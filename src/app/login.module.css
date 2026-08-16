@@ -1,0 +1,10 @@
+.mainContainer { 
+    display: flex;
+    flex-direction: column;
+    justify-items: center;
+}
+.formContainer { 
+    border-color: black;
+    border-radius: 5px;
+    border-width: 2px;
+}

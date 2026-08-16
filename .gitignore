@@ -1,0 +1,9 @@
+node_modules
+
+/src/generated/prisma
+.vercel
+.next/
+.claude
+.env
+.env.local
+.env.*.local
