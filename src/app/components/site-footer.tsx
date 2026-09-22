@@ -1,51 +1,66 @@
 import Link from "next/link";
+import Container from "@/app/components/container";
 
-/* 
+/*
 Primary Color: F2F3F4
 Secondary Color: 9AA1AB */
-export default function SiteFooter() { 
-    const footLinksCol1 = [
-    { href: "/products", label: "Products"},
-    { href: "/arrivals", label: "New Arrivals"},
-    { href: "/track", label: "Track an Order"},
-    { href: "/return", label: "Returns & Refunds"}
-    ]
-   const footLinksCol2 = [
-    { id: 1, href: "/about", label: "About"}, 
-    { id: 2, href: "/contact", label: "Contact"},
-    { id: 3, href: "/policies", label: "Policies"}
-    ]
+
+//  One array instead of three hand-copied column blocks: adding a column or a
+//  link is an edit here, not a new <div> to clone and re-style. href is unique
+//  per link, so it doubles as the key and the rows need no id field.
+const footerColumns = [
+    {
+        heading: "Shop",
+        links: [
+            { href: "/products", label: "Products" },
+            { href: "/arrivals", label: "New Arrivals" },
+        ],
+    },
+    {
+        heading: "Company",
+        links: [
+            { href: "/about", label: "About" },
+            { href: "/contact", label: "Contact" },
+            { href: "/privacy", label: "Privacy" },
+        ],
+    },
+    {
+        heading: "MyCANN",
+        links: [
+            { href: "/about-myCANN", label: "About" },
+            { href: "/favorites", label: "Favorites" },
+            { href: "/purchases", label: "Purchases" },
+        ],
+    },
+];
+
+export default function SiteFooter() {
     return (
-        <footer className="bg-[#16191E] border-t border-[#2A2F36] rounded-t-xl">
-            <div className="px-5 py-6 ">
-            <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-8">
-            <div>
-            <h3 className="font-archivo font-bold text-lg text-[#9AA1AB]">Shop</h3>
-            <ul className="font-archivo mt-3 flex flex-col gap-2 text-[#F2F3F4]">
-            {footLinksCol1.map(({ href, label }) => (
-                <li key={href}>
-                 <Link href={href}>{label}</Link>
-                </li>
-            ))}
-            </ul>
-            </div>
+        <footer className="shrink-0 rounded-t-xl border-t border-[#2A2F36] bg-[#16191E]">
+            {/* Same Container as the header, so the columns stop stretching to
+                the edge on a wide screen and start on the header's gutter. */}
+            <Container className="py-6">
+                <div className="grid grid-cols-1 gap-8 md:grid-cols-3 lg:grid-cols-4">
+                    {footerColumns.map(({ heading, links }) => (
+                        <div key={heading}>
+                            <h3 className="text-lg font-bold text-[#9AA1AB]">
+                                {heading}
+                            </h3>
+                            <ul className="mt-3 flex flex-col gap-2 text-[#F2F3F4]">
+                                {links.map(({ href, label }) => (
+                                    <li key={href}>
+                                        <Link href={href}>{label}</Link>
+                                    </li>
+                                ))}
+                            </ul>
+                        </div>
+                    ))}
+                </div>
 
-            <div>
-            <h3 className="font-archivo font-bold text-lg text-[#9AA1AB]">Company</h3>
-            <ul className="font-archivo mt-3 flex flex-col gap-2 text-[#F2F3F4]">
-                {footLinksCol2.map(({ id, href, label }) => (
-                <li key={id}>
-                <Link href={href}>{label}</Link>
-            </li>
-            ))}
-            </ul>
-            </div>
-            </div>
-
-            <div className="font-archivo mt-8 text-center md:text-left text-[#9AA1AB]">
-            © {new Date().getFullYear()} CANNAN LLC • California
-            </div>
-            </div>
+                <div className="mt-8 text-center text-[#9AA1AB] md:text-left">
+                    © {new Date().getFullYear()} CANNAN LLC • California
+                </div>
+            </Container>
         </footer>
     );
 }

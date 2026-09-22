@@ -1,21 +1,31 @@
 // This is your Prisma schema file,
 // learn more about it in the docs: https://pris.ly/d/prisma-schema
 
-// Get a free hosted Postgres database in seconds: `npx create-db`
+// Define database connection via the `DATABASE_URL` env var
+datasource db {
+  provider = "postgresql"
+}
 
+// Define custom output path for generated Prisma Client
 generator client {
   provider = "prisma-client"
   output   = "../src/generated/prisma"
 }
 
-datasource db {
-  provider = "postgresql"
+enum Role { 
+  CUSTOMER
+  STAFF 
+  ADMIN
 }
 
-// Example data model
+// Table is "User"; adding @@map requires a rename migration.
 model User {
   id        Int      @id @default(autoincrement())
   createdAt DateTime @default(now())
   email     String   @unique
+  password  String?  // null for OAuth-only accounts
   name      String?
+  role      Role     @default(CUSTOMER)
 }
+
+

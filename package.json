@@ -4,19 +4,19 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
+    "postinstall": "prisma generate",
     "build": "next build",
     "start": "next start",
     "lint": "eslint"
   },
   "dependencies": {
+    "@auth/prisma-adapter": "^2.11.3",
     "@heroicons/react": "^2.2.0",
-    "@prisma/adapter-pg": "^7.9.1",
+    "@prisma/adapter-pg": "^7.10.0",
     "@prisma/client": "^7.10.0",
     "bcryptjs": "^3.0.3",
-    "dotenv": "^17.4.2",
     "next": "^16.3.4",
     "next-auth": "^5.0.0-beta.32",
-    "pg": "^8.23.0",
     "react": "19.2.4",
     "react-dom": "19.2.4",
     "react-icons": "^5.7.0",
@@ -25,16 +25,23 @@
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",
-    "@types/node": "^20",
-    "@types/pg": "^8.21.0",
+    "@types/node": "^20.19.43",
+    "@types/pg": "^8.23.1",
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "babel-plugin-react-compiler": "1.0.0",
+    "dotenv": "^17.4.2",
     "eslint": "^9",
     "eslint-config-next": "16.2.12",
+    "pg": "^8.23.0",
     "prisma": "^7.10.0",
     "tailwindcss": "^4",
-    "tsx": "^4.23.12",
-    "typescript": "^5"
+    "tsx": "^4.23.13",
+    "typescript": "^5.9.3"
+  },
+  "//overrides": "Security pins for deps the prisma CLI hard-pins (no in-range upgrade exists). deepmerge-ts <8: GHSA-ggr8-5vv4-36mx; Prisma 8 already ships @prisma/config on 8.0.2. mysql2 <=3.23.0: GHSA-3f6p-5ww8-9rcr, GHSA-rgwj-5xj2-c3m3; unused here (datasource is postgresql). Remove once Prisma ships a stable release with the fixed versions.",
+  "overrides": {
+    "deepmerge-ts": "^8.0.2",
+    "mysql2": "^3.24.4"
   }
 }
