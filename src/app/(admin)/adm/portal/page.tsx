@@ -5,6 +5,7 @@ import FormHeaderDark from '@/app/components/form-header-dark';
 
 export const metadata: Metadata = {
     title: "Portal | Cannan",
+    robots: { index: false },
 };
 
 export default function CNPortal() {

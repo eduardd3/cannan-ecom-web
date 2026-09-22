@@ -7,7 +7,9 @@ import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 
 
-export default function LoginForm() {
+// signupEnabled arrives as a prop because SIGNUP_ENABLED is server-only and
+// this is a client component.
+export default function LoginForm({ signupEnabled }: { signupEnabled: boolean }) {
     const searchParams = useSearchParams();
     const callbackUrl = searchParams.get('callbackUrl') || ('/myCANN/dashboard');
     const [errorMessage, formAction, isPending] = useActionState(
@@ -81,11 +83,13 @@ export default function LoginForm() {
                 
             </Form>
 
-            <div className="mt-3">
-                <p className="text-white"> Don&apos;t have an account? <Link href='/id/signup'>
-                Create an Account
-                </Link></p>
-            </div>
+            {signupEnabled && (
+                <div className="mt-3">
+                    <p className="text-white"> Don&apos;t have an account? <Link href='/id/signup'>
+                    Create an Account
+                    </Link></p>
+                </div>
+            )}
         </div>
     );
 }

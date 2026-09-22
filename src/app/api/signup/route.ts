@@ -2,10 +2,16 @@ import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';    //  validate email/password shape before touching the DB
 import bcrypt from 'bcryptjs';  //    hash the password, never store plaintext
 import { prisma } from '@/lib/prisma'
+import { isSignupEnabled } from '@/lib/flags'
 
 //  Lives at /api/signup, not /api/auth/signup — the [...nextauth] catch-all
 //  owns everything under /api/auth.
 export async function POST(request: NextRequest) {
+    // 404 rather than 403: a closed endpoint should not advertise that it
+    // exists and might reopen.
+    if (!isSignupEnabled()) {
+        return NextResponse.json({ error: 'Not found' }, { status: 404 });
+    }
 
     let bdy: unknown;
     try {
