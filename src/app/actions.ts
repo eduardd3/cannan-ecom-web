@@ -1,6 +1,12 @@
 'use server';
 import {signIn, signOut} from '@/lib/auth-actions';
-import {AuthError} from 'next-auth';
+import {AuthError, CredentialsSignin} from 'next-auth';
+
+// Thrown by enforceLoginLimit() in lib/auth-actions.ts.
+function isRateLimited(error: AuthError) {
+    return error instanceof CredentialsSignin && error.code === 'rate_limited';
+}
+const RATE_LIMITED = 'Too many attempts. Please wait a few minutes and try again.';
 
 export async function authCustomer (
     prev: string | undefined, 
@@ -12,7 +18,8 @@ export async function authCustomer (
     }
     catch (error) { 
 
-        if (error instanceof AuthError) { 
+        if (error instanceof AuthError) {
+            if (isRateLimited(error)) return RATE_LIMITED;
             switch(error.type) {
                 case 'CredentialsSignin':    //   failed to verify user or null
                     return 'Incorrect login information'
@@ -36,6 +43,7 @@ export async function authAdmin (
         // Only AuthError means bad credentials. Anything else must propagate,
         // notably the redirect signal signIn() throws on success.
         if (error instanceof AuthError) {
+            if (isRateLimited(error)) return RATE_LIMITED;
             switch(error.type) {
                 case 'CredentialsSignin':
                     return 'Incorrect login information'

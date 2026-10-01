@@ -43,8 +43,14 @@ export const authConfig = {
 
     // `user` is only set on sign-in, so this costs no DB read per request.
     // authorize() already resolved the row, leaving our id in token.sub.
+    // The server-side instance in src/lib/auth-actions.ts wraps this with a
+    // sessionVersion check; the proxy keeps this DB-free version.
     async jwt({ token, user }) {
-        if (user) token.role = user.role;
+        if (user) {
+          token.role = user.role;
+          token.sessionVersion = user.sessionVersion;
+          token.emailVerified = user.emailVerified != null;
+        }
         return token;
     },
 
@@ -53,6 +59,7 @@ export const authConfig = {
     async session({ session, token }) {
         session.user.role = token.role;
         session.user.id = token.sub!;
+        session.user.emailVerified = token.emailVerified;
         return session;
     },
   },

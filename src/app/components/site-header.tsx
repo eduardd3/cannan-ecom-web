@@ -47,7 +47,7 @@ export default async function SiteHeader() {
                                 <form action={signOutAction}>
                                     <button
                                         type="submit"
-                                        className="cursor-pointer"
+                                        className="cursor-pointer mt-1"
                                     >
                                         <img src='/images/arrow-external.svg' alt="sign-out icon"/>
                                     </button>

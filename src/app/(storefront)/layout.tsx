@@ -1,5 +1,6 @@
 import SiteHeader from "../components/site-header";
 import SiteFooter from "../components/site-footer";
+import { VerifyBanner } from "../components/verify-banner";
 
 //  Route group: the "(storefront)" folder name is stripped from the URL, so
 //  this layout wraps public shop pages without adding a path segment. Pages
@@ -22,6 +23,7 @@ export default function StorefrontLayout({
   return (
     <div className="flex min-h-dvh flex-col">
       <SiteHeader />
+      <VerifyBanner />
       <main className="flex flex-1 flex-col">{children}</main>
       <SiteFooter />
     </div>

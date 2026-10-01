@@ -4,6 +4,7 @@ import { Pool } from "pg";
 import { PrismaPg } from "@prisma/adapter-pg";
 import { PrismaClient } from "@/generated/prisma/client";
 import { Role } from "@/generated/prisma/enums";
+import { withVerifyFullSsl } from "@/lib/db-url";
 
 //  seed db with initial data
 
@@ -15,7 +16,7 @@ function requireEnv(name: string, hint: string): string {
     return value;
 }
 
-const connectionString = requireEnv("DATABASE_URL", "add it to .env before seeding.");
+const connectionString = withVerifyFullSsl(requireEnv("DATABASE_URL", "add it to .env before seeding."));
 const adminEmail = requireEnv("SEED_ADMIN_EMAIL", "add it to .env before seeding.");
 //  never fall back to a default password: an empty or guessable admin password is a live account
 const adminPassword = requireEnv(
@@ -32,10 +33,11 @@ async function main() {
     const hashedPassword = await bcrypt.hash(adminPassword, salt);
 
     //  upsert -> updates an existing row, so re-running the seed is safe
+    //  the admin address is ours, so mark it verified (hides the storefront banner)
     const admin = await prisma.user.upsert({
         where: { email: adminEmail },
         update: { password: hashedPassword, role: Role.ADMIN },
-        create: { email: adminEmail, password: hashedPassword, role: Role.ADMIN },
+        create: { email: adminEmail, password: hashedPassword, role: Role.ADMIN, emailVerified: new Date() },
     });
 
     //  never log the password hash

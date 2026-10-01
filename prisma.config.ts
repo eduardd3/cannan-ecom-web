@@ -9,7 +9,9 @@ export default defineConfig({
     path: "prisma/migrations",
     seed: "tsx prisma/seed.ts",
   },
+  // CLI only (migrate, studio): needs the direct db.prisma.io connection.
+  // The pooled DATABASE_URL drops schema-engine sessions; the app keeps using it.
   datasource: {
-    url: env("DATABASE_URL"),
+    url: env("POSTGRES_URL"),
   },
 });

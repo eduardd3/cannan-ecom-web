@@ -12,3 +12,4 @@ node_modules
 # next.js generated agent rules
 /AGENTS.md
 /CLAUDE.md
+.env*.local

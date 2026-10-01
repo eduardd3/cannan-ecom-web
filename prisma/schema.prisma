@@ -12,20 +12,39 @@ generator client {
   output   = "../src/generated/prisma"
 }
 
-enum Role { 
+enum Role {
   CUSTOMER
-  STAFF 
+  STAFF
   ADMIN
+}
+
+enum TokenType {
+  PASSWORD_RESET
+  EMAIL_VERIFICATION
 }
 
 // Table is "User"; adding @@map requires a rename migration.
 model User {
-  id        Int      @id @default(autoincrement())
-  createdAt DateTime @default(now())
-  email     String   @unique
-  password  String?  // null for OAuth-only accounts
-  name      String?
-  role      Role     @default(CUSTOMER)
+  id             Int       @id @default(autoincrement())
+  createdAt      DateTime  @default(now())
+  email          String    @unique
+  password       String? // null for OAuth-only accounts
+  name           String?
+  role           Role      @default(CUSTOMER)
+  emailVerified  DateTime?
+  sessionVersion Int       @default(0)
+  tokens         Token[]
 }
 
+model Token {
+  id        Int       @id @default(autoincrement())
+  userId    Int
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  type      TokenType
+  tokenHash String    @unique
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime  @default(now())
 
+  @@index([userId, type, createdAt])
+}

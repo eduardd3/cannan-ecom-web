@@ -12,6 +12,8 @@ import Link from 'next/link';
 export default function LoginForm({ signupEnabled }: { signupEnabled: boolean }) {
     const searchParams = useSearchParams();
     const callbackUrl = searchParams.get('callbackUrl') || ('/myCANN/dashboard');
+    const justReset = searchParams.get('reset') === '1';
+    const justSignedUp = searchParams.get('verify') === '1';
     const [errorMessage, formAction, isPending] = useActionState(
         authCustomer,
         undefined,
@@ -20,8 +22,18 @@ export default function LoginForm({ signupEnabled }: { signupEnabled: boolean })
     return (
         <div className="w-full max-w-sm rounded-xl border border-[#2A2F36] bg-[#16191E] p-8 shadow-sm">
             <h1 className="text-center text-xl font-bold text-[#F2F3F4]">
-               MyCANN Portal 
+               MyCANN Portal
             </h1>
+            {justReset && (
+                <p className="mt-4 text-center text-sm text-[#9AA1AB]">
+                    Your password was reset. Log in with your new password.
+                </p>
+            )}
+            {justSignedUp && (
+                <p className="mt-4 text-center text-sm text-[#9AA1AB]">
+                    Account created. Check your email to confirm your address.
+                </p>
+            )}
 
             <Form   //  Client action
                 action={formAction}
@@ -54,6 +66,9 @@ export default function LoginForm({ signupEnabled }: { signupEnabled: boolean })
                         required
                         className="h-10 w-full rounded-md border border-[#2A2F36] bg-[#0F1114] px-3 text-[#F2F3F4] outline-none focus:border-[#9AA1AB] focus-visible:ring-2 focus-visible:ring-[#9AA1AB]"
                     />
+                    <Link href="/id/forgot-password" className="self-end text-sm text-[#9AA1AB] hover:text-[#F2F3F4]">
+                        Forgot password?
+                    </Link>
                 </div>
                 {/* Handling login attempt: system responds with the appropriate result */}
                  <div
