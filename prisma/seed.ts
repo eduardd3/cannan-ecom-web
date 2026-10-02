@@ -1,10 +1,12 @@
-import "dotenv/config";
+import { config } from "dotenv";
 import bcrypt from "bcryptjs";
 import { Pool } from "pg";
 import { PrismaPg } from "@prisma/adapter-pg";
 import { PrismaClient } from "@/generated/prisma/client";
 import { Role } from "@/generated/prisma/enums";
 import { withVerifyFullSsl } from "@/lib/db-url";
+
+config({ path: ".env.local" });
 
 //  seed db with initial data
 
@@ -16,12 +18,12 @@ function requireEnv(name: string, hint: string): string {
     return value;
 }
 
-const connectionString = withVerifyFullSsl(requireEnv("DATABASE_URL", "add it to .env before seeding."));
-const adminEmail = requireEnv("SEED_ADMIN_EMAIL", "add it to .env before seeding.");
+const connectionString = withVerifyFullSsl(requireEnv("DATABASE_URL", "add it to .env.local before seeding."));
+const adminEmail = requireEnv("SEED_ADMIN_EMAIL", "add it to .env.local before seeding.");
 //  never fall back to a default password: an empty or guessable admin password is a live account
 const adminPassword = requireEnv(
     "SEED_ADMIN_PASSWORD",
-    "add it to .env before seeding so the admin is not created with an empty password.",
+    "add it to .env.local before seeding so the admin is not created with an empty password.",
 );
 
 const pool = new Pool({ connectionString });
