@@ -62,24 +62,74 @@ enum ProductStatus {
 // Orders are created by the Stripe webhook after payment, so there is no PENDING.
 enum OrderStatus {
   PAID
+  // Paid, but something needs a person: a line's stock ran short at webhook
+  // time (sold on another channel mid-checkout), or Stripe's subtotal didn't
+  // match the line prices. Lines that had stock were deducted; short lines
+  // were not. An admin restocks and approves (→ PAID, writes ORDER_PLACED
+  // rows only for lines with no ORDER_PLACED adjustment yet) or refunds
+  // (→ REFUNDED).
+  NEEDS_REVIEW
   FULFILLED
   CANCELED
   REFUNDED
 }
 
-model Product {
-  id          Int           @id @default(autoincrement())
-  slug        String        @unique
+// Separate product lines; every product belongs to exactly one. The default
+// collection is what general listings show (one default, partial unique in SQL).
+// Rows are inserted by the migration, so production gets them too.
+model Collection {
+  id          Int      @id @default(autoincrement())
+  slug        String   @unique
   name        String
   description String
-  status      ProductStatus @default(DRAFT)
-  createdAt   DateTime      @default(now())
-  updatedAt   DateTime      @updatedAt
+  isDefault   Boolean  @default(false)
+  position    Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 
-  variants ProductVariant[]
-  images   ProductImage[]
+  products Product[]
+}
+
+// Browsing tags, shared across collections. Always shown scoped to one
+// collection so a category page never mixes product lines.
+model Category {
+  id          Int      @id @default(autoincrement())
+  slug        String   @unique
+  name        String
+  description String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  products ProductCategory[]
+}
+
+model ProductCategory {
+  productId  Int
+  product    Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  categoryId Int
+  category   Category @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+
+  @@id([productId, categoryId])
+  @@index([categoryId])
+}
+
+model Product {
+  id           Int           @id @default(autoincrement())
+  slug         String        @unique
+  name         String
+  description  String
+  status       ProductStatus @default(DRAFT)
+  collectionId Int
+  collection   Collection    @relation(fields: [collectionId], references: [id], onDelete: Restrict)
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+
+  variants   ProductVariant[]
+  images     ProductImage[]
+  categories ProductCategory[]
 
   @@index([status])
+  @@index([collectionId, status])
 }
 
 // Every product has at least one variant; price and stock live here.
@@ -154,10 +204,13 @@ model CartItem {
 }
 
 model Order {
-  id     Int         @id @default(autoincrement())
-  userId Int
-  user   User        @relation(fields: [userId], references: [id], onDelete: Restrict)
-  status OrderStatus @default(PAID)
+  id           Int         @id @default(autoincrement())
+  userId       Int
+  user         User        @relation(fields: [userId], references: [id], onDelete: Restrict)
+  status       OrderStatus @default(PAID)
+  // Why the order went to NEEDS_REVIEW. Required while in review (CHECK in
+  // SQL) and kept after it's resolved, as history.
+  reviewReason String?
 
   subtotalCents Int
   shippingCents Int
@@ -177,6 +230,7 @@ model Order {
   inventoryAdjustments InventoryAdjustment[]
 
   @@index([userId, createdAt])
+  @@index([status])
 }
 
 // Snapshot of the listing at purchase time; later edits never rewrite it.

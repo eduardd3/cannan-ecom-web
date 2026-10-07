@@ -11,3 +11,20 @@
 export function isSignupEnabled(): boolean {
     return process.env.SIGNUP_ENABLED === 'true';
 }
+
+/**
+ * Starting a Stripe checkout.
+ *
+ * Closed in production while Stripe is still in test mode: with test keys,
+ * the live site would accept test cards and write real-looking orders and
+ * stock deductions to the production database.
+ *
+ * Gates only new checkouts. The webhook and the return page ignore it, so a
+ * payment already in flight when this is switched off still becomes an order.
+ *
+ * Opt-in, like SIGNUP_ENABLED: unset fails closed. Set CHECKOUT_ENABLED=true
+ * per environment — on Vercel that needs a redeploy to take effect.
+ */
+export function isCheckoutEnabled(): boolean {
+    return process.env.CHECKOUT_ENABLED === 'true';
+}

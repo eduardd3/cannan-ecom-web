@@ -37,6 +37,8 @@ export const authConfig = {
         }
 
         if (pathname.startsWith("/myCANN/dashboard")) return !!user;
+        // Checkout requires an account; false sends the visitor to pages.signIn.
+        if (pathname.startsWith("/id/checkout")) return !!user;
 
         return true;
     },
