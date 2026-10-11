@@ -7,7 +7,8 @@
     "postinstall": "prisma generate",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "stripe:listen": "stripe listen --api-key \"$(grep '^STRIPE_SECRET_KEY=' .env.local | cut -d= -f2- | tr -d '\"')\" --events checkout.session.completed,checkout.session.async_payment_succeeded,checkout.session.async_payment_failed --forward-to localhost:3000/api/webhooks/stripe"
   },
   "dependencies": {
     "@auth/prisma-adapter": "^2.11.3",

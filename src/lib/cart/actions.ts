@@ -93,7 +93,8 @@ export async function addToCart(
       return { desired, final };
     });
 
-    revalidatePath("/cart");
+    // The whole layout, not just /cart: the header's cart badge is on every page.
+    revalidatePath("/", "layout");
     return { ok: true, data: { quantity: final }, notice: cappedNotice(final, desired) };
   } catch (error) {
     console.error("addToCart failed", error);
@@ -140,7 +141,7 @@ export async function updateCartItemQuantity(
     // Update by id is safe now: ownership was proven above.
     await prisma.cartItem.update({ where: { id: itemId }, data: { quantity: final } });
 
-    revalidatePath("/cart");
+    revalidatePath("/", "layout"); // cart page and header badge
     return { ok: true, data: { quantity: final }, notice: cappedNotice(final, quantity) };
   } catch (error) {
     console.error("updateCartItemQuantity failed", error);
@@ -170,7 +171,7 @@ export async function removeCartItem(input: unknown): Promise<ActionResult> {
     });
     if (count === 0) return fail("ITEM_NOT_FOUND", "That item is no longer in your cart.");
 
-    revalidatePath("/cart");
+    revalidatePath("/", "layout"); // cart page and header badge
     return { ok: true, data: undefined };
   } catch (error) {
     console.error("removeCartItem failed", error);

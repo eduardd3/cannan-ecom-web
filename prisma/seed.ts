@@ -1,3 +1,5 @@
+import { existsSync } from "node:fs";
+import path from "node:path";
 import { config } from "dotenv";
 import bcrypt from "bcryptjs";
 import { Pool } from "pg";
@@ -5,6 +7,8 @@ import { PrismaPg } from "@prisma/adapter-pg";
 import { PrismaClient } from "@/generated/prisma/client";
 import { Role } from "@/generated/prisma/enums";
 import { withVerifyFullSsl } from "@/lib/db-url";
+import { validateAdjustment } from "@/lib/inventory/rules";
+import { SEED_CATEGORIES, SEED_PRODUCTS, type SeedImage } from "./seed-catalog";
 
 config({ path: ".env.local" });
 
@@ -44,6 +48,128 @@ async function main() {
 
     //  never log the password hash
     console.log(`Seeded admin: ${admin.email} (id ${admin.id}, role ${admin.role})`);
+
+    await seedCatalog();
+}
+
+//  Products go in the default collection, which the
+//  collections_and_categories migration created.
+async function seedCatalog() {
+    if (SEED_PRODUCTS.length === 0) {
+        console.log("No seed products defined (prisma/seed-catalog.ts); skipping catalog.");
+        return;
+    }
+
+    const collection = await prisma.collection.findFirstOrThrow({ where: { isDefault: true } });
+
+    const categoryIds = new Map<string, number>();
+    for (const c of SEED_CATEGORIES) {
+        const category = await prisma.category.upsert({
+            where: { slug: c.slug },
+            update: { name: c.name, description: c.description ?? null },
+            create: { slug: c.slug, name: c.name, description: c.description ?? null },
+        });
+        categoryIds.set(c.slug, category.id);
+    }
+
+    for (const p of SEED_PRODUCTS) {
+        const categoryLinks = p.categories.map((slug) => {
+            const categoryId = categoryIds.get(slug);
+            if (!categoryId) throw new Error(`${p.slug}: unknown category "${slug}"`);
+            return { categoryId };
+        });
+
+        const product = await prisma.product.upsert({
+            where: { slug: p.slug },
+            update: {
+                name: p.name,
+                description: p.description,
+                status: p.status,
+                collectionId: collection.id,
+                categories: { deleteMany: {}, create: categoryLinks },
+            },
+            create: {
+                slug: p.slug,
+                name: p.name,
+                description: p.description,
+                status: p.status,
+                collectionId: collection.id,
+                categories: { create: categoryLinks },
+            },
+        });
+
+        //  Images are replaced wholesale on each run; nothing references them.
+        await prisma.productImage.deleteMany({ where: { productId: product.id } });
+        await createImages(product.id, null, p.images);
+
+        for (const [position, v] of p.variants.entries()) {
+            //  Never touches stock: new variants start at 0 and get their
+            //  opening count from the ledger below.
+            const variant = await prisma.productVariant.upsert({
+                where: { sku: v.sku },
+                update: {
+                    productId: product.id,
+                    name: v.name,
+                    value: v.value,
+                    priceCents: v.priceCents,
+                    amazonAsin: v.amazonAsin ?? null,
+                    position,
+                    isActive: true,
+                },
+                create: {
+                    productId: product.id,
+                    sku: v.sku,
+                    name: v.name,
+                    value: v.value,
+                    priceCents: v.priceCents,
+                    stock: 0,
+                    amazonAsin: v.amazonAsin ?? null,
+                    position,
+                },
+            });
+            await createImages(product.id, variant.id, v.images ?? []);
+            await seedOpeningStock(variant.id, v.initialStock);
+        }
+
+        console.log(`Seeded product: ${p.slug} (${p.variants.length} variant(s), ${p.status})`);
+    }
+}
+
+async function createImages(productId: number, variantId: number | null, images: SeedImage[]) {
+    for (const [position, image] of images.entries()) {
+        if (!existsSync(path.join("public/seed-images", image.key))) {
+            console.warn(`  missing image file: public/seed-images/${image.key}`);
+        }
+        await prisma.productImage.create({
+            data: { productId, variantId, key: image.key, alt: image.alt, position },
+        });
+    }
+}
+
+//  A seed-side copy of adjustStock (src/lib/inventory/adjust.ts), which can't
+//  be imported here: it pulls in server-only and the app's Prisma client.
+//  Same shape: stock and its ledger row change in one transaction.
+//
+//  Runs once per variant. Any existing ledger row means the variant already
+//  has history, so re-seeding never stacks a second INITIAL_STOCK.
+async function seedOpeningStock(variantId: number, quantity: number) {
+    if (quantity === 0) return;
+    const problem = validateAdjustment(quantity, "INITIAL_STOCK", null);
+    if (problem) throw new Error(`variant ${variantId}: ${problem}`);
+
+    await prisma.$transaction(async (tx) => {
+        const history = await tx.inventoryAdjustment.count({ where: { variantId } });
+        if (history > 0) return;
+
+        const { stock: stockAfter } = await tx.productVariant.update({
+            where: { id: variantId },
+            data: { stock: { increment: quantity } },
+            select: { stock: true },
+        });
+        await tx.inventoryAdjustment.create({
+            data: { variantId, delta: quantity, stockAfter, reason: "INITIAL_STOCK", note: "Dev seed" },
+        });
+    });
 }
 
 main()

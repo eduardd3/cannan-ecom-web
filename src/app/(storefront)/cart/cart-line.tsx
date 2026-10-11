@@ -1,5 +1,7 @@
 "use client";
 
+import Image from "next/image";
+import Link from "next/link";
 import { useState, useTransition } from "react";
 
 import { removeCartItem, updateCartItemQuantity } from "@/lib/cart/actions";
@@ -7,8 +9,8 @@ import { formatCents } from "@/lib/cart/format";
 import { MAX_QTY_PER_LINE } from "@/lib/cart/schemas";
 import type { CartLineView } from "@/lib/cart/types";
 
-//  The actions call revalidatePath("/cart"), so a successful change re-renders
-//  the server page with fresh lines and totals. This component only tracks the
+//  The actions revalidate the layout, so a successful change re-renders the
+//  server page with fresh lines and totals (and the header badge). This component only tracks the
 //  pending state and the message from the last action.
 export default function CartLine({ line }: { line: CartLineView }) {
     const [pending, startTransition] = useTransition();
@@ -16,6 +18,7 @@ export default function CartLine({ line }: { line: CartLineView }) {
 
     const unavailable = line.availability === "unavailable";
     const maxQty = Math.max(1, Math.min(line.stock, MAX_QTY_PER_LINE));
+    const productHref = `/products/${line.productSlug}`;
 
     function setQuantity(quantity: number) {
         startTransition(async () => {
@@ -33,21 +36,26 @@ export default function CartLine({ line }: { line: CartLineView }) {
 
     return (
         <li className={`flex gap-4 py-6 ${pending ? "opacity-60" : ""}`}>
-            {/* No link to the product yet: /products/[slug] doesn't exist. */}
-            {line.imageUrl ? (
-                <img
-                    src={line.imageUrl}
-                    alt={line.imageAlt ?? line.productName}
-                    className="h-24 w-24 shrink-0 rounded object-cover"
-                />
-            ) : (
-                <div className="h-24 w-24 shrink-0 rounded bg-neutral-200" />
-            )}
+            {/* Links 404 for a line whose product went draft/archived; it's
+                already marked unavailable below, so that's accurate. */}
+            <Link href={productHref} className="relative h-24 w-24 shrink-0 overflow-hidden rounded bg-white">
+                {line.imageUrl && (
+                    <Image
+                        src={line.imageUrl}
+                        alt={line.imageAlt ?? line.productName}
+                        fill
+                        sizes="96px"
+                        className="object-contain"
+                    />
+                )}
+            </Link>
 
             <div className="flex flex-1 flex-col gap-1">
                 <div className="flex justify-between gap-4">
                     <div>
-                        <p className="font-medium">{line.productName}</p>
+                        <Link href={productHref} className="font-medium underline-offset-2 hover:underline">
+                            {line.productName}
+                        </Link>
                         {line.variantLabel && (
                             <p className="text-sm text-neutral-600">{line.variantLabel}</p>
                         )}

@@ -5,6 +5,7 @@
 import "server-only";
 
 import type { Prisma } from "@/generated/prisma/client";
+import { getImageUrl } from "@/lib/images";
 import { prisma } from "@/lib/prisma";
 import type { CartLineView, CartView, LineAvailability } from "./types";
 
@@ -19,14 +20,14 @@ const cartItemInclude = {
           slug: true,
           status: true,
           images: {
-            select: { url: true, alt: true },
+            select: { key: true, alt: true },
             orderBy: { position: "asc" },
             take: 1,
           },
         },
       },
       images: {
-        select: { url: true, alt: true },
+        select: { key: true, alt: true },
         orderBy: { position: "asc" },
         take: 1,
       },
@@ -111,7 +112,7 @@ function toCartLineView(item: CartItemWithDetails): CartLineView {
     productName: product.name,
     productSlug: product.slug,
     variantLabel: formatVariantLabel(variant.name, variant.value),
-    imageUrl: image?.url ?? null,
+    imageUrl: image ? getImageUrl(image.key) : null,
     imageAlt: image?.alt ?? null,
     unitPriceCents: variant.priceCents,
     quantity: item.quantity,

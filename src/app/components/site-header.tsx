@@ -1,16 +1,18 @@
 
 import Link from "next/link";
-import {auth} from '@/lib/auth-actions';
 import {signOutAction} from '@/app/actions';
+import {getCartItemCount} from '@/lib/cart/queries';
+import {getCurrentUserId} from '@/lib/cart/session';
 import Container from '@/app/components/container';
 
 // auth() reads cookies, so every page under (storefront)/layout renders
 // dynamically. Accepted over a <Suspense> island, which would restore static
 // HTML but make the account area pop in late.
 export default async function SiteHeader() {
-    const session = await auth();
-    //  auth() returns Session | null — session.user would throw when logged out
-    const signedIn = !!session?.user;
+    const userId = await getCurrentUserId();
+    const signedIn = userId !== null;
+    //  Signed out there's no cart to count (no guest carts yet).
+    const cartCount = userId ? await getCartItemCount(userId) : 0;
 
     return (
         <header className="shrink-0 border-b bg-[#FCFCFA]">
@@ -25,8 +27,16 @@ export default async function SiteHeader() {
 
                     <ul className="flex items-center gap-3">
                         <li>
-                            <Link href="/cart">
-                                <img src="/images/cart.svg" alt="Cart" />
+                            <Link href="/cart" className="relative block">
+                                <img src="/images/cart.svg" alt={cartCount > 0 ? `Cart, ${cartCount} items` : "Cart"} />
+                                {cartCount > 0 && (
+                                    <span
+                                        aria-hidden="true"
+                                        className="absolute -top-1.5 -right-2 min-w-5 rounded-full bg-[#16191E] px-1 text-center text-xs leading-5 text-white"
+                                    >
+                                        {cartCount > 99 ? "99+" : cartCount}
+                                    </span>
+                                )}
                             </Link>
                         </li>
                         <li>
