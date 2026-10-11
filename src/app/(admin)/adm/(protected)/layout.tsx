@@ -29,14 +29,21 @@ export default async function ProtectedAdminLayout ( {
                 portal login page — which sits outside this group — doesn't get a
                 sign-out bar it has no session for. */}
             <header className="flex shrink-0 items-center justify-between border-b border-[#2A2F36] bg-[#16191E] px-5 py-3">
-                <Link href="/adm/dashboard" className="flex items-center gap-3">
-                    <img
-                        className="h-9"
-                        src="/images/cannan-diamond-ink.svg"
-                        alt="CANNAN"
-                    />
-                    <span className="font-bold text-[#F2F3F4]">Portal</span>
-                </Link>
+                <div className="flex items-center gap-6">
+                    <Link href="/adm/dashboard" className="flex items-center gap-3">
+                        <img
+                            className="h-9"
+                            src="/images/cannan-diamond-ink.svg"
+                            alt="CANNAN"
+                        />
+                        <span className="font-bold text-[#F2F3F4]">Portal</span>
+                    </Link>
+                    <nav aria-label="Admin" className="flex items-center gap-4 text-sm">
+                        <Link href="/adm/orders" className="text-[#9AA1AB] transition-colors hover:text-[#F2F3F4]">
+                            Orders
+                        </Link>
+                    </nav>
+                </div>
 
                 <div className="flex items-center gap-4">
                     <span className="hidden text-sm text-[#9AA1AB] sm:inline">
