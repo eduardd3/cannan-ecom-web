@@ -1,3 +1,5 @@
+import { SUPPORT_EMAIL, SUPPORT_MAILTO } from "@/lib/contact";
+
 interface PasswordResetProps {
     name: string | null
     email: string
@@ -23,7 +25,7 @@ export function PasswordReset({name, email, url}: PasswordResetProps) {
             </p>
             <p>
                 If you have any questions or concerns, please contact us
-                at <a href='mailto:support@mail.shopcannan.com'>support@mail.shopcannan.com</a>.
+                at <a href={SUPPORT_MAILTO}>{SUPPORT_EMAIL}</a>.
             </p>
             <p>
                 Thank you,<br />

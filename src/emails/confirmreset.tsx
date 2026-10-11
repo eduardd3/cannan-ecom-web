@@ -1,3 +1,5 @@
+import { SUPPORT_EMAIL, SUPPORT_MAILTO } from "@/lib/contact";
+
 interface ConfirmPasswordReset {
     name: string | null
 }
@@ -12,7 +14,7 @@ export function ConfirmReset({name} : ConfirmPasswordReset) {
             </p>
             <p>
                 If you didn&apos;t do this, please contact us right away
-                at <a href='mailto:support@mail.shopcannan.com'>support@mail.shopcannan.com</a>.
+                at <a href={SUPPORT_MAILTO}>{SUPPORT_EMAIL}</a>.
             </p>
             <p>
                 Thank you,<br />

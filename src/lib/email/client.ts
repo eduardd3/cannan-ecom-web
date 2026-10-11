@@ -3,6 +3,7 @@ import type {ReactElement} from 'react';
 
 import {Resend} from 'resend';
 import {SENDER_ACCOUNT} from '@/lib/email/senders';
+import {SUPPORT_EMAIL} from '@/lib/contact';
 const FROM = `Cannan <${SENDER_ACCOUNT}>`;
 
 //  Created on first send, not at import: the Resend constructor throws when
@@ -24,7 +25,14 @@ export async function sendEmail (args: SendArgs) : Promise<SendResult> {
     }
     resend ??= new Resend(process.env.RESEND_API_KEY);
     try {
-        const { data, error } = await resend.emails.send({ from: FROM, ...args});
+        //  The mail. sending subdomain isn't a monitored inbox, so replies
+        //  default to support unless a caller passes its own replyTo. Set after
+        //  the spread so an explicit `replyTo: undefined` still gets it.
+        const { data, error } = await resend.emails.send({
+            from: FROM,
+            ...args,
+            replyTo: args.replyTo ?? SUPPORT_EMAIL,
+        });
         if (error || !data) {
             console.error(`[email] send failed`, error);
             return {ok: false, error: 'Email send failed'};

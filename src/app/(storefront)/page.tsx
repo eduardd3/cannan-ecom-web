@@ -21,7 +21,7 @@ export default function Home() {
         <h1 className="text-xl font-bold">
           SHOP CANNAN - COMING SOON!
         </h1>
-        <p className="mt-2">Something handmade is on the way.</p>
+        <p className="mt-2">Meaningful pieces for every home and every tradition are on the way.</p>
       </div>
       <Storefronts />
     </Container>

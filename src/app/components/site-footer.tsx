@@ -17,11 +17,19 @@ const footerColumns = [
         ],
     },
     {
+        heading: "Help",
+        links: [
+            { href: "/contact", label: "Contact" },
+            { href: "/shipping", label: "Shipping" },
+            { href: "/returns", label: "Returns & Refunds" },
+        ],
+    },
+    {
         heading: "Company",
         links: [
             { href: "/about", label: "About" },
-            { href: "/contact", label: "Contact" },
             { href: "/privacy", label: "Privacy" },
+            { href: "/terms", label: "Terms" },
         ],
     },
     {
@@ -40,7 +48,7 @@ export default function SiteFooter() {
             {/* Same Container as the header, so the columns stop stretching to
                 the edge on a wide screen and start on the header's gutter. */}
             <Container className="py-6">
-                <div className="grid grid-cols-1 gap-8 md:grid-cols-3 lg:grid-cols-4">
+                <div className="grid grid-cols-1 gap-8 sm:grid-cols-2 lg:grid-cols-4">
                     {footerColumns.map(({ heading, links }) => (
                         <div key={heading}>
                             <h3 className="text-lg font-bold text-[#9AA1AB]">

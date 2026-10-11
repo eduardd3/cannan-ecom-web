@@ -10,7 +10,7 @@ export default function Storefronts () {
     return (
         <ul className="flex gap-3"> 
             {storeLinks.map(({ href, icon: Icon, label }) => (
-                <li key={label}>
+                <li key={label} className="list-none">
                  <Link href={href}>
                     <Icon className="w-6 h-6" aria-label={label} />
                 </Link>
