@@ -8,6 +8,9 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
+    "test": "vitest run",
+    "test:unit": "vitest run --project unit",
+    "test:watch": "vitest",
     "stripe:listen": "stripe listen --api-key \"$(grep '^STRIPE_SECRET_KEY=' .env.local | cut -d= -f2- | tr -d '\"')\" --events checkout.session.completed,checkout.session.async_payment_succeeded,checkout.session.async_payment_failed --forward-to localhost:3000/api/webhooks/stripe"
   },
   "dependencies": {
@@ -46,7 +49,8 @@
     "prisma": "^7.10.0",
     "tailwindcss": "^4",
     "tsx": "^4.23.13",
-    "typescript": "^5.9.3"
+    "typescript": "^5.9.3",
+    "vitest": "^4.1.11"
   },
   "//overrides": "Security pins for deps the prisma CLI hard-pins (no in-range upgrade exists). deepmerge-ts <8: GHSA-ggr8-5vv4-36mx; Prisma 8 already ships @prisma/config on 8.0.2. mysql2 <=3.23.0: GHSA-3f6p-5ww8-9rcr, GHSA-rgwj-5xj2-c3m3; unused here (datasource is postgresql). Remove once Prisma ships a stable release with the fixed versions.",
   "overrides": {
