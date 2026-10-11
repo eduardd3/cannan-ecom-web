@@ -37,6 +37,7 @@ model User {
 
   cart                 Cart?
   orders               Order[]
+  reviewedOrders       Order[]               @relation("OrderReviewResolvedBy")
   inventoryAdjustments InventoryAdjustment[]
 }
 
@@ -212,7 +213,12 @@ model Order {
   status       OrderStatus @default(PAID)
   // Why the order went to NEEDS_REVIEW. Required while in review (CHECK in
   // SQL) and kept after it's resolved, as history.
-  reviewReason String?
+  reviewReason       String?
+  // Who approved or refunded it, and when. Set only when leaving
+  // NEEDS_REVIEW, and only on orders that had a reviewReason (CHECK in SQL).
+  reviewResolvedAt   DateTime?
+  reviewResolvedById Int?
+  reviewResolvedBy   User?     @relation("OrderReviewResolvedBy", fields: [reviewResolvedById], references: [id], onDelete: SetNull)
 
   subtotalCents Int
   shippingCents Int
