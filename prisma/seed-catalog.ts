@@ -1,8 +1,9 @@
 //  Dev catalog for prisma/seed.ts. Dev database only: production products
 //  and stock come in through the admin, not the seed.
 //
-//  Image keys resolve through getImageUrl (src/lib/images.ts), so each key
-//  needs a file at public/seed-images/<key>. Keep photos small (~300 KB):
+//  Image keys resolve through getImageUrl (src/lib/storage), which treats
+//  any key starting with "products/" as a seed image, so each key needs a
+//  file at public/seed-images/<key>. Keep photos small (~300 KB):
 //  they're committed.
 //
 //  Stock is the OPENING count, written once as an INITIAL_STOCK adjustment.

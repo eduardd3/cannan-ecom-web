@@ -5,7 +5,7 @@
 import "server-only";
 
 import type { Prisma } from "@/generated/prisma/client";
-import { getImageUrl } from "@/lib/images";
+import { getImageUrl } from "@/lib/storage";
 import { prisma } from "@/lib/prisma";
 import type { CartLineView, CartView, LineAvailability } from "./types";
 

@@ -8,7 +8,7 @@ import "server-only";
 import { cache } from "react";
 
 import type { Prisma } from "@/generated/prisma/client";
-import { getImageUrl } from "@/lib/images";
+import { getImageUrl } from "@/lib/storage";
 import { prisma } from "@/lib/prisma";
 import type {
   CategoryView,

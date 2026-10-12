@@ -1,8 +1,17 @@
 import type { NextConfig } from "next";
 
+//  Product images in S3 are served through CloudFront (src/lib/storage).
+//  Allow exactly that host for next/image; unset means seed images only.
+const imageCdn = process.env.IMAGE_CDN_URL ? new URL(process.env.IMAGE_CDN_URL) : null;
+
 const nextConfig: NextConfig = {
   /* config options here */
   reactCompiler: true,
+  images: {
+    remotePatterns: imageCdn
+      ? [{ protocol: "https", hostname: imageCdn.hostname, port: "", pathname: "/**", search: "" }]
+      : [],
+  },
   turbopack: {
     root: __dirname,
   },
