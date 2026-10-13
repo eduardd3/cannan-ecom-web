@@ -13,6 +13,7 @@ import { randomUUID } from "node:crypto";
 import { PutObjectCommand, DeleteObjectCommand } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import { getS3Client, storageConfig } from "./client";
+import { ALLOWED_IMAGE_TYPES, MAX_UPLOAD_BYTES } from "./limits";
 
 // ---------------------------------------------------------------------------
 // Constants
@@ -26,16 +27,9 @@ import { getS3Client, storageConfig } from "./client";
 const SEED_PREFIX = "products/";
 const SEED_BASE_URL = "/seed-images";
 
-// Content type -> file extension. The extension is DERIVED from the type,
-// never taken from the uploaded filename, so the key can't lie about the file.
-// No image/svg+xml: SVGs can contain scripts.
-const ALLOWED_TYPES: Record<string, string> = {
-  "image/jpeg": "jpg",
-  "image/png": "png",
-  "image/webp": "webp",
-};
-
-export const MAX_UPLOAD_BYTES = 10 * 1024 * 1024;
+// Allowed types and the size cap live in limits.ts so the upload form can
+// check them too.
+export { MAX_UPLOAD_BYTES };
 
 // Presigned URLs are used immediately after they're issued.
 const UPLOAD_URL_TTL_SECONDS = 60;
@@ -65,6 +59,24 @@ export function getImageUrl(key: string): string {
   return `${storageConfig.cdnUrl}/${key}`;
 }
 
+function productFolder(productId: number): string {
+  return `${storageConfig.keyPrefix}/products/${productId}/`;
+}
+
+/**
+ * True only for a key createUploadUrl could have issued for this product:
+ * this environment's prefix, this product's folder, a UUID, an allowed
+ * extension. Lets the caller refuse a forged key before saving it.
+ */
+export function isProductUploadKey(key: string, productId: number): boolean {
+  const folder = productFolder(productId);
+  if (!key.startsWith(folder)) return false;
+  const extensions = Object.values(ALLOWED_IMAGE_TYPES).join("|");
+  return new RegExp(`^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\\.(?:${extensions})$`).test(
+    key.slice(folder.length),
+  );
+}
+
 // ---------------------------------------------------------------------------
 // createUploadUrl
 // ---------------------------------------------------------------------------
@@ -90,7 +102,7 @@ export async function createUploadUrl(params: {
 }): Promise<UploadTarget> {
   const { productId, contentType, size } = params;
 
-  const ext = ALLOWED_TYPES[contentType];
+  const ext = ALLOWED_IMAGE_TYPES[contentType];
   if (!ext) throw new Error(`Storage: content type "${contentType}" is not allowed`);
 
   if (!Number.isSafeInteger(productId) || productId <= 0) {
@@ -100,7 +112,7 @@ export async function createUploadUrl(params: {
     throw new Error(`Storage: file size must be 1 to ${MAX_UPLOAD_BYTES} bytes, got ${size}`);
   }
 
-  const key = `${storageConfig.keyPrefix}/products/${productId}/${randomUUID()}.${ext}`;
+  const key = `${productFolder(productId)}${randomUUID()}.${ext}`;
 
   // ContentType and ContentLength are part of the signature: a mismatched
   // header gets 403 SignatureDoesNotMatch. Content-Length is signed by

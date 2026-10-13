@@ -13,7 +13,7 @@ vi.mock("./client", async (importOriginal) => {
   return { ...actual, getS3Client: () => client };
 });
 
-import { createUploadUrl, deleteImage, getImageUrl, MAX_UPLOAD_BYTES } from "./index";
+import { createUploadUrl, deleteImage, getImageUrl, isProductUploadKey, MAX_UPLOAD_BYTES } from "./index";
 
 beforeEach(() => {
   vi.stubEnv("IMAGE_CDN_URL", "https://cdn.example.net/");
@@ -96,5 +96,28 @@ describe("deleteImage", () => {
 
   it("refuses keys outside the env prefix", async () => {
     await expect(deleteImage("prod/products/7/abc.jpg")).rejects.toThrow(/outside the "dev\/" prefix/);
+  });
+});
+
+describe("isProductUploadKey", () => {
+  const uuid = "0b7f9a2e-4c1d-4e8a-9f3b-2a6c5d7e8f90";
+
+  it("accepts a key createUploadUrl issues for the product", async () => {
+    const target = await createUploadUrl({ productId: 7, contentType: "image/webp", size: 10 });
+    expect(isProductUploadKey(target.key, 7)).toBe(true);
+  });
+
+  it("refuses another product's folder, even one sharing a prefix", () => {
+    expect(isProductUploadKey(`dev/products/7/${uuid}.jpg`, 70)).toBe(false);
+    expect(isProductUploadKey(`dev/products/70/${uuid}.jpg`, 7)).toBe(false);
+  });
+
+  it("refuses another environment, seed keys, odd names, and disallowed extensions", () => {
+    expect(isProductUploadKey(`prod/products/7/${uuid}.jpg`, 7)).toBe(false);
+    expect(isProductUploadKey("products/virgen/1.jpg", 7)).toBe(false);
+    expect(isProductUploadKey("dev/products/7/photo.jpg", 7)).toBe(false);
+    expect(isProductUploadKey(`dev/products/7/${uuid}.svg`, 7)).toBe(false);
+    expect(isProductUploadKey(`dev/products/7/sub/${uuid}.jpg`, 7)).toBe(false);
+    expect(isProductUploadKey(`dev/products/7/${uuid}.jpg/../x`, 7)).toBe(false);
   });
 });

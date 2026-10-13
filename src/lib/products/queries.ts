@@ -7,6 +7,7 @@ import type { ProductStatus } from "@/generated/prisma/client";
 
 import { formatVariantLabel } from "@/lib/cart/queries";
 import { prisma } from "@/lib/prisma";
+import { getImageUrl } from "@/lib/storage";
 
 // No pagination yet; the catalog is small.
 export async function listAdminProducts(status: ProductStatus | null) {
@@ -60,6 +61,11 @@ export async function getAdminProduct(productId: number) {
       updatedAt: true,
       categories: { select: { categoryId: true } },
       slugRedirects: { select: { slug: true, createdAt: true }, orderBy: { createdAt: "desc" } },
+      // Same order as the storefront.
+      images: {
+        orderBy: [{ position: "asc" }, { id: "asc" }],
+        select: { id: true, key: true, alt: true, variantId: true },
+      },
       variants: {
         orderBy: [{ position: "asc" }, { id: "asc" }],
         select: {
@@ -82,6 +88,7 @@ export async function getAdminProduct(productId: number) {
     ...product,
     categoryIds: product.categories.map((link) => link.categoryId),
     variants: product.variants.map((variant) => ({ ...variant, label: formatVariantLabel(variant.name, variant.value) })),
+    images: product.images.map(({ key, ...image }) => ({ ...image, url: getImageUrl(key) })),
   };
 }
 

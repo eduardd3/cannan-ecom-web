@@ -8,6 +8,7 @@ import { productPath } from "@/lib/products/slug";
 import { requireStaff } from "@/lib/session";
 import ProductForm from "../product-form";
 import ProductStatusBadge from "../status-badge";
+import Images from "./images";
 import Variants from "./variants";
 
 export async function generateMetadata({ params }: PageProps<"/adm/products/[id]">): Promise<Metadata> {
@@ -77,6 +78,22 @@ export default async function EditProductPage({ params }: PageProps<"/adm/produc
           Variants
         </h2>
         <Variants productId={product.id} variants={product.variants} />
+      </section>
+
+      <section aria-labelledby="images-heading" className={CARD}>
+        <h2 id="images-heading" className="mb-4 font-semibold text-[#F2F3F4]">
+          Images
+        </h2>
+        <Images
+          productId={product.id}
+          productName={product.name}
+          images={product.images}
+          variants={product.variants.map((variant) => ({
+            id: variant.id,
+            label: `${variant.label ?? "Default"}${variant.isActive ? "" : " (off)"}`,
+          }))}
+        />
+
       </section>
 
       {product.slugRedirects.length > 0 && (
