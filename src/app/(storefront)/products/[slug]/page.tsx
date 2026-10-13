@@ -1,11 +1,12 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { notFound } from "next/navigation";
+import { notFound, permanentRedirect } from "next/navigation";
 
 import Container from "@/app/components/container";
 import { getCurrentUserId } from "@/lib/cart/session";
-import { getProductBySlug } from "@/lib/catalog/queries";
+import { getProductBySlug, getRedirectedSlug } from "@/lib/catalog/queries";
 import { isCatalogEnabled } from "@/lib/flags";
+import { productPath } from "@/lib/products/slug";
 import ProductPurchase from "./product-purchase";
 
 //  Full OG and structured data come with launch readiness; title and
@@ -25,12 +26,17 @@ export async function generateMetadata({ params }: PageProps<"/products/[slug]">
 
 //  Missing, draft, and archived products all 404: getProductBySlug only
 //  returns ACTIVE products with an active variant. So does every product while
-//  the catalog is switched off.
+//  the catalog is switched off. A renamed product's old slug 308s to its
+//  current one, so indexed links survive a rename.
 export default async function ProductPage({ params }: PageProps<"/products/[slug]">) {
   if (!isCatalogEnabled()) notFound();
   const { slug } = await params;
   const [product, userId] = await Promise.all([getProductBySlug(slug), getCurrentUserId()]);
-  if (!product) notFound();
+  if (!product) {
+    const currentSlug = await getRedirectedSlug(slug);
+    if (currentSlug) permanentRedirect(productPath(currentSlug));
+    notFound();
+  }
 
   return (
     <Container className="py-10">

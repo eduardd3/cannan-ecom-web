@@ -45,6 +45,9 @@ export default async function ProtectedAdminLayout ( {
                         <Link href="/adm/inventory" className="text-[#9AA1AB] transition-colors hover:text-[#F2F3F4]">
                             Inventory
                         </Link>
+                        <Link href="/adm/products" className="text-[#9AA1AB] transition-colors hover:text-[#F2F3F4]">
+                            Products
+                        </Link>
                     </nav>
                 </div>
 

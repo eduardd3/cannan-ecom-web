@@ -118,3 +118,26 @@ export const getProductBySlug = cache(async (slug: string): Promise<ProductDetai
     variants: product.variants,
   };
 });
+
+/**
+ * The current slug for a product's OLD slug, so the detail page can redirect
+ * a renamed product's indexed URL. Null when the slug was never a product's,
+ * or the product isn't visible (the page 404s, as it would for the product).
+ */
+export async function getRedirectedSlug(oldSlug: string): Promise<string | null> {
+  const redirect = await prisma.productSlugRedirect.findUnique({
+    where: { slug: oldSlug },
+    select: {
+      product: {
+        select: {
+          slug: true,
+          status: true,
+          variants: { where: { isActive: true }, select: { id: true }, take: 1 },
+        },
+      },
+    },
+  });
+  const product = redirect?.product;
+  if (!product || product.status !== visibleProduct.status || product.variants.length === 0) return null;
+  return product.slug;
+}

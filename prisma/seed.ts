@@ -79,12 +79,18 @@ async function seedCatalog() {
             return { categoryId };
         });
 
+        //  An ACTIVE product needs publishedAt (CHECK in SQL). Keep an existing
+        //  one: it records the first listing, not this seed run.
+        const existing = await prisma.product.findUnique({ where: { slug: p.slug }, select: { publishedAt: true } });
+        const publishedAt = existing?.publishedAt ?? (p.status === "ACTIVE" ? new Date() : null);
+
         const product = await prisma.product.upsert({
             where: { slug: p.slug },
             update: {
                 name: p.name,
                 description: p.description,
                 status: p.status,
+                publishedAt,
                 collectionId: collection.id,
                 categories: { deleteMany: {}, create: categoryLinks },
             },
@@ -93,6 +99,7 @@ async function seedCatalog() {
                 name: p.name,
                 description: p.description,
                 status: p.status,
+                publishedAt,
                 collectionId: collection.id,
                 categories: { create: categoryLinks },
             },

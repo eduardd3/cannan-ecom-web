@@ -6,6 +6,10 @@
 
 import type { InventoryReason } from "@/generated/prisma/client";
 
+// At or below this, admin pages flag a variant as running low. Here rather
+// than in queries.ts so client components can use it.
+export const LOW_STOCK_THRESHOLD = 3;
+
 // Which direction each reason is allowed to move stock.
 //   "in"   → delta must be > 0
 //   "out"  → delta must be < 0

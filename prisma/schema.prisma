@@ -132,15 +132,34 @@ model Product {
   status       ProductStatus @default(DRAFT)
   collectionId Int
   collection   Collection    @relation(fields: [collectionId], references: [id], onDelete: Restrict)
+  // First time the product went ACTIVE; never cleared. From then on its URL
+  // may be indexed, so a slug change keeps the old one as a redirect.
+  // An ACTIVE product always has it (CHECK in SQL).
+  publishedAt  DateTime?
   createdAt    DateTime      @default(now())
   updatedAt    DateTime      @updatedAt
 
-  variants   ProductVariant[]
-  images     ProductImage[]
-  categories ProductCategory[]
+  variants      ProductVariant[]
+  images        ProductImage[]
+  categories    ProductCategory[]
+  slugRedirects ProductSlugRedirect[]
 
   @@index([status])
   @@index([collectionId, status])
+}
+
+// A published product's former slugs. /products/<old> redirects (308) to the
+// product's current slug, so renames never break indexed links. Points at the
+// product, not the next slug, so there are no redirect chains. A slug is
+// either some product's current slug or some product's old one, never both;
+// lib/products enforces that, since a unique index can't span two tables.
+model ProductSlugRedirect {
+  slug      String   @id
+  productId Int
+  product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+
+  @@index([productId])
 }
 
 // Every product has at least one variant; price and stock live here.

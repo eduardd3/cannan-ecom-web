@@ -12,6 +12,7 @@ const TABLES = [
   "CartItem",
   "Cart",
   "ProductImage",
+  "ProductSlugRedirect",
   "ProductCategory",
   "ProductVariant",
   "Product",
@@ -45,6 +46,7 @@ export async function createVariant({ stock, priceCents = 1500 }: { stock: numbe
       name: `Product ${sequence}`,
       description: "Test product",
       status: "ACTIVE",
+      publishedAt: new Date(), // required while ACTIVE (CHECK in SQL)
       collectionId: collection.id,
       variants: { create: { sku: `SKU-${sequence}`, priceCents, stock: 0 } },
     },

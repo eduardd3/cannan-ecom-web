@@ -8,9 +8,9 @@ import type { Prisma } from "@/generated/prisma/client";
 import { formatVariantLabel } from "@/lib/cart/queries";
 import { prisma } from "@/lib/prisma";
 import { checkStockConsistency } from "./adjust";
+import { LOW_STOCK_THRESHOLD } from "./rules";
 
-// At or below this, the list flags a variant as running low.
-export const LOW_STOCK_THRESHOLD = 3;
+export { LOW_STOCK_THRESHOLD };
 
 export const STOCK_FILTERS = ["low", "out"] as const;
 export type StockFilter = (typeof STOCK_FILTERS)[number];

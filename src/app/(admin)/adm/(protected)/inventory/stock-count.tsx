@@ -1,4 +1,4 @@
-import { LOW_STOCK_THRESHOLD } from "@/lib/inventory/queries";
+import { LOW_STOCK_THRESHOLD } from "@/lib/inventory/rules";
 
 //  Stock number, colored when it's out or running low.
 export default function StockCount({ stock }: { stock: number }) {
