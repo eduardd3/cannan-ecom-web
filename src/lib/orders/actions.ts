@@ -9,10 +9,19 @@ import { z } from "zod";
 
 import { adjustStockStandalone } from "@/lib/inventory/adjust";
 import { requireStaff } from "@/lib/session";
+import { fulfillOrder, updateTracking, type FulfillInput, type FulfillResult } from "./fulfillment";
 import { approveReviewedOrder, refundReviewedOrder } from "./review";
+import { normalizeTrackingNumber, parseCarrier } from "./shipping";
 
 // What the forms render. null before the first submit.
 export type OrderActionState = { ok: true } | { ok: false; message: string } | null;
+
+// The fulfill form also gets back what was typed: React resets the form after
+// every action, so a failure would otherwise clear the tracking number.
+export type FulfillActionState =
+  | { ok: true }
+  | { ok: false; message: string; fields: { carrier: string; trackingNumber: string } }
+  | null;
 
 const orderIdSchema = z.coerce.number().int().positive();
 
@@ -72,4 +81,36 @@ export async function restockFromOrderAction(_prev: OrderActionState, formData: 
 
   revalidateOrders(true);
   return { ok: true };
+}
+
+// Shared by ship and edit: same fields, same validation, different write.
+async function shipmentAction(
+  formData: FormData,
+  write: (input: FulfillInput) => Promise<FulfillResult>,
+): Promise<FulfillActionState> {
+  const admin = await requireStaff();
+  const fields = {
+    carrier: String(formData.get("carrier") ?? ""),
+    trackingNumber: String(formData.get("trackingNumber") ?? ""),
+  };
+  const orderId = orderIdSchema.safeParse(formData.get("orderId"));
+  const carrier = parseCarrier(fields.carrier);
+  if (!orderId.success || !carrier) return { ok: false, message: "That request wasn't valid.", fields };
+
+  const trackingNumber = normalizeTrackingNumber(fields.trackingNumber);
+  if (!trackingNumber) {
+    return { ok: false, message: "Enter the tracking number: letters, digits, and hyphens.", fields };
+  }
+
+  const result = await write({ orderId: orderId.data, carrier, trackingNumber, adminId: admin.id });
+  revalidateOrders(false);
+  return result.ok ? result : { ok: false, message: result.message, fields };
+}
+
+export async function fulfillOrderAction(_prev: FulfillActionState, formData: FormData): Promise<FulfillActionState> {
+  return shipmentAction(formData, fulfillOrder);
+}
+
+export async function updateTrackingAction(_prev: FulfillActionState, formData: FormData): Promise<FulfillActionState> {
+  return shipmentAction(formData, updateTracking);
 }

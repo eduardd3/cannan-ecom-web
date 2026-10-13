@@ -38,6 +38,8 @@ model User {
   cart                 Cart?
   orders               Order[]
   reviewedOrders       Order[]               @relation("OrderReviewResolvedBy")
+  fulfilledOrders      Order[]               @relation("OrderFulfilledBy")
+  trackingUpdates      Order[]               @relation("OrderTrackingUpdatedBy")
   inventoryAdjustments InventoryAdjustment[]
 }
 
@@ -73,6 +75,14 @@ enum OrderStatus {
   FULFILLED
   CANCELED
   REFUNDED
+}
+
+// Fixed so the admin page can build tracking links. OTHER has no link.
+enum Carrier {
+  USPS
+  UPS
+  FEDEX
+  OTHER
 }
 
 // Separate product lines; every product belongs to exactly one. The default
@@ -220,6 +230,20 @@ model Order {
   reviewResolvedAt   DateTime?
   reviewResolvedById Int?
   reviewResolvedBy   User?     @relation("OrderReviewResolvedBy", fields: [reviewResolvedById], references: [id], onDelete: SetNull)
+
+  // Set together when the order ships (PAID → FULFILLED); a FULFILLED order
+  // must have all three (CHECK in SQL). Kept if the order later changes
+  // status, as history.
+  carrier        Carrier?
+  trackingNumber String?
+  fulfilledAt    DateTime?
+  fulfilledById  Int?
+  fulfilledBy    User?     @relation("OrderFulfilledBy", fields: [fulfilledById], references: [id], onDelete: SetNull)
+  // The last time carrier or tracking was corrected after shipping, and by
+  // whom. Only on shipped orders (CHECK in SQL); fulfilledAt stays the ship date.
+  trackingUpdatedAt   DateTime?
+  trackingUpdatedById Int?
+  trackingUpdatedBy   User?     @relation("OrderTrackingUpdatedBy", fields: [trackingUpdatedById], references: [id], onDelete: SetNull)
 
   subtotalCents Int
   shippingCents Int

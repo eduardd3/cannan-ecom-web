@@ -5,8 +5,11 @@ import { notFound } from "next/navigation";
 import { formatCents } from "@/lib/cart/format";
 import { formatOrderDate } from "@/lib/orders/format";
 import { getOrderDetail, type OrderDetail } from "@/lib/orders/queries";
+import { CARRIER_LABEL, trackingUrl } from "@/lib/orders/shipping";
 import { requireStaff } from "@/lib/session";
 import StatusBadge from "../status-badge";
+import FulfillForm from "./fulfill-form";
+import ShipmentEditor from "./shipment-editor";
 import RestockForm from "./restock-form";
 import ReviewActions from "./review-actions";
 
@@ -33,6 +36,42 @@ function addressLines(value: OrderDetail["shippingAddress"]): string[] {
   const a = value as ShippingAddress;
   const cityLine = [a.city, [a.state, a.postal_code].filter(Boolean).join(" ")].filter(Boolean).join(", ");
   return [a.name, a.line1, a.line2, cityLine, a.country].filter((line): line is string => Boolean(line));
+}
+
+function ShipmentDetails({ order }: { order: OrderDetail }) {
+  if (!order.carrier || !order.trackingNumber || !order.fulfilledAt) return null;
+  const href = trackingUrl(order.carrier, order.trackingNumber);
+
+  return (
+    <dl className="grid gap-x-6 gap-y-2 text-sm sm:grid-cols-[auto_1fr]">
+      <dt className="text-[#9AA1AB]">Carrier</dt>
+      <dd className="text-[#F2F3F4]">{CARRIER_LABEL[order.carrier]}</dd>
+      <dt className="text-[#9AA1AB]">Tracking</dt>
+      <dd className="break-all font-mono text-[#F2F3F4]">
+        {href ? (
+          <a href={href} target="_blank" rel="noopener noreferrer" className="underline underline-offset-2 hover:text-white">
+            {order.trackingNumber}
+          </a>
+        ) : (
+          order.trackingNumber
+        )}
+      </dd>
+      <dt className="text-[#9AA1AB]">Shipped</dt>
+      <dd className="text-[#F2F3F4]">
+        {formatOrderDate(order.fulfilledAt)}
+        {order.fulfilledBy && <span className="text-[#9AA1AB]"> by {order.fulfilledBy.email}</span>}
+      </dd>
+      {order.trackingUpdatedAt && (
+        <>
+          <dt className="text-[#9AA1AB]">Tracking updated</dt>
+          <dd className="text-[#F2F3F4]">
+            {formatOrderDate(order.trackingUpdatedAt)}
+            {order.trackingUpdatedBy && <span className="text-[#9AA1AB]"> by {order.trackingUpdatedBy.email}</span>}
+          </dd>
+        </>
+      )}
+    </dl>
+  );
 }
 
 export default async function OrderDetailPage({ params }: PageProps<"/adm/orders/[id]">) {
@@ -85,6 +124,41 @@ export default async function OrderDetailPage({ params }: PageProps<"/adm/orders
               </p>
             )
           )}
+        </section>
+      )}
+
+      {order.status === "PAID" && (
+        <section aria-labelledby="ship-heading" className={CARD}>
+          <h2 id="ship-heading" className="font-semibold text-[#F2F3F4]">
+            Ship
+          </h2>
+          <p className="mt-2 text-sm text-[#9AA1AB]">
+            Once it&apos;s handed to the carrier, record the tracking number to mark the order fulfilled.
+          </p>
+          <div className="mt-4">
+            <FulfillForm orderId={order.id} />
+          </div>
+        </section>
+      )}
+
+      {order.carrier && order.trackingNumber && order.fulfilledAt && (
+        <section aria-labelledby="shipment-heading" className={CARD}>
+          <h2 id="shipment-heading" className="font-semibold text-[#F2F3F4]">
+            Shipment
+          </h2>
+          <div className="mt-2">
+            {/* Tracking can be corrected only while the order is FULFILLED. */}
+            {order.status === "FULFILLED" ? (
+              <ShipmentEditor
+                orderId={order.id}
+                shipment={{ carrier: order.carrier, trackingNumber: order.trackingNumber }}
+              >
+                <ShipmentDetails order={order} />
+              </ShipmentEditor>
+            ) : (
+              <ShipmentDetails order={order} />
+            )}
+          </div>
         </section>
       )}
 

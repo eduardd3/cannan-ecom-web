@@ -62,6 +62,8 @@ export async function getOrderDetail(orderId: number) {
     include: {
       user: { select: { email: true, name: true } },
       reviewResolvedBy: { select: { email: true } },
+      fulfilledBy: { select: { email: true } },
+      trackingUpdatedBy: { select: { email: true } },
       items: {
         orderBy: { id: "asc" },
         include: {
