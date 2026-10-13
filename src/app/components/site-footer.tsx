@@ -13,7 +13,6 @@ const footerColumns = [
         heading: "Shop",
         links: [
             { href: "/products", label: "Products" },
-            { href: "/arrivals", label: "New Arrivals" },
         ],
     },
     {
@@ -35,9 +34,7 @@ const footerColumns = [
     {
         heading: "MyCANN",
         links: [
-            { href: "/about-myCANN", label: "About" },
-            { href: "/favorites", label: "Favorites" },
-            { href: "/purchases", label: "Purchases" },
+            {href: "/purchases", label: "Purchases"}
         ],
     },
 ];
