@@ -35,11 +35,11 @@ export type VariantRow = {
 };
 
 const FIELD =
-  "w-full rounded-md border bg-[#0F1114] px-3 py-2 text-sm text-[#F2F3F4] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#9AA1AB]";
+  "w-full rounded-md border bg-adm-bg px-3 py-2 text-sm text-adm-fg focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-adm-muted";
 const PRIMARY_BUTTON =
-  "cursor-pointer rounded-md bg-[#F2F3F4] px-4 py-2 text-sm font-medium text-[#16191E] transition-colors hover:bg-white disabled:cursor-not-allowed disabled:opacity-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#9AA1AB]";
+  "cursor-pointer rounded-md bg-adm-fg px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-adm-fg/85 disabled:cursor-not-allowed disabled:opacity-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-adm-muted";
 const SECONDARY_BUTTON =
-  "cursor-pointer rounded-md border border-[#2A2F36] px-3 py-1.5 text-sm text-[#F2F3F4] transition-colors hover:bg-[#2A2F36] disabled:cursor-not-allowed disabled:opacity-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#9AA1AB]";
+  "cursor-pointer rounded-md border border-adm-border px-3 py-1.5 text-sm text-adm-fg transition-colors hover:bg-adm-border disabled:cursor-not-allowed disabled:opacity-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-adm-muted";
 
 function valuesOf(variant: VariantRow): VariantFormValues {
   return {
@@ -76,14 +76,14 @@ function Field({
 } & InputHTMLAttributes<HTMLInputElement>) {
   const invalid = Boolean(state && !state.ok && state.field === field);
   return (
-    <label className="flex flex-col gap-1 text-sm text-[#9AA1AB]">
+    <label className="flex flex-col gap-1 text-sm text-adm-muted">
       {label}
       <input
         name={name}
         defaultValue={defaultValue}
         aria-invalid={invalid}
         {...input}
-        className={`${FIELD} ${invalid ? "border-red-400/70" : "border-[#2A2F36]"} ${className}`}
+        className={`${FIELD} ${invalid ? "border-red-500" : "border-adm-border"} ${className}`}
       />
       {hint && <span className="text-xs">{hint}</span>}
     </label>
@@ -117,7 +117,7 @@ function VariantForm({
       <input type="hidden" name={editing ? "variantId" : "productId"} value={editing ? variant.id : productId} />
 
       <fieldset className="grid gap-4 sm:grid-cols-2">
-        <legend className="mb-2 text-sm text-[#9AA1AB]">
+        <legend className="mb-2 text-sm text-adm-muted">
           Option <span className="text-xs">(leave both blank for a product with just one version)</span>
         </legend>
         <Field label="Name" name="optionName" field="option" state={state} defaultValue={values?.optionName}
@@ -126,7 +126,7 @@ function VariantForm({
           placeholder="e.g. Large" maxLength={MAX_OPTION_LENGTH} />
       </fieldset>
       {optionInvalid && state && !state.ok && (
-        <p role="alert" className="-mt-2 text-sm text-red-300">
+        <p role="alert" className="-mt-2 text-sm text-red-700">
           {state.message}
         </p>
       )}
@@ -158,12 +158,12 @@ function VariantForm({
           </button>
         )}
         {state && !state.ok && !optionInvalid && (
-          <p role="alert" className="text-sm text-red-300">
+          <p role="alert" className="text-sm text-red-700">
             {state.message}
           </p>
         )}
         {state?.ok && !editing && (
-          <p role="status" className="text-sm text-emerald-300">
+          <p role="status" className="text-sm text-emerald-700">
             Variant added.
           </p>
         )}
@@ -186,7 +186,7 @@ function ActiveToggle({ variant }: { variant: VariantRow }) {
         {pending ? "Saving…" : variant.isActive ? "Turn off" : "Turn on"}
       </button>
       {state && !state.ok && (
-        <p role="alert" className="max-w-56 text-right text-xs text-red-300">
+        <p role="alert" className="max-w-56 text-right text-xs text-red-700">
           {state.message}
         </p>
       )}
@@ -202,18 +202,18 @@ function Row({ productId, variant }: { productId: number; variant: VariantRow })
   if (editing) {
     return (
       <tr>
-        <td colSpan={COLUMNS} className="bg-[#0F1114]/40 px-6 py-4">
+        <td colSpan={COLUMNS} className="bg-adm-bg px-6 py-4">
           <VariantForm productId={productId} variant={variant} onDone={() => setEditing(false)} />
         </td>
       </tr>
     );
   }
   return (
-    <tr className={`align-top ${variant.isActive ? "" : "text-[#9AA1AB]"}`}>
+    <tr className={`align-top ${variant.isActive ? "" : "text-adm-muted"}`}>
       <td className="px-6 py-3">
         {variant.label ?? "Default"}
         {!variant.isActive && <span className="ml-2 text-xs">· off</span>}
-        {variant.amazonAsin && <div className="font-mono text-xs text-[#9AA1AB]">ASIN {variant.amazonAsin}</div>}
+        {variant.amazonAsin && <div className="font-mono text-xs text-adm-muted">ASIN {variant.amazonAsin}</div>}
       </td>
       <td className="px-4 py-3 font-mono text-xs">{variant.sku}</td>
       <td className="px-4 py-3 text-right tabular-nums">{formatCents(variant.priceCents)}</td>
@@ -238,10 +238,10 @@ export default function Variants({ productId, variants }: { productId: number; v
   return (
     <>
       {variants.length === 0 ? (
-        <p className="px-6 py-4 text-sm text-[#9AA1AB]">None yet. A product needs one before it can be listed.</p>
+        <p className="px-6 py-4 text-sm text-adm-muted">None yet. A product needs one before it can be listed.</p>
       ) : (
         <table className="mt-4 w-full text-left text-sm">
-          <thead className="border-y border-[#2A2F36] text-[#9AA1AB]">
+          <thead className="border-y border-adm-border text-adm-muted">
             <tr>
               <th className="px-6 py-3 font-medium">Variant</th>
               <th className="px-4 py-3 font-medium">SKU</th>
@@ -252,15 +252,15 @@ export default function Variants({ productId, variants }: { productId: number; v
               </th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-[#2A2F36] text-[#F2F3F4]">
+          <tbody className="divide-y divide-adm-border text-adm-fg">
             {variants.map((variant) => (
               <Row key={variant.id} productId={productId} variant={variant} />
             ))}
           </tbody>
         </table>
       )}
-      <details className="border-t border-[#2A2F36] px-6 py-4" open={variants.length === 0}>
-        <summary className="cursor-pointer text-sm font-medium text-[#F2F3F4]">Add a variant</summary>
+      <details className="border-t border-adm-border px-6 py-4" open={variants.length === 0}>
+        <summary className="cursor-pointer text-sm font-medium text-adm-fg">Add a variant</summary>
         <div className="mt-4">
           <VariantForm productId={productId} />
         </div>

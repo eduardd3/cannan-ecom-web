@@ -24,11 +24,11 @@ export default async function ProtectedAdminLayout ( {
     if (!session?.user || !isStaff(session.user.role)) redirect ("/adm/portal");
 
     return (
-        <div className="flex min-h-dvh flex-col bg-[#0F1114]">
+        <div className="flex min-h-dvh flex-col bg-adm-bg">
             {/* Admin chrome. Lives here rather than in (admin)/layout.tsx so the
                 portal login page — which sits outside this group — doesn't get a
                 sign-out bar it has no session for. */}
-            <header className="flex shrink-0 items-center justify-between border-b border-[#2A2F36] bg-[#16191E] px-5 py-3">
+            <header className="flex shrink-0 items-center justify-between border-b border-adm-border bg-adm-surface px-5 py-3">
                 <div className="flex items-center gap-6">
                     <Link href="/adm/dashboard" className="flex items-center gap-3">
                         <img
@@ -36,30 +36,33 @@ export default async function ProtectedAdminLayout ( {
                             src="/images/cannan-diamond-ink.svg"
                             alt="CANNAN"
                         />
-                        <span className="font-bold text-[#F2F3F4]">Portal</span>
+                        <span className="font-bold text-adm-fg">Portal</span>
                     </Link>
                     <nav aria-label="Admin" className="flex items-center gap-4 text-sm">
-                        <Link href="/adm/orders" className="text-[#9AA1AB] transition-colors hover:text-[#F2F3F4]">
+                        <Link href="/adm/orders" className="text-adm-muted transition-colors hover:text-adm-fg">
                             Orders
                         </Link>
-                        <Link href="/adm/inventory" className="text-[#9AA1AB] transition-colors hover:text-[#F2F3F4]">
+                        <Link href="/adm/inventory" className="text-adm-muted transition-colors hover:text-adm-fg">
                             Inventory
                         </Link>
-                        <Link href="/adm/products" className="text-[#9AA1AB] transition-colors hover:text-[#F2F3F4]">
+                        <Link href="/adm/products" className="text-adm-muted transition-colors hover:text-adm-fg">
                             Products
+                        </Link>
+                        <Link href="/adm/categories" className="text-adm-muted transition-colors hover:text-adm-fg">
+                            Categories
                         </Link>
                     </nav>
                 </div>
 
                 <div className="flex items-center gap-4">
-                    <span className="hidden text-sm text-[#9AA1AB] sm:inline">
+                    <span className="hidden text-sm text-adm-muted sm:inline">
                         {session.user.email} · {session.user.role}
                     </span>
                     {/* POST, not a link — see the note in site-header.tsx */}
                     <form action={signOutAdminAction}>
                         <button
                             type="submit"
-                            className="cursor-pointer rounded-md border border-[#2A2F36] px-3 py-1.5 text-sm text-[#F2F3F4] transition-colors hover:bg-[#2A2F36] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#9AA1AB]"
+                            className="cursor-pointer rounded-md border border-adm-border px-3 py-1.5 text-sm text-adm-fg transition-colors hover:bg-adm-border focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-adm-muted"
                         >
                             Sign out
                         </button>

@@ -5,12 +5,12 @@ import { useActionState } from "react";
 import { approveOrderAction, refundOrderAction, type OrderActionState } from "@/lib/orders/actions";
 
 const BUTTON =
-  "cursor-pointer rounded-md px-4 py-2 text-sm font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#9AA1AB]";
+  "cursor-pointer rounded-md px-4 py-2 text-sm font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-adm-muted";
 
 function Message({ state }: { state: OrderActionState }) {
   if (!state || state.ok) return null;
   return (
-    <p role="alert" className="text-sm text-red-300">
+    <p role="alert" className="text-sm text-red-700">
       {state.message}
     </p>
   );
@@ -28,7 +28,7 @@ export default function ReviewActions({ orderId, refundLabel }: { orderId: numbe
       <div className="flex flex-wrap gap-3">
         <form action={approve}>
           <input type="hidden" name="orderId" value={orderId} />
-          <button type="submit" disabled={busy} className={`${BUTTON} bg-[#F2F3F4] text-[#16191E] hover:bg-white`}>
+          <button type="submit" disabled={busy} className={`${BUTTON} bg-adm-fg text-white hover:bg-adm-fg/85`}>
             {approving ? "Approving…" : "Approve"}
           </button>
         </form>
@@ -44,7 +44,7 @@ export default function ReviewActions({ orderId, refundLabel }: { orderId: numbe
           <button
             type="submit"
             disabled={busy}
-            className={`${BUTTON} border border-red-400/50 text-red-300 hover:bg-red-500/10`}
+            className={`${BUTTON} border border-red-300 text-red-700 hover:bg-red-50`}
           >
             {refunding ? "Refunding…" : `Refund ${refundLabel}`}
           </button>

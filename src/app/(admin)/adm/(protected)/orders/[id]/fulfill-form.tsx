@@ -7,13 +7,13 @@ import { fulfillOrderAction, type FulfillActionState } from "@/lib/orders/action
 import { CARRIER_LABEL, CARRIERS, MAX_TRACKING_LENGTH } from "@/lib/orders/shipping";
 
 const FIELD =
-  "rounded-md border border-[#2A2F36] bg-[#0F1114] px-3 py-2 text-sm text-[#F2F3F4] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#9AA1AB]";
+  "rounded-md border border-adm-border bg-adm-bg px-3 py-2 text-sm text-adm-fg focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-adm-muted";
 
 export const PRIMARY_BUTTON =
-  "cursor-pointer rounded-md bg-[#F2F3F4] px-4 py-2 text-sm font-medium text-[#16191E] transition-colors hover:bg-white disabled:cursor-not-allowed disabled:opacity-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#9AA1AB]";
+  "cursor-pointer rounded-md bg-adm-fg px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-adm-fg/85 disabled:cursor-not-allowed disabled:opacity-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-adm-muted";
 
 export const SECONDARY_BUTTON =
-  "cursor-pointer rounded-md border border-[#2A2F36] px-4 py-2 text-sm text-[#F2F3F4] transition-colors hover:bg-[#2A2F36] disabled:cursor-not-allowed disabled:opacity-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#9AA1AB]";
+  "cursor-pointer rounded-md border border-adm-border px-4 py-2 text-sm text-adm-fg transition-colors hover:bg-adm-border disabled:cursor-not-allowed disabled:opacity-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-adm-muted";
 
 /**
  * Carrier and tracking fields, shared by shipping and editing. A failed
@@ -39,7 +39,7 @@ export function ShipmentForm({
     <form action={action} className="flex flex-col gap-3">
       <input type="hidden" name="orderId" value={orderId} />
       <div className="flex flex-wrap items-end gap-4">
-        <label className="flex flex-col gap-1 text-sm text-[#9AA1AB]">
+        <label className="flex flex-col gap-1 text-sm text-adm-muted">
           Carrier
           <select name="carrier" defaultValue={fields?.carrier ?? "USPS"} className={FIELD}>
             {CARRIERS.map((carrier) => (
@@ -49,7 +49,7 @@ export function ShipmentForm({
             ))}
           </select>
         </label>
-        <label className="flex min-w-56 flex-1 flex-col gap-1 text-sm text-[#9AA1AB]">
+        <label className="flex min-w-56 flex-1 flex-col gap-1 text-sm text-adm-muted">
           Tracking number
           <input
             name="trackingNumber"
@@ -66,7 +66,7 @@ export function ShipmentForm({
         <div className="flex gap-2">{children}</div>
       </div>
       {state && !state.ok && (
-        <p role="alert" className="text-sm text-red-300">
+        <p role="alert" className="text-sm text-red-700">
           {state.message}
         </p>
       )}

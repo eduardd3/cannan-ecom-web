@@ -31,17 +31,17 @@ export default function RestockForm({
         step={1}
         defaultValue={suggested}
         required
-        className="w-20 rounded-md border border-[#2A2F36] bg-[#0F1114] px-2 py-1 text-sm text-[#F2F3F4] tabular-nums"
+        className="w-20 rounded-md border border-adm-border bg-adm-bg px-2 py-1 text-sm text-adm-fg tabular-nums"
       />
       <button
         type="submit"
         disabled={pending}
-        className="cursor-pointer rounded-md border border-[#2A2F36] px-3 py-1 text-sm text-[#F2F3F4] transition-colors hover:bg-[#2A2F36] disabled:cursor-not-allowed disabled:opacity-50"
+        className="cursor-pointer rounded-md border border-adm-border px-3 py-1 text-sm text-adm-fg transition-colors hover:bg-adm-border disabled:cursor-not-allowed disabled:opacity-50"
       >
         {pending ? "Saving…" : "Restock"}
       </button>
       {state && !state.ok && (
-        <span role="alert" className="text-sm text-red-300">
+        <span role="alert" className="text-sm text-red-700">
           {state.message}
         </span>
       )}

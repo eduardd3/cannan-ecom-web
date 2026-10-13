@@ -32,10 +32,10 @@ export default async function ProductsPage({ searchParams }: PageProps<"/adm/pro
   return (
     <div className="mx-auto w-full max-w-5xl">
       <div className="flex flex-wrap items-center justify-between gap-4">
-        <h1 className="text-2xl font-bold text-[#F2F3F4]">Products</h1>
+        <h1 className="text-2xl font-bold text-adm-fg">Products</h1>
         <Link
           href="/adm/products/new"
-          className="rounded-md bg-[#F2F3F4] px-4 py-2 text-sm font-medium text-[#16191E] transition-colors hover:bg-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#9AA1AB]"
+          className="rounded-md bg-adm-fg px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-adm-fg/85 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-adm-muted"
         >
           New product
         </Link>
@@ -49,8 +49,8 @@ export default async function ProductsPage({ searchParams }: PageProps<"/adm/pro
             aria-current={tab.active ? "page" : undefined}
             className={`rounded-md border px-3 py-1.5 text-sm transition-colors ${
               tab.active
-                ? "border-[#9AA1AB] bg-[#2A2F36] text-[#F2F3F4]"
-                : "border-[#2A2F36] text-[#9AA1AB] hover:bg-[#2A2F36] hover:text-[#F2F3F4]"
+                ? "border-adm-muted bg-adm-border text-adm-fg"
+                : "border-adm-border text-adm-muted hover:bg-adm-border hover:text-adm-fg"
             }`}
           >
             {tab.label} <span className="tabular-nums opacity-70">{tab.count}</span>
@@ -58,12 +58,12 @@ export default async function ProductsPage({ searchParams }: PageProps<"/adm/pro
         ))}
       </nav>
 
-      <div className="mt-6 overflow-x-auto rounded-xl border border-[#2A2F36] bg-[#16191E]">
+      <div className="mt-6 overflow-x-auto rounded-xl border border-adm-border bg-adm-surface">
         {products.length === 0 ? (
-          <p className="p-6 text-[#9AA1AB]">No products here.</p>
+          <p className="p-6 text-adm-muted">No products here.</p>
         ) : (
           <table className="w-full text-left text-sm">
-            <thead className="border-b border-[#2A2F36] text-[#9AA1AB]">
+            <thead className="border-b border-adm-border text-adm-muted">
               <tr>
                 <th className="px-4 py-3 font-medium">Product</th>
                 <th className="px-4 py-3 font-medium">Collection</th>
@@ -73,29 +73,29 @@ export default async function ProductsPage({ searchParams }: PageProps<"/adm/pro
                 <th className="px-4 py-3 font-medium">Updated</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-[#2A2F36] text-[#F2F3F4]">
+            <tbody className="divide-y divide-adm-border text-adm-fg">
               {products.map((product) => (
-                <tr key={product.id} className="hover:bg-[#2A2F36]/40">
+                <tr key={product.id} className="hover:bg-adm-border/40">
                   <td className="px-4 py-3">
                     <Link href={`/adm/products/${product.id}`} className="font-medium underline-offset-2 hover:underline">
                       {product.name}
                     </Link>
-                    <div className="font-mono text-xs text-[#9AA1AB]">{product.slug}</div>
+                    <div className="font-mono text-xs text-adm-muted">{product.slug}</div>
                   </td>
-                  <td className="px-4 py-3 text-[#9AA1AB]">{product.collectionName}</td>
+                  <td className="px-4 py-3 text-adm-muted">{product.collectionName}</td>
                   <td className="px-4 py-3">
                     <ProductStatusBadge status={product.status} />
                   </td>
                   <td className="px-4 py-3 text-right tabular-nums">
                     {product.activeVariantCount}
                     {product.variantCount !== product.activeVariantCount && (
-                      <span className="text-[#9AA1AB]"> of {product.variantCount}</span>
+                      <span className="text-adm-muted"> of {product.variantCount}</span>
                     )}
                   </td>
                   <td className="px-4 py-3 text-right">
                     <StockCount stock={product.totalStock} />
                   </td>
-                  <td className="whitespace-nowrap px-4 py-3 text-[#9AA1AB]">{formatOrderDate(product.updatedAt)}</td>
+                  <td className="whitespace-nowrap px-4 py-3 text-adm-muted">{formatOrderDate(product.updatedAt)}</td>
                 </tr>
               ))}
             </tbody>

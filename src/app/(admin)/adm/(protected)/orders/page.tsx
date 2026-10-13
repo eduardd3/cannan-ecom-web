@@ -30,7 +30,7 @@ export default async function OrdersPage({ searchParams }: PageProps<"/adm/order
 
   return (
     <div className="mx-auto w-full max-w-5xl">
-      <h1 className="text-2xl font-bold text-[#F2F3F4]">Orders</h1>
+      <h1 className="text-2xl font-bold text-adm-fg">Orders</h1>
 
       <nav aria-label="Filter by status" className="mt-6 flex flex-wrap gap-2">
         {tabs.map((tab) => (
@@ -40,8 +40,8 @@ export default async function OrdersPage({ searchParams }: PageProps<"/adm/order
             aria-current={tab.active ? "page" : undefined}
             className={`rounded-md border px-3 py-1.5 text-sm transition-colors ${
               tab.active
-                ? "border-[#9AA1AB] bg-[#2A2F36] text-[#F2F3F4]"
-                : "border-[#2A2F36] text-[#9AA1AB] hover:bg-[#2A2F36] hover:text-[#F2F3F4]"
+                ? "border-adm-muted bg-adm-border text-adm-fg"
+                : "border-adm-border text-adm-muted hover:bg-adm-border hover:text-adm-fg"
             }`}
           >
             {tab.label} <span className="tabular-nums opacity-70">{tab.count}</span>
@@ -49,12 +49,12 @@ export default async function OrdersPage({ searchParams }: PageProps<"/adm/order
         ))}
       </nav>
 
-      <div className="mt-6 overflow-x-auto rounded-xl border border-[#2A2F36] bg-[#16191E]">
+      <div className="mt-6 overflow-x-auto rounded-xl border border-adm-border bg-adm-surface">
         {orders.length === 0 ? (
-          <p className="p-6 text-[#9AA1AB]">No orders here.</p>
+          <p className="p-6 text-adm-muted">No orders here.</p>
         ) : (
           <table className="w-full text-left text-sm">
-            <thead className="border-b border-[#2A2F36] text-[#9AA1AB]">
+            <thead className="border-b border-adm-border text-adm-muted">
               <tr>
                 <th className="px-4 py-3 font-medium">Order</th>
                 <th className="px-4 py-3 font-medium">Placed</th>
@@ -64,15 +64,15 @@ export default async function OrdersPage({ searchParams }: PageProps<"/adm/order
                 <th className="px-4 py-3 text-right font-medium">Total</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-[#2A2F36] text-[#F2F3F4]">
+            <tbody className="divide-y divide-adm-border text-adm-fg">
               {orders.map((order) => (
-                <tr key={order.id} className="hover:bg-[#2A2F36]/40">
+                <tr key={order.id} className="hover:bg-adm-border/40">
                   <td className="px-4 py-3">
                     <Link href={`/adm/orders/${order.id}`} className="font-medium underline-offset-2 hover:underline">
                       #{order.id}
                     </Link>
                   </td>
-                  <td className="whitespace-nowrap px-4 py-3 text-[#9AA1AB]">{formatOrderDate(order.createdAt)}</td>
+                  <td className="whitespace-nowrap px-4 py-3 text-adm-muted">{formatOrderDate(order.createdAt)}</td>
                   <td className="px-4 py-3">{order.email}</td>
                   <td className="px-4 py-3">
                     <StatusBadge status={order.status} />
@@ -87,7 +87,7 @@ export default async function OrdersPage({ searchParams }: PageProps<"/adm/order
       </div>
 
       {orders.length === ORDER_LIST_LIMIT && (
-        <p className="mt-3 text-sm text-[#9AA1AB]">Showing the latest {ORDER_LIST_LIMIT}.</p>
+        <p className="mt-3 text-sm text-adm-muted">Showing the latest {ORDER_LIST_LIMIT}.</p>
       )}
     </div>
   );

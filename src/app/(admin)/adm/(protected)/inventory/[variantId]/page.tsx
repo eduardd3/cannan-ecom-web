@@ -14,7 +14,7 @@ export const metadata: Metadata = {
   robots: { index: false },
 };
 
-const CARD = "rounded-xl border border-[#2A2F36] bg-[#16191E] p-6";
+const CARD = "rounded-xl border border-adm-border bg-adm-surface p-6";
 
 export default async function VariantInventoryPage({ params }: PageProps<"/adm/inventory/[variantId]">) {
   await requireStaff();
@@ -26,11 +26,11 @@ export default async function VariantInventoryPage({ params }: PageProps<"/adm/i
   return (
     <div className="mx-auto flex w-full max-w-5xl flex-col gap-6">
       <div>
-        <Link href="/adm/inventory" className="text-sm text-[#9AA1AB] underline-offset-2 hover:underline">
+        <Link href="/adm/inventory" className="text-sm text-adm-muted underline-offset-2 hover:underline">
           ← Inventory
         </Link>
-        <h1 className="mt-2 text-2xl font-bold text-[#F2F3F4]">{variant.product.name}</h1>
-        <p className="mt-1 text-sm text-[#9AA1AB]">
+        <h1 className="mt-2 text-2xl font-bold text-adm-fg">{variant.product.name}</h1>
+        <p className="mt-1 text-sm text-adm-muted">
           {variant.variantLabel && `${variant.variantLabel} · `}SKU {variant.sku}
           {variant.amazonAsin && ` · ASIN ${variant.amazonAsin}`}
           {!variant.isActive && " · variant off"}
@@ -39,16 +39,16 @@ export default async function VariantInventoryPage({ params }: PageProps<"/adm/i
 
       <div className="grid gap-6 md:grid-cols-[1fr_2fr]">
         <section aria-labelledby="stock-heading" className={CARD}>
-          <h2 id="stock-heading" className="font-semibold text-[#F2F3F4]">
+          <h2 id="stock-heading" className="font-semibold text-adm-fg">
             In stock
           </h2>
           <p className="mt-2 text-4xl">
             <StockCount stock={variant.stock} />
           </p>
           {variant.ledgerConsistent ? (
-            <p className="mt-3 text-sm text-[#9AA1AB]">Matches the ledger below.</p>
+            <p className="mt-3 text-sm text-adm-muted">Matches the ledger below.</p>
           ) : (
-            <p role="alert" className="mt-3 text-sm text-amber-300">
+            <p role="alert" className="mt-3 text-sm text-amber-700">
               The ledger adds up to {variant.ledgerSum}, not {variant.stock}. Something changed stock without
               recording it.
             </p>
@@ -56,7 +56,7 @@ export default async function VariantInventoryPage({ params }: PageProps<"/adm/i
         </section>
 
         <section aria-labelledby="adjust-heading" className={CARD}>
-          <h2 id="adjust-heading" className="font-semibold text-[#F2F3F4]">
+          <h2 id="adjust-heading" className="font-semibold text-adm-fg">
             Record a change
           </h2>
           <div className="mt-4">
@@ -66,14 +66,14 @@ export default async function VariantInventoryPage({ params }: PageProps<"/adm/i
       </div>
 
       <section aria-labelledby="ledger-heading" className={`${CARD} overflow-x-auto p-0`}>
-        <h2 id="ledger-heading" className="px-6 pt-6 font-semibold text-[#F2F3F4]">
+        <h2 id="ledger-heading" className="px-6 pt-6 font-semibold text-adm-fg">
           History
         </h2>
         {variant.inventoryAdjustments.length === 0 ? (
-          <p className="px-6 py-4 text-sm text-[#9AA1AB]">No stock movements yet.</p>
+          <p className="px-6 py-4 text-sm text-adm-muted">No stock movements yet.</p>
         ) : (
           <table className="mt-4 w-full text-left text-sm">
-            <thead className="border-y border-[#2A2F36] text-[#9AA1AB]">
+            <thead className="border-y border-adm-border text-adm-muted">
               <tr>
                 <th className="px-6 py-3 font-medium">When</th>
                 <th className="px-4 py-3 font-medium">Reason</th>
@@ -83,10 +83,10 @@ export default async function VariantInventoryPage({ params }: PageProps<"/adm/i
                 <th className="px-6 py-3 font-medium">By</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-[#2A2F36] text-[#F2F3F4]">
+            <tbody className="divide-y divide-adm-border text-adm-fg">
               {variant.inventoryAdjustments.map((row) => (
                 <tr key={row.id} className="align-top">
-                  <td className="whitespace-nowrap px-6 py-3 text-[#9AA1AB]">{formatOrderDate(row.createdAt)}</td>
+                  <td className="whitespace-nowrap px-6 py-3 text-adm-muted">{formatOrderDate(row.createdAt)}</td>
                   <td className="px-4 py-3">
                     {REASON_LABEL[row.reason]}
                     {row.orderId && (
@@ -94,7 +94,7 @@ export default async function VariantInventoryPage({ params }: PageProps<"/adm/i
                         {" "}
                         <Link
                           href={`/adm/orders/${row.orderId}`}
-                          className="text-[#9AA1AB] underline-offset-2 hover:underline"
+                          className="text-adm-muted underline-offset-2 hover:underline"
                         >
                           #{row.orderId}
                         </Link>
@@ -103,15 +103,15 @@ export default async function VariantInventoryPage({ params }: PageProps<"/adm/i
                   </td>
                   <td className="px-4 py-3 text-right tabular-nums">{row.delta > 0 ? `+${row.delta}` : row.delta}</td>
                   <td className="px-4 py-3 text-right tabular-nums">{row.stockAfter}</td>
-                  <td className="px-4 py-3 text-[#9AA1AB]">{row.note ?? ""}</td>
-                  <td className="px-6 py-3 text-[#9AA1AB]">{row.createdBy?.email ?? "System"}</td>
+                  <td className="px-4 py-3 text-adm-muted">{row.note ?? ""}</td>
+                  <td className="px-6 py-3 text-adm-muted">{row.createdBy?.email ?? "System"}</td>
                 </tr>
               ))}
             </tbody>
           </table>
         )}
         {variant.inventoryAdjustments.length === LEDGER_LIMIT && (
-          <p className="px-6 pb-4 text-sm text-[#9AA1AB]">Showing the latest {LEDGER_LIMIT}.</p>
+          <p className="px-6 pb-4 text-sm text-adm-muted">Showing the latest {LEDGER_LIMIT}.</p>
         )}
       </section>
     </div>

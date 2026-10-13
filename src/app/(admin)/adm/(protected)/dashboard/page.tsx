@@ -23,26 +23,26 @@ export default async function AdminDashboard() {
 
     return (
         <div className="mx-auto w-full max-w-5xl">
-            <h1 className="text-2xl font-bold text-[#F2F3F4]">
+            <h1 className="text-2xl font-bold text-adm-fg">
                 Dashboard
             </h1>
-            <p className="mt-2 text-[#9AA1AB]">
+            <p className="mt-2 text-adm-muted">
                 Signed in as {session?.user?.email}.
             </p>
 
-            <div className="mt-8 rounded-xl border border-[#2A2F36] bg-[#16191E] p-6">
-                <h2 className="font-semibold text-[#F2F3F4]">Orders</h2>
+            <div className="mt-8 rounded-xl border border-adm-border bg-adm-surface p-6">
+                <h2 className="font-semibold text-adm-fg">Orders</h2>
                 {needsReview > 0 ? (
-                    <p className="mt-2 text-amber-300">
+                    <p className="mt-2 text-amber-700">
                         {needsReview === 1 ? "1 order needs" : `${needsReview} orders need`} review.{" "}
                         <Link href="/adm/orders?status=NEEDS_REVIEW" className="underline underline-offset-2">
                             Review now
                         </Link>
                     </p>
                 ) : (
-                    <p className="mt-2 text-[#9AA1AB]">No orders need review.</p>
+                    <p className="mt-2 text-adm-muted">No orders need review.</p>
                 )}
-                <Link href="/adm/orders" className="mt-3 inline-block text-sm text-[#9AA1AB] underline-offset-2 hover:underline">
+                <Link href="/adm/orders" className="mt-3 inline-block text-sm text-adm-muted underline-offset-2 hover:underline">
                     All orders →
                 </Link>
             </div>

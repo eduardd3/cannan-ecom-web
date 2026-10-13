@@ -13,7 +13,7 @@ import {
 } from "@/lib/inventory/manual";
 
 const FIELD =
-  "rounded-md border border-[#2A2F36] bg-[#0F1114] px-3 py-2 text-sm text-[#F2F3F4] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#9AA1AB]";
+  "rounded-md border border-adm-border bg-adm-bg px-3 py-2 text-sm text-adm-fg focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-adm-muted";
 
 const NOTE_PLACEHOLDER: Record<ManualReason, string> = {
   RESTOCK: "Optional, e.g. supplier or shipment",
@@ -40,10 +40,10 @@ export default function AdjustForm({ variantId }: { variantId: number }) {
         {MANUAL_REASONS.map((value) => (
           <label
             key={value}
-            className={`cursor-pointer rounded-md border px-3 py-1.5 text-sm transition-colors has-[:focus-visible]:outline has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-[#9AA1AB] ${
+            className={`cursor-pointer rounded-md border px-3 py-1.5 text-sm transition-colors has-[:focus-visible]:outline has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-adm-muted ${
               reason === value
-                ? "border-[#9AA1AB] bg-[#2A2F36] text-[#F2F3F4]"
-                : "border-[#2A2F36] text-[#9AA1AB] hover:bg-[#2A2F36] hover:text-[#F2F3F4]"
+                ? "border-adm-muted bg-adm-border text-adm-fg"
+                : "border-adm-border text-adm-muted hover:bg-adm-border hover:text-adm-fg"
             }`}
           >
             <input
@@ -60,7 +60,7 @@ export default function AdjustForm({ variantId }: { variantId: number }) {
       </fieldset>
 
       <div className="flex flex-wrap gap-4">
-        <label className="flex flex-col gap-1 text-sm text-[#9AA1AB]">
+        <label className="flex flex-col gap-1 text-sm text-adm-muted">
           {AMOUNT_LABEL[reason]}
           <input
             name="amount"
@@ -74,7 +74,7 @@ export default function AdjustForm({ variantId }: { variantId: number }) {
             className={`${FIELD} w-32 tabular-nums`}
           />
         </label>
-        <label className="flex min-w-48 flex-1 flex-col gap-1 text-sm text-[#9AA1AB]">
+        <label className="flex min-w-48 flex-1 flex-col gap-1 text-sm text-adm-muted">
           Note{noteRequired ? "" : " (optional)"}
           <input
             name="note"
@@ -92,13 +92,13 @@ export default function AdjustForm({ variantId }: { variantId: number }) {
         <button
           type="submit"
           disabled={pending}
-          className="cursor-pointer rounded-md bg-[#F2F3F4] px-4 py-2 text-sm font-medium text-[#16191E] transition-colors hover:bg-white disabled:cursor-not-allowed disabled:opacity-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#9AA1AB]"
+          className="cursor-pointer rounded-md bg-adm-fg px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-adm-fg/85 disabled:cursor-not-allowed disabled:opacity-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-adm-muted"
         >
           {pending ? "Saving…" : "Save"}
         </button>
         <p aria-live="polite" className="text-sm">
-          {state?.ok && <span className="text-emerald-300">Saved. Stock is now {state.stockAfter}.</span>}
-          {state && !state.ok && <span className="text-red-300">{state.message}</span>}
+          {state?.ok && <span className="text-emerald-700">Saved. Stock is now {state.stockAfter}.</span>}
+          {state && !state.ok && <span className="text-red-700">{state.message}</span>}
         </p>
       </div>
     </form>

@@ -12,6 +12,17 @@
   --font-mono: var(--font-geist-mono);
 }
 
+/*  Admin palette (light). Used as bg-adm-*, text-adm-*, border-adm-* under
+    /adm/(protected); change the theme here, not in the pages. The portal
+    login page still uses its own dark hex values. */
+@theme {
+  --color-adm-bg: #F6F7F8;
+  --color-adm-surface: #FFFFFF;
+  --color-adm-border: #E2E5E9;
+  --color-adm-fg: #16191E;
+  --color-adm-muted: #5B636E;
+}
+
 @media (prefers-color-scheme: dark) {
   :root {
     --background: #FCFCFA;  /*  changes background on DARK MODE*/

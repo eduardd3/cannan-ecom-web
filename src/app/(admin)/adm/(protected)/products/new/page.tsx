@@ -17,17 +17,15 @@ export default async function NewProductPage() {
   return (
     <div className="mx-auto flex w-full max-w-3xl flex-col gap-6">
       <div>
-        <Link href="/adm/products" className="text-sm text-[#9AA1AB] underline-offset-2 hover:underline">
+        <Link href="/adm/products" className="text-sm text-adm-muted underline-offset-2 hover:underline">
           ← Products
         </Link>
-        <h1 className="mt-2 text-2xl font-bold text-[#F2F3F4]">New product</h1>
-        <p className="mt-1 text-sm text-[#9AA1AB]">
+        <h1 className="mt-2 text-2xl font-bold text-adm-fg">New product</h1>
+        <p className="mt-1 text-sm text-adm-muted">
           Saved as a draft. Add variants and images on the next page, then list it.
         </p>
       </div>
-      <section className="rounded-xl border border-[#2A2F36] bg-[#16191E] p-6">
-        <ProductForm options={options} />
-      </section>
+      <ProductForm options={options} />
     </div>
   );
 }

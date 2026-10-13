@@ -23,16 +23,16 @@ export type ImageTile = { id: number; url: string; alt: string; variantId: numbe
 export type VariantChoice = { id: number; label: string };
 
 const FIELD =
-  "w-full rounded-md border border-[#2A2F36] bg-[#0F1114] px-3 py-2 text-sm text-[#F2F3F4] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#9AA1AB]";
+  "w-full rounded-md border border-adm-border bg-adm-bg px-3 py-2 text-sm text-adm-fg focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-adm-muted";
 const PRIMARY_BUTTON =
-  "cursor-pointer rounded-md bg-[#F2F3F4] px-4 py-2 text-sm font-medium text-[#16191E] transition-colors hover:bg-white disabled:cursor-not-allowed disabled:opacity-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#9AA1AB]";
+  "cursor-pointer rounded-md bg-adm-fg px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-adm-fg/85 disabled:cursor-not-allowed disabled:opacity-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-adm-muted";
 const SMALL_BUTTON =
-  "cursor-pointer rounded-md border border-[#2A2F36] px-2 py-1 text-xs text-[#F2F3F4] transition-colors hover:bg-[#2A2F36] disabled:cursor-not-allowed disabled:opacity-40 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#9AA1AB]";
+  "cursor-pointer rounded-md border border-adm-border px-2 py-1 text-xs text-adm-fg transition-colors hover:bg-adm-border disabled:cursor-not-allowed disabled:opacity-40 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-adm-muted";
 
 function ErrorText({ state }: { state: ImageActionState }) {
   if (!state || state.ok) return null;
   return (
-    <p role="alert" className="text-xs text-red-300">
+    <p role="alert" className="text-xs text-red-700">
       {state.message}
     </p>
   );
@@ -98,23 +98,23 @@ function UploadForm({
   return (
     <form action={action} className="flex flex-col gap-4">
       <div className="grid gap-4 sm:grid-cols-2">
-        <label className="flex flex-col gap-1 text-sm text-[#9AA1AB] sm:col-span-2">
+        <label className="flex flex-col gap-1 text-sm text-adm-muted sm:col-span-2">
           Image
           <input
             name="file"
             type="file"
             accept={ACCEPT_ATTRIBUTE}
             required
-            className="text-sm text-[#F2F3F4] file:mr-3 file:cursor-pointer file:rounded-md file:border file:border-[#2A2F36] file:bg-transparent file:px-3 file:py-1.5 file:text-[#F2F3F4] hover:file:bg-[#2A2F36]"
+            className="text-sm text-adm-fg file:mr-3 file:cursor-pointer file:rounded-md file:border file:border-adm-border file:bg-transparent file:px-3 file:py-1.5 file:text-adm-fg hover:file:bg-adm-border"
           />
           <span className="text-xs">JPEG, PNG, or WebP, up to 10 MB.</span>
         </label>
-        <label className="flex flex-col gap-1 text-sm text-[#9AA1AB]">
+        <label className="flex flex-col gap-1 text-sm text-adm-muted">
           Alt text
           <input name="alt" type="text" required maxLength={MAX_ALT_LENGTH} defaultValue={productName} className={FIELD} />
           <span className="text-xs">What the image shows, for screen readers and search.</span>
         </label>
-        <label className="flex flex-col gap-1 text-sm text-[#9AA1AB]">
+        <label className="flex flex-col gap-1 text-sm text-adm-muted">
           Shows for
           <VariantSelect variants={variants} defaultValue={null} />
         </label>
@@ -124,12 +124,12 @@ function UploadForm({
           {pending ? "Uploading…" : "Upload"}
         </button>
         {state?.ok && (
-          <p role="status" className="text-sm text-emerald-300">
+          <p role="status" className="text-sm text-emerald-700">
             Image added.
           </p>
         )}
         {state && !state.ok && (
-          <p role="alert" className="text-sm text-red-300">
+          <p role="alert" className="text-sm text-red-700">
             {state.message}
           </p>
         )}
@@ -160,11 +160,11 @@ function EditForm({
   return (
     <form action={action} className="flex flex-col gap-2">
       <input type="hidden" name="imageId" value={image.id} />
-      <label className="flex flex-col gap-1 text-xs text-[#9AA1AB]">
+      <label className="flex flex-col gap-1 text-xs text-adm-muted">
         Alt text
         <input name="alt" type="text" required maxLength={MAX_ALT_LENGTH} defaultValue={image.alt} className={FIELD} />
       </label>
-      <label className="flex flex-col gap-1 text-xs text-[#9AA1AB]">
+      <label className="flex flex-col gap-1 text-xs text-adm-muted">
         Shows for
         <VariantSelect variants={variants} defaultValue={image.variantId} />
       </label>
@@ -199,11 +199,11 @@ function Tile({
   const variantLabel = variants.find((variant) => variant.id === image.variantId)?.label;
 
   return (
-    <li className={`flex flex-col gap-2 rounded-lg border border-[#2A2F36] p-2 ${busy ? "opacity-60" : ""}`}>
-      <div className="relative aspect-square overflow-hidden rounded-md bg-[#0F1114]">
+    <li className={`flex flex-col gap-2 rounded-lg border border-adm-border p-2 ${busy ? "opacity-60" : ""}`}>
+      <div className="relative aspect-square overflow-hidden rounded-md bg-adm-bg">
         <Image src={image.url} alt={image.alt} fill sizes="200px" className="object-cover" />
         {index === 0 && (
-          <span className="absolute left-1 top-1 rounded bg-[#16191E]/90 px-1.5 py-0.5 text-xs text-[#F2F3F4]">Main</span>
+          <span className="absolute left-1 top-1 rounded bg-adm-surface/90 px-1.5 py-0.5 text-xs text-adm-fg">Main</span>
         )}
       </div>
 
@@ -211,10 +211,10 @@ function Tile({
         <EditForm image={image} variants={variants} onDone={() => setEditing(false)} />
       ) : (
         <>
-          <p className="line-clamp-2 text-xs text-[#F2F3F4]" title={image.alt}>
+          <p className="line-clamp-2 text-xs text-adm-fg" title={image.alt}>
             {image.alt}
           </p>
-          <p className="text-xs text-[#9AA1AB]">{variantLabel ?? "All variants"}</p>
+          <p className="text-xs text-adm-muted">{variantLabel ?? "All variants"}</p>
           <div className="flex flex-wrap gap-1">
             <form action={move}>
               <input type="hidden" name="imageId" value={image.id} />
@@ -240,7 +240,7 @@ function Tile({
               }}
             >
               <input type="hidden" name="imageId" value={image.id} />
-              <button type="submit" disabled={busy} className={`${SMALL_BUTTON} text-red-300`}>
+              <button type="submit" disabled={busy} className={`${SMALL_BUTTON} text-red-700`}>
                 {deleting ? "Deleting…" : "Delete"}
               </button>
             </form>
@@ -269,7 +269,7 @@ export default function Images({
   return (
     <div className="flex flex-col gap-6">
       {images.length === 0 ? (
-        <p className="text-sm text-[#9AA1AB]">No images yet. The first one is the main image on the storefront.</p>
+        <p className="text-sm text-adm-muted">No images yet. The first one is the main image on the storefront.</p>
       ) : (
         <ul className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4">
           {images.map((image, index) => (
@@ -278,12 +278,12 @@ export default function Images({
         </ul>
       )}
       {full ? (
-        <p className="text-sm text-[#9AA1AB]">
+        <p className="text-sm text-adm-muted">
           {MAX_IMAGES_PER_PRODUCT} images is the limit. Delete one to add another.
         </p>
       ) : (
-        <div className="border-t border-[#2A2F36] pt-4">
-          <h3 className="mb-3 text-sm font-medium text-[#F2F3F4]">Add an image</h3>
+        <div className="border-t border-adm-border pt-4">
+          <h3 className="mb-3 text-sm font-medium text-adm-fg">Add an image</h3>
           <UploadForm productId={productId} productName={productName} variants={variants} />
         </div>
       )}

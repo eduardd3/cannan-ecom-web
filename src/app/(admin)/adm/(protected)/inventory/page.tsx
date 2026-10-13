@@ -24,8 +24,8 @@ export default async function InventoryPage({ searchParams }: PageProps<"/adm/in
 
   return (
     <div className="mx-auto w-full max-w-5xl">
-      <h1 className="text-2xl font-bold text-[#F2F3F4]">Inventory</h1>
-      <p className="mt-1 text-sm text-[#9AA1AB]">
+      <h1 className="text-2xl font-bold text-adm-fg">Inventory</h1>
+      <p className="mt-1 text-sm text-adm-muted">
         Amazon and Walmart sell from this same stock. Record their sales here so the storefront doesn&apos;t oversell.
       </p>
 
@@ -37,8 +37,8 @@ export default async function InventoryPage({ searchParams }: PageProps<"/adm/in
             aria-current={tab.active ? "page" : undefined}
             className={`rounded-md border px-3 py-1.5 text-sm transition-colors ${
               tab.active
-                ? "border-[#9AA1AB] bg-[#2A2F36] text-[#F2F3F4]"
-                : "border-[#2A2F36] text-[#9AA1AB] hover:bg-[#2A2F36] hover:text-[#F2F3F4]"
+                ? "border-adm-muted bg-adm-border text-adm-fg"
+                : "border-adm-border text-adm-muted hover:bg-adm-border hover:text-adm-fg"
             }`}
           >
             {tab.label} <span className="tabular-nums opacity-70">{tab.count}</span>
@@ -46,12 +46,12 @@ export default async function InventoryPage({ searchParams }: PageProps<"/adm/in
         ))}
       </nav>
 
-      <div className="mt-6 overflow-x-auto rounded-xl border border-[#2A2F36] bg-[#16191E]">
+      <div className="mt-6 overflow-x-auto rounded-xl border border-adm-border bg-adm-surface">
         {variants.length === 0 ? (
-          <p className="p-6 text-[#9AA1AB]">No variants here.</p>
+          <p className="p-6 text-adm-muted">No variants here.</p>
         ) : (
           <table className="w-full text-left text-sm">
-            <thead className="border-b border-[#2A2F36] text-[#9AA1AB]">
+            <thead className="border-b border-adm-border text-adm-muted">
               <tr>
                 <th className="px-4 py-3 font-medium">Product</th>
                 <th className="px-4 py-3 font-medium">SKU</th>
@@ -60,9 +60,9 @@ export default async function InventoryPage({ searchParams }: PageProps<"/adm/in
                 <th className="px-4 py-3 text-right font-medium">Stock</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-[#2A2F36] text-[#F2F3F4]">
+            <tbody className="divide-y divide-adm-border text-adm-fg">
               {variants.map((variant) => (
-                <tr key={variant.id} className="hover:bg-[#2A2F36]/40">
+                <tr key={variant.id} className="hover:bg-adm-border/40">
                   <td className="px-4 py-3">
                     <Link
                       href={`/adm/inventory/${variant.id}`}
@@ -70,11 +70,11 @@ export default async function InventoryPage({ searchParams }: PageProps<"/adm/in
                     >
                       {variant.productName}
                     </Link>
-                    {variant.variantLabel && <div className="text-[#9AA1AB]">{variant.variantLabel}</div>}
+                    {variant.variantLabel && <div className="text-adm-muted">{variant.variantLabel}</div>}
                   </td>
                   <td className="px-4 py-3 font-mono text-xs">{variant.sku}</td>
-                  <td className="px-4 py-3 text-[#9AA1AB]">{variant.collectionName}</td>
-                  <td className="px-4 py-3 text-[#9AA1AB]">
+                  <td className="px-4 py-3 text-adm-muted">{variant.collectionName}</td>
+                  <td className="px-4 py-3 text-adm-muted">
                     {variant.productStatus === "ACTIVE" ? "Listed" : variant.productStatus === "DRAFT" ? "Draft" : "Archived"}
                     {!variant.isActive && " · variant off"}
                   </td>
