@@ -9,6 +9,25 @@ export const ORDER_STATUS_LABEL: Record<OrderStatus, string> = {
   CANCELED: "Canceled",
 };
 
+// What the customer sees on /purchases. A review is internal, so a
+// NEEDS_REVIEW order reads the same as a PAID one.
+export const CUSTOMER_STATUS_LABEL: Record<OrderStatus, string> = {
+  NEEDS_REVIEW: "Processing",
+  PAID: "Processing",
+  FULFILLED: "Shipped",
+  REFUNDED: "Refunded",
+  CANCELED: "Canceled",
+};
+
+// Order.id is an Int4; a larger id would make Prisma throw instead of 404.
+const MAX_ORDER_ID = 2_147_483_647;
+
+/** A route's [id] segment as an order id, or null if it can't be one. */
+export function parseOrderId(raw: string): number | null {
+  const id = Number(raw);
+  return Number.isInteger(id) && id > 0 && id <= MAX_ORDER_ID ? id : null;
+}
+
 // Pinned to the shop's time zone: the server renders in UTC on Vercel.
 const dateTime = new Intl.DateTimeFormat("en-US", {
   dateStyle: "medium",

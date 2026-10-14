@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import Container from "@/app/components/container";
 
 export const metadata: Metadata = {
@@ -8,8 +9,13 @@ export const metadata: Metadata = {
 
 export default function Dashboard() {
     return (
-        <Container className="py-10">
-            <p> Customer Dashboard - Coming Soon! </p>
+        <Container className="flex flex-col gap-4 py-10">
+            <h1 className="text-xl font-semibold">Dashboard</h1>
+            <p>
+                <Link href="/purchases" className="underline underline-offset-2">
+                    View your purchases
+                </Link>
+            </p>
         </Container>
     );
 }

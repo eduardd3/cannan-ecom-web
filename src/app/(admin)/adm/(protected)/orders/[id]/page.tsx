@@ -3,7 +3,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 
 import { formatCents } from "@/lib/cart/format";
-import { addressLines, formatOrderDate } from "@/lib/orders/format";
+import { addressLines, formatOrderDate, parseOrderId } from "@/lib/orders/format";
 import { getOrderDetail, type OrderDetail } from "@/lib/orders/queries";
 import { CARRIER_LABEL, trackingUrl } from "@/lib/orders/shipping";
 import { requireStaff } from "@/lib/session";
@@ -58,8 +58,8 @@ function ShipmentDetails({ order }: { order: OrderDetail }) {
 
 export default async function OrderDetailPage({ params }: PageProps<"/adm/orders/[id]">) {
   await requireStaff();
-  const id = Number((await params).id);
-  if (!Number.isInteger(id) || id <= 0) notFound();
+  const id = parseOrderId((await params).id);
+  if (!id) notFound();
   const order = await getOrderDetail(id);
   if (!order) notFound();
 
