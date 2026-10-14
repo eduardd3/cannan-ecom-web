@@ -4,6 +4,8 @@ import {WelcomeEmail} from '@/emails/welcome';
 import { PasswordReset } from '@/emails/passwordReset';
 import { ConfirmReset } from '@/emails/confirmreset';
 import { VerifyAccount } from '@/emails/verifyAccount';
+import { OrderConfirmation, type OrderConfirmationProps } from '@/emails/orderConfirmation';
+import { SENDER_ORDERS } from '@/lib/email/senders';
 
 export function sendWelcomeEmail (user: {email: string; name: string | null}) {
     return sendEmail ({
@@ -34,5 +36,17 @@ export async function sendVerificationEmail (user: {email: string; name: string 
         to: user.email,
         subject: 'Confirm your MyCANN account',
         react: <VerifyAccount name={user.name} url={url} />
+    })
+}
+
+//  The key makes a second send for the same order (two webhook deliveries
+//  racing) a no-op at Resend.
+export async function sendOrderConfirmationEmail (to: string, order: OrderConfirmationProps) {
+    return sendEmail({
+        to,
+        from: SENDER_ORDERS,
+        subject: `Your Cannan order #${order.orderId}`,
+        react: <OrderConfirmation {...order} />,
+        idempotencyKey: `order-confirmation/${order.orderId}`,
     })
 }

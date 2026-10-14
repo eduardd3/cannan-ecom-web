@@ -4,7 +4,6 @@ import type {ReactElement} from 'react';
 import {Resend} from 'resend';
 import {SENDER_ACCOUNT} from '@/lib/email/senders';
 import {SUPPORT_EMAIL} from '@/lib/contact';
-const FROM = `Cannan <${SENDER_ACCOUNT}>`;
 
 //  Created on first send, not at import: the Resend constructor throws when
 //  the key is missing, which would 500 every route that imports this file.
@@ -13,8 +12,12 @@ let resend: Resend | null = null;
 type SendArgs = {
     to: string | string[],
     subject: string,
-    react: ReactElement, 
-    replyTo?: string
+    react: ReactElement,
+    replyTo?: string,
+    //  A sender address from ./senders; defaults to the account sender.
+    from?: string,
+    //  Resend drops a repeat send with the same key for 24 hours.
+    idempotencyKey?: string,
 };
 
 export type SendResult = {ok: true, id: string } | {ok: false, error: string};
@@ -28,11 +31,15 @@ export async function sendEmail (args: SendArgs) : Promise<SendResult> {
         //  The mail. sending subdomain isn't a monitored inbox, so replies
         //  default to support unless a caller passes its own replyTo. Set after
         //  the spread so an explicit `replyTo: undefined` still gets it.
-        const { data, error } = await resend.emails.send({
-            from: FROM,
-            ...args,
-            replyTo: args.replyTo ?? SUPPORT_EMAIL,
-        });
+        const { from, idempotencyKey, ...message } = args;
+        const { data, error } = await resend.emails.send(
+            {
+                ...message,
+                from: `Cannan <${from ?? SENDER_ACCOUNT}>`,
+                replyTo: args.replyTo ?? SUPPORT_EMAIL,
+            },
+            idempotencyKey ? { idempotencyKey } : undefined,
+        );
         if (error || !data) {
             console.error(`[email] send failed`, error);
             return {ok: false, error: 'Email send failed'};

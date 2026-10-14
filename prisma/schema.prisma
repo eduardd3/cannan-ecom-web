@@ -275,6 +275,10 @@ model Order {
   email           String
   shippingAddress Json?
 
+  // When the order confirmation email went out. Sent once the order is PAID
+  // (never while in NEEDS_REVIEW, CHECK in SQL); null means not sent yet.
+  confirmationEmailSentAt DateTime?
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 

@@ -6,6 +6,7 @@
 import type Stripe from "stripe";
 
 import { fulfillCheckout } from "@/lib/checkout/fulfill";
+import { sendOrderConfirmation } from "@/lib/orders/confirmation";
 import { getStripe, getWebhookSecret } from "@/lib/stripe";
 
 // Prisma needs the Node.js runtime (not Edge). Being explicit means a future
@@ -75,6 +76,12 @@ export async function POST(request: Request): Promise<Response> {
           ? ` order=${result.orderId}`
           : "";
     console.info(`Stripe webhook ${event.id} ${event.type}: ${result.status}${detail}`);
+
+    // 4. Confirmation email, after the order is committed. Also tried on
+    //    already_fulfilled, so a redelivery covers a send that never happened.
+    //    It only sends for PAID orders (review orders wait for approval) and
+    //    never throws: a failed email is logged, not retried through Stripe.
+    if (result.status !== "not_paid") await sendOrderConfirmation(result.orderId);
     return reply(200, "ok");
   } catch (err) {
     // No customer data in the log: ids, type, and the error only.

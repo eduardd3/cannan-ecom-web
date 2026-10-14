@@ -5,10 +5,12 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { after } from "next/server";
 import { z } from "zod";
 
 import { adjustStockStandalone } from "@/lib/inventory/adjust";
 import { requireStaff } from "@/lib/session";
+import { sendOrderConfirmation } from "./confirmation";
 import { fulfillOrder, updateTracking, type FulfillInput, type FulfillResult } from "./fulfillment";
 import { approveReviewedOrder, refundReviewedOrder } from "./review";
 import { normalizeTrackingNumber, parseCarrier } from "./shipping";
@@ -46,6 +48,8 @@ export async function approveOrderAction(_prev: OrderActionState, formData: Form
 
   const result = await approveReviewedOrder(orderId.data, admin.id);
   revalidateOrders(result.ok);
+  // The confirmation held back while the order was in review goes out now.
+  if (result.ok) after(() => sendOrderConfirmation(orderId.data));
   return result;
 }
 
