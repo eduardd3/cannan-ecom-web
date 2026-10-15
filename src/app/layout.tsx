@@ -1,18 +1,26 @@
 import type { Metadata } from "next";
-import { Geist_Mono, Archivo } from "next/font/google";
+import { DM_Sans, EB_Garamond, Geist_Mono } from "next/font/google";
 import "./globals.css";
 
-//  Archivo is the site font: globals.css maps --font-sans to it, so it is
-//  inherited everywhere and needs no utility class. Geist Mono stays for
-//  `font-mono` (order numbers, SKUs).
+//  DM Sans is the site font: globals.css maps --font-sans to it, so it is
+//  inherited everywhere and needs no utility class. EB Garamond is the
+//  storefront's display serif (`font-serif`). Geist Mono stays for
+//  `font-mono` (order numbers, SKUs). All three are variable fonts, so one
+//  file per family covers every weight the type scale uses.
 const geistMono = Geist_Mono({
   variable: "--font-geist-mono",
   subsets: ["latin"],
 });
 
-const archivo = Archivo({
-  variable: "--font-archivo",
+const dmSans = DM_Sans({
+  variable: "--font-dm-sans",
   subsets: ["latin"],
+});
+
+const ebGaramond = EB_Garamond({
+  variable: "--font-eb-garamond",
+  subsets: ["latin"],
+  style: ["normal", "italic"],
 });
 //  Fallback only — this applies to any page that sets no title of its own,
 //  including the admin and identity areas. Keep it brand-generic; pages that
@@ -38,7 +46,7 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`${geistMono.variable} ${archivo.variable} antialiased`}
+      className={`${geistMono.variable} ${dmSans.variable} ${ebGaramond.variable} antialiased`}
     >
       <body className="flex min-h-dvh flex-col">{children}</body>
     </html>
