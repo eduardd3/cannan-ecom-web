@@ -11,7 +11,7 @@
     "test": "vitest run",
     "test:unit": "vitest run --project unit",
     "test:watch": "vitest",
-    "stripe:listen": "stripe listen --api-key \"$(grep '^STRIPE_SECRET_KEY=' .env.local | cut -d= -f2- | tr -d '\"')\" --events checkout.session.completed,checkout.session.async_payment_succeeded,checkout.session.async_payment_failed --forward-to localhost:3000/api/webhooks/stripe"
+    "stripe:listen": "stripe listen --api-key \"$(grep '^STRIPE_SECRET_KEY=' .env.local | cut -d= -f2- | tr -d '\"')\" --events checkout.session.completed,checkout.session.async_payment_succeeded,checkout.session.async_payment_failed,charge.refunded,charge.dispute.created,charge.dispute.updated,charge.dispute.closed --forward-to localhost:3000/api/webhooks/stripe"
   },
   "dependencies": {
     "@auth/prisma-adapter": "^2.11.3",

@@ -3,6 +3,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 
 import { formatCents } from "@/lib/cart/format";
+import { formatDisputeReason, formatDisputeStatus, isDisputeOpen } from "@/lib/orders/dispute";
 import { addressLines, formatOrderDate, parseOrderId } from "@/lib/orders/format";
 import { getOrderDetail, type OrderDetail } from "@/lib/orders/queries";
 import { CARRIER_LABEL, trackingUrl } from "@/lib/orders/shipping";
@@ -56,6 +57,45 @@ function ShipmentDetails({ order }: { order: OrderDetail }) {
   );
 }
 
+function DisputeSection({ order }: { order: OrderDetail }) {
+  if (!order.stripeDisputeId || !order.disputeStatus || !order.disputeReason || !order.disputedAt) return null;
+  const open = isDisputeOpen(order.disputeStatus);
+  const shipped = order.fulfilledAt !== null;
+
+  let guidance: string;
+  if (open) {
+    guidance = shipped
+      ? "Respond in the Stripe Dashboard with the shipment's tracking as evidence."
+      : "Respond in the Stripe Dashboard. Shipping is blocked until the dispute is resolved.";
+  } else if (order.disputeStatus === "lost") {
+    guidance =
+      order.status === "CANCELED"
+        ? "The dispute was lost before shipping, so the order was canceled and its units were put back in stock."
+        : "The dispute was lost. The order had already shipped, so stock was not changed.";
+  } else {
+    guidance = "Resolved. Nothing more to do here.";
+  }
+
+  return (
+    <section aria-labelledby="dispute-heading" className={`${CARD} ${open ? "border-red-500/40" : ""}`}>
+      <h2 id="dispute-heading" className="font-semibold text-adm-fg">
+        Dispute
+      </h2>
+      <dl className="mt-2 grid gap-x-6 gap-y-1 text-sm sm:grid-cols-[auto_1fr]">
+        <dt className="text-adm-muted">Status</dt>
+        <dd className={open ? "font-medium text-red-700" : "text-adm-fg"}>{formatDisputeStatus(order.disputeStatus)}</dd>
+        <dt className="text-adm-muted">Reason</dt>
+        <dd className="text-adm-fg">{formatDisputeReason(order.disputeReason)}</dd>
+        <dt className="text-adm-muted">Opened</dt>
+        <dd className="text-adm-fg">{formatOrderDate(order.disputedAt)}</dd>
+        <dt className="text-adm-muted">Dispute</dt>
+        <dd className="break-all font-mono text-xs text-adm-fg">{order.stripeDisputeId}</dd>
+      </dl>
+      <p className="mt-3 text-sm text-adm-muted">{guidance}</p>
+    </section>
+  );
+}
+
 export default async function OrderDetailPage({ params }: PageProps<"/adm/orders/[id]">) {
   await requireStaff();
   const id = parseOrderId((await params).id);
@@ -64,6 +104,7 @@ export default async function OrderDetailPage({ params }: PageProps<"/adm/orders
   if (!order) notFound();
 
   const inReview = order.status === "NEEDS_REVIEW";
+  const disputeOpen = isDisputeOpen(order.disputeStatus);
   const address = addressLines(order.shippingAddress);
 
   return (
@@ -78,6 +119,20 @@ export default async function OrderDetailPage({ params }: PageProps<"/adm/orders
         </div>
         <p className="mt-1 text-sm text-adm-muted">Placed {formatOrderDate(order.createdAt)}</p>
       </div>
+
+      <DisputeSection order={order} />
+
+      {order.status === "REFUNDED" && order.fulfilledAt && (
+        <section aria-labelledby="refund-heading" className={CARD}>
+          <h2 id="refund-heading" className="font-semibold text-adm-fg">
+            Refunded after shipping
+          </h2>
+          <p className="mt-2 text-sm text-adm-muted">
+            Stock wasn&apos;t changed because the items had already shipped. If they come back in sellable
+            condition, restock them from Inventory.
+          </p>
+        </section>
+      )}
 
       {order.reviewReason && (
         <section
@@ -114,12 +169,20 @@ export default async function OrderDetailPage({ params }: PageProps<"/adm/orders
           <h2 id="ship-heading" className="font-semibold text-adm-fg">
             Ship
           </h2>
-          <p className="mt-2 text-sm text-adm-muted">
-            Once it&apos;s handed to the carrier, record the tracking number to mark the order fulfilled.
-          </p>
-          <div className="mt-4">
-            <FulfillForm orderId={order.id} />
-          </div>
+          {!disputeOpen && (
+            <p className="mt-2 text-sm text-adm-muted">
+              Once it&apos;s handed to the carrier, record the tracking number to mark the order fulfilled.
+            </p>
+          )}
+          {disputeOpen ? (
+            <p className="mt-2 text-sm text-red-700">
+              This order has an open dispute. Don&apos;t ship it until the dispute is resolved in Stripe.
+            </p>
+          ) : (
+            <div className="mt-4">
+              <FulfillForm orderId={order.id} />
+            </div>
+          )}
         </section>
       )}
 
@@ -210,6 +273,16 @@ export default async function OrderDetailPage({ params }: PageProps<"/adm/orders
           <dd className="text-right tabular-nums text-adm-fg">{formatCents(order.taxCents)}</dd>
           <dt className="font-semibold text-adm-fg">Total</dt>
           <dd className="text-right font-semibold tabular-nums text-adm-fg">{formatCents(order.totalCents)}</dd>
+          {order.refundedCents > 0 && (
+            <>
+              <dt className="text-adm-muted">Refunded</dt>
+              <dd className="text-right tabular-nums text-adm-fg">−{formatCents(order.refundedCents)}</dd>
+              <dt className="font-semibold text-adm-fg">Net</dt>
+              <dd className="text-right font-semibold tabular-nums text-adm-fg">
+                {formatCents(order.totalCents - order.refundedCents)}
+              </dd>
+            </>
+          )}
         </dl>
       </section>
 
@@ -272,12 +345,15 @@ export default async function OrderDetailPage({ params }: PageProps<"/adm/orders
               {order.inventoryAdjustments.map((row) => (
                 <tr key={row.id}>
                   <td className="whitespace-nowrap px-6 py-3 text-adm-muted">{formatOrderDate(row.createdAt)}</td>
-                  <td className="px-4 py-3">{row.reason}</td>
+                  <td className="px-4 py-3">
+                    {row.reason}
+                    {row.note && <div className="text-xs text-adm-muted">{row.note}</div>}
+                  </td>
                   <td className="px-4 py-3">
                     {order.items.find((item) => item.variantId === row.variantId)?.sku ?? row.variantId}
                   </td>
                   <td className="px-4 py-3 text-right tabular-nums">{row.delta > 0 ? `+${row.delta}` : row.delta}</td>
-                  <td className="px-6 py-3 text-adm-muted">{row.createdBy?.email ?? "Checkout"}</td>
+                  <td className="px-6 py-3 text-adm-muted">{row.createdBy?.email ?? (row.reason === "ORDER_PLACED" ? "Checkout" : "Stripe")}</td>
                 </tr>
               ))}
             </tbody>

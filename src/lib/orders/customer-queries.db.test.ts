@@ -75,6 +75,7 @@ describe("getCustomerOrder", () => {
         "createdAt",
         "id",
         "items",
+        "refundedCents",
         "shipment",
         "shippingAddress",
         "shippingCents",

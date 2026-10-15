@@ -12,7 +12,7 @@ import { Prisma, type OrderStatus } from "@/generated/prisma/client";
 import { adjustStock } from "@/lib/inventory/adjust";
 import { prisma } from "@/lib/prisma";
 import { getStripe } from "@/lib/stripe";
-import { lineStock } from "./line-stock";
+import { orderLines, restockDeducted } from "./order-stock";
 
 export type ReviewErrorCode =
   | "NOT_FOUND"
@@ -45,15 +45,6 @@ async function runReview(fn: (tx: Prisma.TransactionClient) => Promise<ReviewRes
     if (err instanceof Rollback) return err.result;
     throw err;
   }
-}
-
-async function orderLines(tx: Prisma.TransactionClient, orderId: number) {
-  const [items, rows] = await Promise.all([
-    tx.orderItem.findMany({ where: { orderId }, select: { variantId: true, quantity: true, sku: true } }),
-    tx.inventoryAdjustment.findMany({ where: { orderId }, select: { variantId: true, delta: true, reason: true } }),
-  ]);
-  const skus = new Map(items.map((item) => [item.variantId, item.sku]));
-  return lineStock(items, rows).map((line) => ({ ...line, sku: skus.get(line.variantId)! }));
 }
 
 // ---------------------------------------------------------------------------
@@ -108,7 +99,7 @@ export async function approveReviewedOrder(orderId: number, adminId: number): Pr
 // ---------------------------------------------------------------------------
 
 // Long enough for a Stripe refund call made while the transaction is open.
-const REFUND_TIMEOUT_MS = 20_000;
+export const REFUND_TIMEOUT_MS = 20_000;
 
 /**
  * NEEDS_REVIEW → REFUNDED. Refunds the full payment in Stripe, then puts back
@@ -129,11 +120,16 @@ export async function refundReviewedOrder(orderId: number, adminId: number): Pro
       return fail("NO_PAYMENT_INTENT", "This order has no Stripe payment to refund. Check it in the Stripe Dashboard.");
     }
 
+    // What this call refunded: the rest of the charge, after any earlier
+    // partial refund. Stays 0 if Stripe had already refunded it all, whose
+    // charge.refunded event records the amount instead.
+    let refundedNow = 0;
     try {
-      await getStripe().refunds.create(
+      const refund = await getStripe().refunds.create(
         { payment_intent: order.stripePaymentIntentId, metadata: { orderId: String(orderId) } },
         { idempotencyKey: `order-${orderId}-refund` },
       );
+      refundedNow = refund.amount;
     } catch (err) {
       // Already refunded (e.g. from the Dashboard): the money is back with the
       // customer either way, so finish recording it here.
@@ -145,23 +141,16 @@ export async function refundReviewedOrder(orderId: number, adminId: number): Pro
       }
     }
 
-    for (const line of await orderLines(tx, orderId)) {
-      if (line.deducted === 0) continue;
-      const result = await adjustStock(tx, {
-        variantId: line.variantId,
-        delta: line.deducted,
-        reason: "ORDER_CANCELED",
-        orderId,
-        createdById: adminId,
-        note: "Refunded from review",
-      });
-      // An increment only fails if the variant is gone, which Restrict prevents.
-      if (!result.ok) throw new Error(`Restock of variant ${line.variantId} on order ${orderId} failed`);
-    }
+    await restockDeducted(tx, orderId, { createdById: adminId, note: "Refunded from review" });
 
     await tx.order.update({
       where: { id: orderId },
-      data: { status: "REFUNDED", reviewResolvedAt: new Date(), reviewResolvedById: adminId },
+      data: {
+        status: "REFUNDED",
+        refundedCents: { increment: refundedNow },
+        reviewResolvedAt: new Date(),
+        reviewResolvedById: adminId,
+      },
     });
     return { ok: true };
   }, REFUND_TIMEOUT_MS);

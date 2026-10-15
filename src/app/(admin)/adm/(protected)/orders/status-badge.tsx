@@ -16,3 +16,17 @@ export default function StatusBadge({ status }: { status: OrderStatus }) {
     </span>
   );
 }
+
+const FLAG_STYLE = {
+  red: "border-red-500/40 bg-red-500/10 text-red-700",
+  muted: "border-adm-border bg-adm-border/40 text-adm-muted",
+};
+
+// Payment states that sit alongside the status: an open dispute, a partial refund.
+export function FlagBadge({ tone, children }: { tone: keyof typeof FLAG_STYLE; children: React.ReactNode }) {
+  return (
+    <span className={`inline-block whitespace-nowrap rounded-full border px-2 py-0.5 text-xs font-medium ${FLAG_STYLE[tone]}`}>
+      {children}
+    </span>
+  );
+}

@@ -7,6 +7,7 @@ import type Stripe from "stripe";
 
 import { fulfillCheckout } from "@/lib/checkout/fulfill";
 import { sendOrderConfirmation } from "@/lib/orders/confirmation";
+import { recordChargeRefund, recordDispute, type PaymentEventResult } from "@/lib/orders/payment-events";
 import { getStripe, getWebhookSecret } from "@/lib/stripe";
 
 // Prisma needs the Node.js runtime (not Edge). Being explicit means a future
@@ -18,6 +19,14 @@ const FULFILLMENT_EVENTS = new Set<Stripe.Event.Type>([
   "checkout.session.completed",
   "checkout.session.async_payment_succeeded",
 ]);
+
+// After payment: each maps a Stripe object id to its handler.
+const PAYMENT_EVENT_HANDLERS: Partial<Record<Stripe.Event.Type, (id: string) => Promise<PaymentEventResult>>> = {
+  "charge.refunded": recordChargeRefund,
+  "charge.dispute.created": recordDispute,
+  "charge.dispute.updated": recordDispute,
+  "charge.dispute.closed": recordDispute,
+};
 
 // Small plain bodies: Stripe only reads the status code, and nothing here
 // should reveal internals.
@@ -53,6 +62,8 @@ export async function POST(request: Request): Promise<Response> {
 
   // 2. Route the event. async_payment_failed and expired have nothing to
   //    create; the failed one is logged so a bounced delayed payment shows up.
+  const paymentHandler = PAYMENT_EVENT_HANDLERS[event.type];
+  if (paymentHandler) return handlePaymentEvent(event, paymentHandler);
   if (!FULFILLMENT_EVENTS.has(event.type)) {
     if (event.type === "checkout.session.async_payment_failed") {
       console.warn("Stripe async payment failed", event.id, event.data.object.id);
@@ -87,6 +98,33 @@ export async function POST(request: Request): Promise<Response> {
     // No customer data in the log: ids, type, and the error only.
     console.error(
       `Stripe webhook ${event.id} ${event.type} failed for session ${session.id}`,
+      err instanceof Error ? (err.stack ?? err.message) : err,
+    );
+    return reply(500, "Server error"); // Stripe retries this event later
+  }
+}
+
+// Refunds and disputes. Only the object's id is read from the payload; the
+// handler re-retrieves it from Stripe.
+async function handlePaymentEvent(
+  event: Stripe.Event,
+  handler: (id: string) => Promise<PaymentEventResult>,
+): Promise<Response> {
+  const objectId = (event.data.object as { id: string }).id;
+  try {
+    const result = await handler(objectId);
+    if (result.status === "no_order") {
+      // Usually the checkout event hasn't been processed yet. 500 so Stripe
+      // retries (for up to 3 days) until the order exists.
+      console.warn(`Stripe webhook ${event.id} ${event.type}: no order for ${result.paymentIntentId}, will retry`);
+      return reply(500, "Order not found");
+    }
+    const detail = result.status === "recorded" ? ` order=${result.orderId} ${result.detail}` : "";
+    console.info(`Stripe webhook ${event.id} ${event.type}: ${result.status}${detail}`);
+    return reply(200, "ok");
+  } catch (err) {
+    console.error(
+      `Stripe webhook ${event.id} ${event.type} failed for ${objectId}`,
       err instanceof Error ? (err.stack ?? err.message) : err,
     );
     return reply(500, "Server error"); // Stripe retries this event later

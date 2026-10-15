@@ -8,9 +8,10 @@ import "server-only";
 import type { Carrier } from "@/generated/prisma/client";
 
 import { prisma } from "@/lib/prisma";
+import { CLOSED_DISPUTE_STATUSES, isDisputeOpen } from "./dispute";
 import { ORDER_STATUS_LABEL } from "./format";
 
-export type FulfillErrorCode = "NOT_FOUND" | "NOT_PAID" | "NOT_FULFILLED";
+export type FulfillErrorCode = "NOT_FOUND" | "NOT_PAID" | "NOT_FULFILLED" | "DISPUTED";
 
 export type FulfillResult = { ok: true } | { ok: false; error: FulfillErrorCode; message: string };
 
@@ -26,12 +27,18 @@ export type FulfillInput = {
  * PAID → FULFILLED with the shipment's carrier and tracking number.
  *
  * Only PAID orders ship: a NEEDS_REVIEW order hasn't taken all its stock, and
- * the rest are finished. The status guard in the WHERE makes this a single
- * conditional write, so two admins submitting at once can't both succeed.
+ * the rest are finished. An order with an open dispute doesn't ship either:
+ * the customer's bank is already taking the money back. The guards in the
+ * WHERE make this a single conditional write, so two admins submitting at
+ * once (or a dispute landing mid-submit) can't both succeed.
  */
 export async function fulfillOrder(input: FulfillInput): Promise<FulfillResult> {
   const { count } = await prisma.order.updateMany({
-    where: { id: input.orderId, status: "PAID" },
+    where: {
+      id: input.orderId,
+      status: "PAID",
+      OR: [{ disputeStatus: null }, { disputeStatus: { in: [...CLOSED_DISPUTE_STATUSES] } }],
+    },
     data: {
       status: "FULFILLED",
       carrier: input.carrier,
@@ -42,8 +49,18 @@ export async function fulfillOrder(input: FulfillInput): Promise<FulfillResult> 
   });
   if (count === 1) return { ok: true };
 
-  const order = await prisma.order.findUnique({ where: { id: input.orderId }, select: { status: true } });
+  const order = await prisma.order.findUnique({
+    where: { id: input.orderId },
+    select: { status: true, disputeStatus: true },
+  });
   if (!order) return { ok: false, error: "NOT_FOUND", message: "Order not found." };
+  if (order.status === "PAID" && isDisputeOpen(order.disputeStatus)) {
+    return {
+      ok: false,
+      error: "DISPUTED",
+      message: "This order has an open dispute. Don't ship it until the dispute is resolved in Stripe.",
+    };
+  }
   return {
     ok: false,
     error: "NOT_PAID",

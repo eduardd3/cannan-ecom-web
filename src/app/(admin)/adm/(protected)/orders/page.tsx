@@ -2,10 +2,11 @@ import type { Metadata } from "next";
 import Link from "next/link";
 
 import { formatCents } from "@/lib/cart/format";
+import { isDisputeOpen } from "@/lib/orders/dispute";
 import { formatOrderDate, ORDER_STATUS_LABEL } from "@/lib/orders/format";
 import { listOrders, ORDER_LIST_LIMIT, ORDER_STATUSES, parseOrderStatus } from "@/lib/orders/queries";
 import { requireStaff } from "@/lib/session";
-import StatusBadge from "./status-badge";
+import StatusBadge, { FlagBadge } from "./status-badge";
 
 export const metadata: Metadata = {
   title: "Orders | CANNAN Portal",
@@ -75,7 +76,13 @@ export default async function OrdersPage({ searchParams }: PageProps<"/adm/order
                   <td className="whitespace-nowrap px-4 py-3 text-adm-muted">{formatOrderDate(order.createdAt)}</td>
                   <td className="px-4 py-3">{order.email}</td>
                   <td className="px-4 py-3">
-                    <StatusBadge status={order.status} />
+                    <div className="flex flex-wrap gap-1">
+                      <StatusBadge status={order.status} />
+                      {isDisputeOpen(order.disputeStatus) && <FlagBadge tone="red">Disputed</FlagBadge>}
+                      {order.status !== "REFUNDED" && order.refundedCents > 0 && (
+                        <FlagBadge tone="muted">Partly refunded</FlagBadge>
+                      )}
+                    </div>
                   </td>
                   <td className="px-4 py-3 text-right tabular-nums">{order.lineCount}</td>
                   <td className="px-4 py-3 text-right tabular-nums">{formatCents(order.totalCents)}</td>

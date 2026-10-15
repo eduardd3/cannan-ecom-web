@@ -52,7 +52,7 @@ async function reviewScenario() {
 
 beforeEach(async () => {
   vi.clearAllMocks();
-  stripe.refunds.create.mockResolvedValue({ id: "re_test" });
+  stripe.refunds.create.mockResolvedValue({ id: "re_test", amount: 3500 });
   await resetDb();
 });
 
@@ -172,6 +172,7 @@ describe("refundReviewedOrder", () => {
     const after = await prisma.order.findUniqueOrThrow({ where: { id: order.id } });
     expect(after.status).toBe("REFUNDED");
     expect(after.reviewResolvedById).toBe(admin.id);
+    expect(after.refundedCents).toBe(3500); // the amount Stripe's refund reported
 
     expect(await ledger(order.id)).toEqual([
       { variantId: plenty.id, delta: -2, reason: "ORDER_PLACED", createdById: null },
@@ -216,7 +217,7 @@ describe("refundReviewedOrder", () => {
     const { admin, short, order } = await reviewScenario();
     await restock(short.id, 10);
     // A slow Stripe call keeps the refund's lock held while the approve arrives.
-    stripe.refunds.create.mockImplementation(() => new Promise((resolve) => setTimeout(() => resolve({}), 200)));
+    stripe.refunds.create.mockImplementation(() => new Promise((resolve) => setTimeout(() => resolve({ id: "re_test", amount: 3500 }), 200)));
 
     const [refund, approve] = await Promise.all([
       refundReviewedOrder(order.id, admin.id),

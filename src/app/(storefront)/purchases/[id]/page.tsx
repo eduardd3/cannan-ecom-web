@@ -31,6 +31,14 @@ export default async function PurchaseDetailPage({ params }: PageProps<"/purchas
     if (!order) notFound();
 
     const address = addressLines(order.shippingAddress);
+    const refundNote =
+        order.status === "REFUNDED"
+            ? "This order was refunded to your original payment method."
+            : order.status === "CANCELED"
+              ? "This order was canceled and won't ship."
+              : order.refundedCents > 0
+                ? `${formatCents(order.refundedCents)} of this order was refunded to your original payment method.`
+                : null;
 
     return (
         <Container className="py-10">
@@ -43,9 +51,9 @@ export default async function PurchaseDetailPage({ params }: PageProps<"/purchas
             </div>
             <p className="text-sm text-neutral-600">Placed {formatOrderDate(order.createdAt)}</p>
 
-            {order.status === "REFUNDED" && (
+            {refundNote && (
                 <p className="mt-4 rounded border border-neutral-300 bg-neutral-50 px-4 py-3 text-sm">
-                    This order was refunded to your original payment method. Questions?{" "}
+                    {refundNote} Questions?{" "}
                     <Link href="/contact" className="underline underline-offset-2">
                         Contact us
                     </Link>
@@ -82,6 +90,12 @@ export default async function PurchaseDetailPage({ params }: PageProps<"/purchas
                     <dd className="text-right">{formatCents(order.taxCents)}</dd>
                     <dt className="mt-1 text-base font-semibold">Total</dt>
                     <dd className="mt-1 text-right text-base font-semibold">{formatCents(order.totalCents)}</dd>
+                    {order.refundedCents > 0 && (
+                        <>
+                            <dt className="text-neutral-600">Refunded</dt>
+                            <dd className="text-right">−{formatCents(order.refundedCents)}</dd>
+                        </>
+                    )}
                 </dl>
             </div>
         </Container>

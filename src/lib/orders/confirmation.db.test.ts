@@ -43,7 +43,7 @@ async function reviewOrder() {
 beforeEach(async () => {
   vi.clearAllMocks();
   sendEmail.mockResolvedValue({ ok: true, id: "email_test" });
-  stripe.refunds.create.mockResolvedValue({ id: "re_test" });
+  stripe.refunds.create.mockResolvedValue({ id: "re_test", amount: 3500 });
   await resetDb();
 });
 

@@ -73,7 +73,10 @@ enum OrderStatus {
   // (→ REFUNDED).
   NEEDS_REVIEW
   FULFILLED
+  // A dispute was lost before the order shipped: the money is gone and the
+  // units this order took were put back (ORDER_CANCELED).
   CANCELED
+  // Fully refunded. Units go back to stock only if the order hadn't shipped.
   REFUNDED
 }
 
@@ -272,7 +275,21 @@ model Order {
   stripeCheckoutSessionId String  @unique
   stripePaymentIntentId   String? @unique
 
-  email           String
+  // Total refunded so far, mirrored from the Stripe charge (amount_refunded is
+  // cumulative, so replays are harmless). A full refund also moves the order
+  // to REFUNDED; a partial one only records the amount (CHECK >= 0 in SQL).
+  refundedCents Int @default(0)
+
+  // The charge's dispute, mirrored from Stripe's charge.dispute.* events. All
+  // four are set together or not at all (CHECK in SQL). disputeStatus is
+  // Stripe's own value (needs_response, under_review, won, lost, ...), kept
+  // as text so a new Stripe status can't break the webhook.
+  stripeDisputeId String?   @unique
+  disputeStatus   String?
+  disputeReason   String?
+  disputedAt      DateTime?
+
+  email          String
   shippingAddress Json?
 
   // When the order confirmation email went out. Sent once the order is PAID
