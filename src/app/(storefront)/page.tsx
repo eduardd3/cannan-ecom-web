@@ -8,9 +8,40 @@ import Promises from "@/app/components/home/promises";
 import { listCollections, listFeaturedProducts } from "@/lib/catalog/queries";
 import { isCatalogEnabled } from "@/lib/flags";
 
+const TITLE = "Cannan | Saint, Orisha & Santa Muerte Devotional Goods";
+// TODO(copy): homepage meta description.
+const DESCRIPTION =
+  "Statues, figurines, framed wall art, and more, honoring saints, Orishas, and Santa Muerte. Chosen with care in California. Para ti y los tuyos.";
+
 //  Homepage. Served at "/" directly — no redirect hop.
+//
+//  Brand first only here: brand searches are this page's main job. absolute
+//  keeps the title as written if the root layout ever gains a title template.
+//  Canonical is set on this page only; in the layout it would make every page
+//  canonicalize to home. openGraph merges shallowly (a page's object replaces
+//  the parent's), so siteName lives here, not in the layout.
 export const metadata: Metadata = {
-  title: "Cannan | Official Online Store",
+  title: { absolute: TITLE },
+  description: DESCRIPTION,
+  alternates: { canonical: "/" },
+  openGraph: {
+    type: "website",
+    url: "/",
+    siteName: "Cannan",
+    title: TITLE,
+    description: DESCRIPTION,
+    // TODO: OG image, likely a generated opengraph-image.tsx (ImageResponse).
+  },
+};
+
+//  Tells Google which site name to show above the URL; alternateName gives it
+//  fallbacks if "Cannan" alone isn't treated as unique.
+const websiteJsonLd = {
+  "@context": "https://schema.org",
+  "@type": "WebSite",
+  name: "Cannan",
+  alternateName: ["Shop Cannan", "shopcannan.com"],
+  url: "https://www.shopcannan.com/",
 };
 
 //  no HTML, body, or main -> outlined in Layout.tsx
@@ -29,6 +60,11 @@ export default async function Home() {
 
   return (
     <>
+      <script
+        type="application/ld+json"
+        //  Escaping < keeps any string in the data from closing the script tag.
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(websiteJsonLd).replace(/</g, "\\u003c") }}
+      />
       <Hero />
       <CollectionsGrid collections={collections} />
       <FeaturedProducts products={featured} />

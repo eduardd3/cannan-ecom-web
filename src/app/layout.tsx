@@ -25,7 +25,13 @@ const ebGaramond = EB_Garamond({
 //  Fallback only — this applies to any page that sets no title of its own,
 //  including the admin and identity areas. Keep it brand-generic; pages that
 //  want a specific title set their own.
+//
+//  metadataBase turns relative metadata URLs (canonical, og:url) into absolute
+//  ones. Always the www host: the apex 308s to it, so it must never be the
+//  canonical. Not from an env var, or Preview deployments would canonicalize
+//  to their own URLs.
 export const metadata: Metadata = {
+  metadataBase: new URL("https://www.shopcannan.com"),
   title: "Cannan",
 };
 
