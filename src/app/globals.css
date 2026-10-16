@@ -25,6 +25,10 @@
   --color-hairline: #E4E0D9;
   --color-antique-gold: #A8874F;
   --color-gold-ink: #7D6232;
+  /*  Muted red for form errors (AuthBanner). error-ink is both the text and
+      the left rule; about 9:1 on error-tint. */
+  --color-error-tint: #FAF0EE;
+  --color-error-ink: #7A2820;
 
   --text-display-hero: 4rem;
   --text-display-hero--line-height: 1.1;
