@@ -1,16 +1,26 @@
 'use client'
-import { ExclamationCircleIcon } from '@heroicons/react/24/outline';
 import { useState} from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link'
+import AuthHeading from '@/app/components/auth/auth-heading';
+import AuthBanner from '@/app/components/auth/auth-banner';
+import TextField from '@/app/components/auth/text-field';
+import PasswordField from '@/app/components/auth/password-field';
+import SubmitButton from '@/app/components/auth/submit-button';
+
+//  One object, so the message and the sign-in action are always cleared together.
+type SignupError = { message: string; emailInUse?: boolean };
+
+const FALLBACK_ERROR = 'Something went wrong. Please try again.';
+
 export default function SignupForm() {
     const router = useRouter();
-    const [errorMessage, setErrorMessage] = useState<string | undefined>();
+    const [error, setError] = useState<SignupError | undefined>();
     const [isPending, setIsPending] = useState(false);
 
     async function handleSubmit(event: React.SubmitEvent<HTMLFormElement>) {
         event.preventDefault();
-        setErrorMessage(undefined);
+        setError(undefined);
         setIsPending(true);
 
         const formData = new FormData(event.currentTarget);
@@ -25,14 +35,22 @@ export default function SignupForm() {
             });
 
             if (!response.ok) {
+                //  403 is /api/signup's duplicate-email response. Keyed off the
+                //  status, not the message text, so rewording the API can't break it.
+                if (response.status === 403) {
+                    setError({ message: 'Email already in use.', emailInUse: true });
+                    return;
+                }
                 const body = await response.json().catch(() => null);
-                setErrorMessage(body?.error ?? 'Something went wrong :(');
+                const message: string = body?.error ?? FALLBACK_ERROR;
+                //  The banner wants a final period; not every API message has one.
+                setError({ message: message.endsWith('.') ? message : `${message}.` });
                 return;
             }
 
             router.push('/id/signin?verify=1'); //  redirect to login page after signing up
         } catch {
-            setErrorMessage('Something went wrong :(');
+            setError({ message: FALLBACK_ERROR });
         } finally {
             setIsPending(false);
         }
@@ -40,71 +58,62 @@ export default function SignupForm() {
 
     //  The page shell (header, footer, centering) lives in app/id/layout.tsx — this is just the card.
     return (
-        <form
-            onSubmit={handleSubmit}
-            aria-label="customer sign up"
-            className="w-full max-w-sm"
-        >
-            <div className="w-full rounded-xl border border-[#2A2F36] bg-[#16191E] p-8 shadow-sm">
-                <h1 className="text-center text-xl font-bold text-[#F2F3F4]">
-                    Create an Account
-                </h1>
+        <div className="w-full max-w-100">
+            <AuthHeading eyebrow="Bienvenido a myCANN" title="Create an account" subtitle="Para ti y los tuyos" />
 
-                <div className="mt-6 flex flex-col gap-4">
-                    <div className="flex flex-col gap-1.5">
-                        <label htmlFor="email" className="text-sm text-[#9AA1AB]">
-                            Email
-                        </label>
-                        <input
-                            id="email"
-                            type="email"
-                            name="email"
-                            autoComplete="email"
-                            required
-                            className="h-10 w-full rounded-md border border-[#2A2F36] bg-[#0F1114] px-3 text-[#F2F3F4] outline-none focus:border-[#9AA1AB] focus-visible:ring-2 focus-visible:ring-[#9AA1AB]"
-                        />
-                    </div>
+            <form
+                onSubmit={handleSubmit}
+                aria-label="customer sign up"
+                className="flex flex-col gap-5"
+            >
+                {error && (
+                    <AuthBanner
+                        variant="error"
+                        action={error.emailInUse ? { href: '/id/signin', label: 'Sign in instead' } : undefined}
+                    >
+                        {error.message}
+                    </AuthBanner>
+                )}
 
-                    <div className="flex flex-col gap-1.5">
-                        <label htmlFor="password" className="text-sm text-[#9AA1AB]">
-                            Password
-                        </label>
-                        <input
-                            id="password"
-                            type="password"
-                            name="password"
-                            autoComplete="new-password"
-                            required
-                            minLength={6}
-                            className="h-10 w-full rounded-md border border-[#2A2F36] bg-[#0F1114] px-3 text-[#F2F3F4] outline-none focus:border-[#9AA1AB] focus-visible:ring-2 focus-visible:ring-[#9AA1AB]"
-                        />
-                    </div>
-                    <button
-                        type="submit"
-                        disabled={isPending}
-                        aria-disabled={isPending}
-                        className="mt-2 h-11 w-full rounded-lg bg-[#F2F3F4] font-semibold text-[#16191E] transition-colors hover:bg-[#9AA1AB] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#F2F3F4] disabled:opacity-50"
-                    >
-                        Create an Account
-                    </button>
-                    <p className="text-white"> Already have an account? 
-                        <Link href="/id/signin"> Log in</Link>
-                    </p>
-                    {/* Handling signup error: system displays an error message */}
-                    <div
-                        className="flex h-8 items-end space-x-1"
-                        aria-live="polite"
-                        aria-atomic="true"
-                    >
-                    {errorMessage && (
-                    <>
-                        <ExclamationCircleIcon className="h-5 w-5 text-red-500" />
-                        <p className="text-sm text-red-500">{errorMessage}</p>
-                    </>
-                    )}
-                    </div>
+                <TextField
+                    id="email"
+                    label="Email address"
+                    type="email"
+                    name="email"
+                    autoComplete="email"
+                    placeholder="you@example.com"
+                    required
+                />
+
+                <PasswordField
+                    id="password"
+                    label="Password"
+                    name="password"
+                    autoComplete="new-password"
+                    required
+                    minLength={6}
+                    helper="Must be at least 6 characters."
+                />
+
+                {/* mt-1 + the form's 20px gap = 24px above the button. */}
+                <div className="mt-1">
+                    <SubmitButton pending={isPending} pendingLabel="Creating account…">
+                        Create account
+                    </SubmitButton>
                 </div>
+            </form>
+
+            <div className="mt-6 flex flex-col items-center gap-3 text-center">
+                <p className="text-body-md text-stone">
+                    Already have an account?{' '}
+                    <Link href="/id/signin" className="text-gold-ink underline underline-offset-4 transition-colors hover:text-charcoal">
+                        Sign in
+                    </Link>
+                </p>
+                <p className="max-w-75 text-caption text-stone">
+                    An account is required to place an order and complete checkout.
+                </p>
             </div>
-        </form>
+        </div>
     );
 }
