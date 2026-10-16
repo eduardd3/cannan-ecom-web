@@ -18,7 +18,8 @@ type ContainerProps = {
 
 export default function Container({ children, className = "" }: ContainerProps) {
   return (
-    <div className={`mx-auto w-full max-w-7xl px-5 sm:px-8 ${className}`}>
+    //  max-w-300 = 75rem = 1200px, the width the storefront design is laid out at.
+    <div className={`mx-auto w-full max-w-300 px-5 sm:px-8 ${className}`}>
       {children}
     </div>
   );

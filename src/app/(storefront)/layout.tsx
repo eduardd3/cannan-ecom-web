@@ -1,3 +1,4 @@
+import AnnouncementBar from "../components/announcement-bar";
 import SiteHeader from "../components/site-header";
 import SiteFooter from "../components/site-footer";
 import { VerifyBanner } from "../components/verify-banner";
@@ -20,8 +21,12 @@ export default function StorefrontLayout({
   //  on a short page and pushes it down on a long one. <main> is itself a flex
   //  column so that a page can stretch into the leftover space with flex-1 and
   //  center itself there; see the note in components/container.tsx.
+  //
+  //  The storefront palette is set here rather than on <body>, so the
+  //  identity and admin areas keep their own.
   return (
-    <div className="flex min-h-dvh flex-col">
+    <div className="flex min-h-dvh flex-col bg-gallery-white text-charcoal">
+      <AnnouncementBar />
       <SiteHeader />
       <VerifyBanner />
       <main className="flex flex-1 flex-col">{children}</main>

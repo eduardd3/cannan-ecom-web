@@ -14,7 +14,7 @@ export async function VerifyBanner() {
 
   // Not dismissible for now. Kept visually quiet.
   return (
-    <div className="border-b border-[#2A2F36] bg-[#16191E] px-4 py-2 text-center text-sm text-[#9AA1AB]">
+    <div className="border-b border-hairline bg-linen px-4 py-2 text-center text-sm text-charcoal">
       Please confirm your email address. <ResendButton />
     </div>
   );

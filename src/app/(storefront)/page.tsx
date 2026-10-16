@@ -1,5 +1,4 @@
 import type { Metadata } from "next";
-import Storefronts from "@/app/components/storefronts";
 import Container from "@/app/components/container";
 
 //  Homepage. Served at "/" directly — no redirect hop.
@@ -23,7 +22,6 @@ export default function Home() {
         </h1>
         <p className="mt-2">Meaningful pieces for every home and every tradition are on the way.</p>
       </div>
-      <Storefronts />
     </Container>
   );
 }
