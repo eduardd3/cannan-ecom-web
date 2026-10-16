@@ -9,6 +9,7 @@ import AuthBanner from '@/app/components/auth/auth-banner';
 import TextField from '@/app/components/auth/text-field';
 import PasswordField from '@/app/components/auth/password-field';
 import SubmitButton from '@/app/components/auth/submit-button';
+import { textLinkClass } from '@/app/components/auth/styles';
 
 
 // signupEnabled arrives as a prop because SIGNUP_ENABLED is server-only and
@@ -94,7 +95,7 @@ export default function LoginForm({ signupEnabled }: { signupEnabled: boolean })
                 {signupEnabled && (
                     <p className="text-body-md text-stone">
                         New to myCANN?{' '}
-                        <Link href="/id/signup" className="text-gold-ink underline underline-offset-4 transition-colors hover:text-charcoal">
+                        <Link href="/id/signup" className={textLinkClass}>
                             Create an account
                         </Link>
                     </p>

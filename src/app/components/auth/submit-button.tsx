@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import { primaryButtonClass } from "./styles";
 
 type SubmitButtonProps = {
   pending: boolean;
@@ -14,7 +15,7 @@ export default function SubmitButton({ pending, pendingLabel, children }: Submit
     <button
       type="submit"
       disabled={pending}
-      className="flex h-12 w-full cursor-pointer items-center justify-center rounded-[2px] bg-charcoal text-label-ui text-gallery-white transition-colors hover:bg-stone focus:outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-antique-gold disabled:pointer-events-none disabled:opacity-75"
+      className={primaryButtonClass}
     >
       {pending ? pendingLabel : children}
     </button>

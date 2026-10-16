@@ -7,6 +7,7 @@ import AuthBanner from '@/app/components/auth/auth-banner';
 import TextField from '@/app/components/auth/text-field';
 import PasswordField from '@/app/components/auth/password-field';
 import SubmitButton from '@/app/components/auth/submit-button';
+import { textLinkClass } from '@/app/components/auth/styles';
 
 //  One object, so the message and the sign-in action are always cleared together.
 type SignupError = { message: string; emailInUse?: boolean };
@@ -106,7 +107,7 @@ export default function SignupForm() {
             <div className="mt-6 flex flex-col items-center gap-3 text-center">
                 <p className="text-body-md text-stone">
                     Already have an account?{' '}
-                    <Link href="/id/signin" className="text-gold-ink underline underline-offset-4 transition-colors hover:text-charcoal">
+                    <Link href="/id/signin" className={textLinkClass}>
                         Sign in
                     </Link>
                 </p>
