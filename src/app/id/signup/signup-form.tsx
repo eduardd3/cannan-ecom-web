@@ -38,7 +38,7 @@ export default function SignupForm() {
         }
     }
 
-    //  The two-column split lives in app/id/layout.tsx — this is just the card.
+    //  The page shell (header, footer, centering) lives in app/id/layout.tsx — this is just the card.
     return (
         <form
             onSubmit={handleSubmit}

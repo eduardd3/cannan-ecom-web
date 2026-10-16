@@ -18,7 +18,7 @@ export default function LoginForm({ signupEnabled }: { signupEnabled: boolean })
         authCustomer,
         undefined,
     );
-    //  two-column split lives in app/id/layout.tsx — this is just the card.
+    //  The page shell (header, footer, centering) lives in app/id/layout.tsx — this is just the card.
     return (
         <div className="w-full max-w-sm rounded-xl border border-[#2A2F36] bg-[#16191E] p-8 shadow-sm">
             <h1 className="text-center text-xl font-bold text-[#F2F3F4]">

@@ -117,7 +117,7 @@ export default async function CheckoutReturnPage({
     );
 }
 
-//  The two-column split lives in app/id/layout.tsx — this is just the card.
+//  The page shell (header, footer, centering) lives in app/id/layout.tsx — this is just the card.
 function StatusCard({ title, children }: { title: string; children: React.ReactNode }) {
     return (
         <div className="w-full max-w-sm rounded-xl border border-[#2A2F36] bg-[#16191E] p-8 shadow-sm">

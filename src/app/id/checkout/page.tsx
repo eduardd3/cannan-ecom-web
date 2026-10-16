@@ -42,7 +42,7 @@ export default async function CheckoutPage() {
     //  The authoritative stock check happens in the Stripe webhook.
     if (!cart || cart.lines.length === 0 || cart.hasIssues) redirect("/cart");
 
-    //  The two-column split lives in app/id/layout.tsx — this is just the card.
+    //  The page shell (header, footer, centering) lives in app/id/layout.tsx — this is just the card.
     return (
         <div className="w-full max-w-xl rounded-xl border border-[#F2F3F4] bg-[#F2F3F4] p-8 shadow-sm">
             <div className="mt-6">

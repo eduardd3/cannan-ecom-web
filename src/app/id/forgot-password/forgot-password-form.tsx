@@ -35,7 +35,7 @@ export default function ForgotPasswordForm() {
         }
     }
 
-    //  The two-column split lives in app/id/layout.tsx — this is just the card.
+    //  The page shell (header, footer, centering) lives in app/id/layout.tsx — this is just the card.
     if (sent) {
         // Same message whether or not the account exists.
         return (
