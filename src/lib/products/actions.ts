@@ -22,6 +22,7 @@ export type ProductFormValues = {
   collectionId: string;
   categoryIds: string[];
   status: string;
+  featured: boolean;
 };
 
 export type ProductActionState =
@@ -40,6 +41,8 @@ function readValues(formData: FormData): ProductFormValues {
     collectionId: text("collectionId"),
     categoryIds: formData.getAll("categoryIds").map(String),
     status: text("status"),
+    //  An unchecked checkbox isn't submitted at all.
+    featured: formData.get("featured") === "on",
   };
 }
 
@@ -84,6 +87,7 @@ function revalidateProducts() {
   revalidatePath("/adm/products", "layout");
   revalidatePath("/adm/inventory", "layout");
   revalidatePath("/products", "layout");
+  revalidatePath("/"); // the homepage's featured pieces
 }
 
 export async function createProductAction(_prev: ProductActionState, formData: FormData): Promise<ProductActionState> {
@@ -110,7 +114,7 @@ export async function updateProductAction(_prev: ProductActionState, formData: F
   const parsed = parseFields(values);
   if (!parsed.ok) return { ...parsed, values };
 
-  const result = await updateProduct(productId.data, { ...parsed.fields, status });
+  const result = await updateProduct(productId.data, { ...parsed.fields, status, featured: values.featured });
   if (!result.ok) return { ...result, values };
 
   revalidateProducts();

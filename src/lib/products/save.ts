@@ -137,10 +137,13 @@ export async function createProduct(fields: ProductFields): Promise<SaveProductR
  *
  * Status: listing requires an active variant, and the first listing stamps
  * publishedAt.
+ *
+ * Featured: left as is when omitted. It only matters while the product is
+ * visible, so it's kept (not cleared) when a product is unlisted.
  */
 export async function updateProduct(
   productId: number,
-  fields: ProductFields & { status: ProductStatus },
+  fields: ProductFields & { status: ProductStatus; featured?: boolean },
 ): Promise<SaveProductResult> {
   return run(async (tx) => {
     await lockSlugs(tx);
@@ -177,6 +180,7 @@ export async function updateProduct(
         description: fields.description,
         collectionId: fields.collectionId,
         status: fields.status,
+        featured: fields.featured,
         publishedAt: product.publishedAt ?? (fields.status === "ACTIVE" ? new Date() : null),
         categories: { deleteMany: {}, create: categoryLinks(fields.categoryIds) },
       },

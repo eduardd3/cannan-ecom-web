@@ -7,7 +7,14 @@ export type CategoryView = {
   name: string;
 };
 
-// A product card on the listing page.
+// A collection card on the homepage.
+export type CollectionView = {
+  slug: string;
+  name: string;
+  description: string;
+};
+
+// A product card on the listing page and the homepage.
 export type ProductCardView = {
   slug: string;
   name: string;

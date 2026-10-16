@@ -52,15 +52,17 @@ async function main() {
     await seedCatalog();
 }
 
-//  Products go in the default collection, which the
-//  collections_and_categories migration created.
+//  Each product names its collection by slug; the collections themselves come
+//  from the collections_and_categories migration.
 async function seedCatalog() {
     if (SEED_PRODUCTS.length === 0) {
         console.log("No seed products defined (prisma/seed-catalog.ts); skipping catalog.");
         return;
     }
 
-    const collection = await prisma.collection.findFirstOrThrow({ where: { isDefault: true } });
+    const collectionIds = new Map(
+        (await prisma.collection.findMany({ select: { id: true, slug: true } })).map((c) => [c.slug, c.id]),
+    );
 
     const categoryIds = new Map<string, number>();
     for (const c of SEED_CATEGORIES) {
@@ -78,6 +80,9 @@ async function seedCatalog() {
             if (!categoryId) throw new Error(`${p.slug}: unknown category "${slug}"`);
             return { categoryId };
         });
+        const collectionId = collectionIds.get(p.collection);
+        if (!collectionId) throw new Error(`${p.slug}: unknown collection "${p.collection}"`);
+        const featured = p.featured ?? false;
 
         //  An ACTIVE product needs publishedAt (CHECK in SQL). Keep an existing
         //  one: it records the first listing, not this seed run.
@@ -91,7 +96,8 @@ async function seedCatalog() {
                 description: p.description,
                 status: p.status,
                 publishedAt,
-                collectionId: collection.id,
+                collectionId,
+                featured,
                 categories: { deleteMany: {}, create: categoryLinks },
             },
             create: {
@@ -100,7 +106,8 @@ async function seedCatalog() {
                 description: p.description,
                 status: p.status,
                 publishedAt,
-                collectionId: collection.id,
+                collectionId,
+                featured,
                 categories: { create: categoryLinks },
             },
         });

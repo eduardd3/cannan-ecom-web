@@ -55,6 +55,7 @@ export async function getAdminProduct(productId: number) {
       slug: true,
       description: true,
       status: true,
+      featured: true,
       publishedAt: true,
       collectionId: true,
       createdAt: true,

@@ -343,6 +343,21 @@ export default function ProductForm({
             })}
             <FieldError id="status-error" state={state} field="status" />
           </fieldset>
+          <label className="flex items-start gap-2 text-sm text-adm-muted">
+            <input
+              type="checkbox"
+              name="featured"
+              form={FORM_ID}
+              defaultChecked={values?.featured ?? saved.values.featured}
+              className="mt-1 accent-adm-fg"
+            />
+            <span>
+              <span className="text-adm-fg">Featured on homepage</span>
+              <span className="block text-xs">
+                Shown first in the homepage&apos;s featured pieces while the product is active.
+              </span>
+            </span>
+          </label>
           {submitBar}
         </section>
       )}

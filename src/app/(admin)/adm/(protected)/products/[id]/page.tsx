@@ -65,6 +65,7 @@ export default async function EditProductPage({ params }: PageProps<"/adm/produc
             collectionId: String(product.collectionId),
             categoryIds: product.categoryIds.map(String),
             status: product.status,
+            featured: product.featured,
           },
           published: product.publishedAt !== null,
           activeVariantCount,

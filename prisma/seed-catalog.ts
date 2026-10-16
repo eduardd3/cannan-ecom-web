@@ -34,6 +34,8 @@ export type SeedImage = {
 
 export type SeedProduct = {
     slug: string;
+    collection: string; //  Collection slug; the collections come from a migration
+    featured?: boolean; //  shown first in the homepage's featured pieces
     name: string;
     description: string;
     status: "DRAFT" | "ACTIVE" | "ARCHIVED";
@@ -53,6 +55,8 @@ export const SEED_CATEGORIES: SeedCategory[] = [
 export const SEED_PRODUCTS: SeedProduct[] = [
     {
         slug: "virgen-caridad-del-cobre",
+        collection: "signature",
+        featured: true,
         name: "Virgen Caridad del Cobre",
         description: [
             "Home décor, devout gift, prayerful inspiration.",
@@ -71,6 +75,8 @@ export const SEED_PRODUCTS: SeedProduct[] = [
     },
     {
         slug: "saint-rosa-of-lima",
+        collection: "signature",
+        featured: true,
         name: "Saint Rosa of Lima",
         description: [
             "DIMENSIONS: This religious statue measures 12 inches in height, 4 inches in width, and 3.5 inches in depth, perfect for tabletop display.",
@@ -91,6 +97,7 @@ export const SEED_PRODUCTS: SeedProduct[] = [
     },
     {
         slug: "nuestra-senora-del-pilar",
+        collection: "signature",
         name: "Nuestra Señora del Pilar",
         description: [
             "AUTHENTIC DESIGN: Beautifully detailed religious sculpture featuring traditional iconography with ornate golden sunburst halo and decorative base.",
@@ -111,6 +118,7 @@ export const SEED_PRODUCTS: SeedProduct[] = [
     },
     {
         slug: "san-jose-dormido",
+        collection: "signature",
         name: "San José Dormido",
         description: [
             "San José dormiente recuerda que, a pesar de las dificultades y responsabilidades, la fe en Dios y su providencia puede permitir descansar en la confianza.",
@@ -126,6 +134,99 @@ export const SEED_PRODUCTS: SeedProduct[] = [
         ],
         variants: [
             { sku: "CN-JSD-05", name: null, value: null, priceCents: 1699, initialStock: 6, amazonAsin: "B0F6Y616LF" },
+        ],
+    },
+    //  Orishas and Santa Muerte: no photos yet, so their cards show the
+    //  placeholder background.
+    {
+        slug: "yemaya-statue",
+        collection: "orisha",
+        featured: true,
+        name: "Yemayá Statue",
+        description: [
+            "Yemayá, mother of the sea, shown in her traditional blue and white.",
+            "Resin, 8 inches tall. Paint and finish vary slightly from piece to piece.",
+        ].join("\n\n"),
+        status: "ACTIVE",
+        categories: [],
+        images: [],
+        variants: [
+            { sku: "CN-YMY-08", name: null, value: null, priceCents: 3499, initialStock: 5 },
+        ],
+    },
+    {
+        slug: "chango-statue",
+        collection: "orisha",
+        name: "Changó Statue",
+        description: [
+            "Changó, Orisha of thunder and fire, in red and white.",
+            "Resin, 8 inches tall. Paint and finish vary slightly from piece to piece.",
+        ].join("\n\n"),
+        status: "ACTIVE",
+        categories: [],
+        images: [],
+        variants: [
+            { sku: "CN-CHG-08", name: null, value: null, priceCents: 3499, initialStock: 4 },
+        ],
+    },
+    {
+        slug: "oshun-statue",
+        collection: "orisha",
+        name: "Oshún Statue",
+        description: [
+            "Oshún, Orisha of rivers and love, in gold and amber tones.",
+            "Resin, 8 inches tall. Paint and finish vary slightly from piece to piece.",
+        ].join("\n\n"),
+        status: "ACTIVE",
+        categories: [],
+        images: [],
+        variants: [
+            { sku: "CN-OSH-08", name: null, value: null, priceCents: 3499, initialStock: 0 },
+        ],
+    },
+    {
+        slug: "santa-muerte-statue-white",
+        collection: "santa-muerte",
+        featured: true,
+        name: "Santa Muerte Statue, White",
+        description: [
+            "La Santa Muerte in white robes, holding her scythe and globe.",
+            "Resin, 12 inches tall. Paint and finish vary slightly from piece to piece.",
+        ].join("\n\n"),
+        status: "ACTIVE",
+        categories: [],
+        images: [],
+        variants: [
+            { sku: "CN-SMW-12", name: null, value: null, priceCents: 4499, initialStock: 6 },
+        ],
+    },
+    {
+        slug: "santa-muerte-seven-day-candle",
+        collection: "santa-muerte",
+        featured: true,
+        name: "Santa Muerte Seven-Day Candle",
+        description: [
+            "A seven-day glass candle with a printed image of La Santa Muerte.",
+            "About 8 inches tall.",
+        ].join("\n\n"),
+        status: "ACTIVE",
+        categories: [],
+        images: [],
+        variants: [
+            { sku: "CN-SMC-WHT", name: "Color", value: "White", priceCents: 1299, initialStock: 12 },
+            { sku: "CN-SMC-GLD", name: "Color", value: "Gold", priceCents: 1499, initialStock: 8 },
+        ],
+    },
+    {
+        slug: "santa-muerte-prayer-card",
+        collection: "santa-muerte",
+        name: "Santa Muerte Prayer Card",
+        description: "A laminated prayer card with an image of La Santa Muerte on the front and a prayer in Spanish on the back.",
+        status: "ACTIVE",
+        categories: [],
+        images: [],
+        variants: [
+            { sku: "CN-SMP-01", name: null, value: null, priceCents: 399, initialStock: 25 },
         ],
     },
 ];

@@ -139,6 +139,9 @@ model Product {
   // may be indexed, so a slug change keeps the old one as a redirect.
   // An ACTIVE product always has it (CHECK in SQL).
   publishedAt  DateTime?
+  // Shown first in the homepage's featured pieces (while visible); set from
+  // the admin product page.
+  featured     Boolean       @default(false)
   createdAt    DateTime      @default(now())
   updatedAt    DateTime      @updatedAt
 

@@ -12,6 +12,7 @@ import { getImageUrl } from "@/lib/storage";
 import { prisma } from "@/lib/prisma";
 import type {
   CategoryView,
+  CollectionView,
   ProductCardView,
   ProductDetailView,
 } from "./types";
@@ -57,27 +58,59 @@ export async function listProducts({
       collectionId,
       ...(categorySlug && { categories: { some: { category: { slug: categorySlug } } } }),
     },
-    select: {
-      slug: true,
-      name: true,
-      images: { select: { key: true, alt: true }, orderBy: { position: "asc" }, take: 1 },
-      variants: { where: { isActive: true }, select: { priceCents: true, stock: true } },
-    },
+    select: productCardSelect,
     orderBy: [{ createdAt: "desc" }, { id: "desc" }],
   });
 
-  return products.map((product) => {
-    const prices = product.variants.map((variant) => variant.priceCents);
-    const image = product.images[0] ?? null;
-    return {
-      slug: product.slug,
-      name: product.name,
-      imageUrl: image ? getImageUrl(image.key) : null,
-      imageAlt: image?.alt ?? null,
-      minPriceCents: Math.min(...prices),
-      hasPriceRange: new Set(prices).size > 1,
-      inStock: product.variants.some((variant) => variant.stock > 0),
-    };
+  return products.map(toProductCard);
+}
+
+// What a product card needs: the first image and the active variants' prices.
+const productCardSelect = {
+  slug: true,
+  name: true,
+  images: { select: { key: true, alt: true }, orderBy: { position: "asc" }, take: 1 },
+  variants: { where: { isActive: true }, select: { priceCents: true, stock: true } },
+} satisfies Prisma.ProductSelect;
+
+function toProductCard(
+  product: Prisma.ProductGetPayload<{ select: typeof productCardSelect }>,
+): ProductCardView {
+  const prices = product.variants.map((variant) => variant.priceCents);
+  const image = product.images[0] ?? null;
+  return {
+    slug: product.slug,
+    name: product.name,
+    imageUrl: image ? getImageUrl(image.key) : null,
+    imageAlt: image?.alt ?? null,
+    minPriceCents: Math.min(...prices),
+    hasPriceRange: new Set(prices).size > 1,
+    inStock: product.variants.some((variant) => variant.stock > 0),
+  };
+}
+
+const FEATURED_LIMIT = 8;
+
+/**
+ * The homepage's featured pieces: up to 8 visible products, featured ones
+ * first, topped up with the newest when fewer than 8 are featured. One query:
+ * sorting on featured before createdAt does both.
+ */
+export async function listFeaturedProducts(): Promise<ProductCardView[]> {
+  const products = await prisma.product.findMany({
+    where: visibleProduct,
+    select: productCardSelect,
+    orderBy: [{ featured: "desc" }, { createdAt: "desc" }, { id: "desc" }],
+    take: FEATURED_LIMIT,
+  });
+  return products.map(toProductCard);
+}
+
+/** Every collection, in its admin-set order, for the homepage grid. */
+export async function listCollections(): Promise<CollectionView[]> {
+  return prisma.collection.findMany({
+    select: { slug: true, name: true, description: true },
+    orderBy: [{ position: "asc" }, { id: "asc" }],
   });
 }
 

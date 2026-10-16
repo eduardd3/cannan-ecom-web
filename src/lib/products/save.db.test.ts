@@ -40,7 +40,10 @@ async function listedProduct(slug: string) {
   return variant.productId;
 }
 
-async function save(productId: number, overrides: Partial<ProductFields> & { status?: "DRAFT" | "ACTIVE" | "ARCHIVED" }) {
+async function save(
+  productId: number,
+  overrides: Partial<ProductFields> & { status?: "DRAFT" | "ACTIVE" | "ARCHIVED"; featured?: boolean },
+) {
   const product = await prisma.product.findUniqueOrThrow({
     where: { id: productId },
     include: { categories: true },
@@ -189,6 +192,27 @@ describe("updateProduct: status", () => {
     await save(id, { slug: "launch-slug", status: "ACTIVE" });
 
     expect(await redirectsOf(id)).toEqual([]);
+  });
+});
+
+describe("updateProduct: featured", () => {
+  it("sets and clears featured", async () => {
+    const { productId } = await createVariant({ stock: 1 });
+
+    await save(productId, { featured: true });
+    expect((await prisma.product.findUniqueOrThrow({ where: { id: productId } })).featured).toBe(true);
+
+    await save(productId, { featured: false });
+    expect((await prisma.product.findUniqueOrThrow({ where: { id: productId } })).featured).toBe(false);
+  });
+
+  it("leaves featured alone when it's omitted", async () => {
+    const { productId } = await createVariant({ stock: 1 });
+    await prisma.product.update({ where: { id: productId }, data: { featured: true } });
+
+    await save(productId, { name: "Renamed" });
+
+    expect((await prisma.product.findUniqueOrThrow({ where: { id: productId } })).featured).toBe(true);
   });
 });
 
