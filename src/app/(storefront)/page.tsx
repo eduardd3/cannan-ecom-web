@@ -1,5 +1,8 @@
 import type { Metadata } from "next";
-import Container from "@/app/components/container";
+
+import Hero from "@/app/components/home/hero";
+import Narrative from "@/app/components/home/narrative";
+import Promises from "@/app/components/home/promises";
 
 //  Homepage. Served at "/" directly — no redirect hop.
 export const metadata: Metadata = {
@@ -8,20 +11,14 @@ export const metadata: Metadata = {
 
 //  no HTML, body, or main -> outlined in Layout.tsx
 //
-//  Container is the outermost element, which is what lets flex-1 stretch it
-//  into the space between header and footer; justify-center then centers the
-//  block vertically in that space and items-center horizontally. The old
-//  "grid flex justify-center" set display twice and left the outcome to
-//  stylesheet order.
+//  Each section wraps its own content in Container rather than the page
+//  wrapping them all: the narrative band's linen background runs full width.
 export default function Home() {
   return (
-    <Container className="flex flex-1 flex-col items-center justify-center gap-6 py-16 text-center">
-      <div>
-        <h1 className="text-xl font-bold">
-          SHOP CANNAN - COMING SOON!
-        </h1>
-        <p className="mt-2">Meaningful pieces for every home and every tradition are on the way.</p>
-      </div>
-    </Container>
+    <>
+      <Hero />
+      <Narrative />
+      <Promises />
+    </>
   );
 }

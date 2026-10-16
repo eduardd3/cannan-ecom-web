@@ -13,3 +13,4 @@ node_modules
 /AGENTS.md
 /CLAUDE.md
 .env*.local
+design/

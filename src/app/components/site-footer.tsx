@@ -1,5 +1,6 @@
 import Link from "next/link";
 import Container from "@/app/components/container";
+import GoldRule from "@/app/components/gold-rule";
 import Storefronts from "@/app/components/storefronts";
 import { SUPPORT_EMAIL, SUPPORT_MAILTO } from "@/lib/contact";
 
@@ -47,7 +48,7 @@ export default function SiteFooter() {
                 <div className="mb-16 flex flex-col items-center text-center">
                     <span className="mb-2 font-serif text-wordmark text-charcoal uppercase">CANNAN</span>
                     <p className={`mb-4 text-gold-ink ${eyebrow}`}>Since 2022</p>
-                    <div aria-hidden="true" className="mb-4 h-px w-12 bg-antique-gold" />
+                    <GoldRule className="mb-4" />
                     <p className="text-body-md text-stone italic">
                         For you and yours · <span lang="es">Para ti y los tuyos</span>
                     </p>
