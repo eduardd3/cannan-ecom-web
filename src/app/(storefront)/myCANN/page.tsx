@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from 'next/link';
 import Container from "@/app/components/container";
 import GoldRule from "@/app/components/gold-rule";
+import AccountFeatures from "@/app/components/mycann/account-features";
 import { isSignupEnabled } from "@/lib/flags";
 
 //  Site chrome comes from the (storefront) group layout — this segment used to
@@ -67,6 +68,8 @@ export default function MyCANNPage () {
                 <p className="mx-auto mt-6 max-w-100 text-caption text-stone">
                     An account is required to place an order and complete checkout.
                 </p>
+
+                <AccountFeatures />
             </div>
         </Container>
     );
