@@ -1,12 +1,22 @@
 'use client'
-import { ExclamationCircleIcon } from '@heroicons/react/24/outline';
-import { useState } from 'react';
+import { useRef, useState } from 'react';
+import { flushSync } from 'react-dom';
 import Link from 'next/link';
+import AuthHeading from '@/app/components/auth/auth-heading';
+import AuthBanner from '@/app/components/auth/auth-banner';
+import TextField from '@/app/components/auth/text-field';
+import SubmitButton from '@/app/components/auth/submit-button';
+import ButtonLink from '@/app/components/auth/button-link';
+import { textLinkClass } from '@/app/components/auth/styles';
+
+const FALLBACK_ERROR = 'Something went wrong. Please try again.';
 
 export default function ForgotPasswordForm() {
     const [errorMessage, setErrorMessage] = useState<string | undefined>();
     const [isPending, setIsPending] = useState(false);
     const [sent, setSent] = useState(false);
+    const sentHeadingRef = useRef<HTMLHeadingElement>(null);
+    const emailRef = useRef<HTMLInputElement>(null);
 
     async function handleSubmit(event: React.SubmitEvent<HTMLFormElement>) {
         event.preventDefault();
@@ -22,91 +32,102 @@ export default function ForgotPasswordForm() {
             });
 
             if (!response.ok) {
+                //  Keyed off the status, not the API's wording.
+                if (response.status === 429) {
+                    setErrorMessage('Too many requests. Please try again later.');
+                    return;
+                }
                 const body = await response.json().catch(() => null);
-                setErrorMessage(body?.error ?? 'Something went wrong :(');
+                const message: string = body?.error ?? FALLBACK_ERROR;
+                //  The banner wants a final period; not every API message has one.
+                setErrorMessage(message.endsWith('.') ? message : `${message}.`);
                 return;
             }
 
-            setSent(true);
+            //  Render the sent state now so its heading exists to take focus,
+            //  which tells screen-reader users the page changed.
+            flushSync(() => setSent(true));
+            sentHeadingRef.current?.focus();
         } catch {
-            setErrorMessage('Something went wrong :(');
+            setErrorMessage(FALLBACK_ERROR);
         } finally {
             setIsPending(false);
         }
     }
 
+    //  The form remounts, so the uncontrolled email input comes back empty.
+    //  Focus follows it; the clicked button is gone.
+    function handleUseDifferentEmail() {
+        flushSync(() => setSent(false));
+        emailRef.current?.focus();
+    }
+
     //  The page shell (header, footer, centering) lives in app/id/layout.tsx — this is just the card.
     if (sent) {
-        // Same message whether or not the account exists.
+        //  Same message whether or not the account exists, and never the address.
         return (
-            <div className="w-full max-w-sm rounded-xl border border-[#2A2F36] bg-[#16191E] p-8 shadow-sm">
-                <h1 className="text-center text-xl font-bold text-[#F2F3F4]">
-                    Check your email
-                </h1>
-                <p className="mt-4 text-sm text-[#9AA1AB]">
+            <div className="w-full max-w-100 text-center">
+                <AuthHeading
+                    eyebrow="Correo enviado"
+                    title="Check your email"
+                    subtitle="Un espacio para ti"
+                    titleRef={sentHeadingRef}
+                />
+                <p className="mx-auto mb-8 max-w-95 text-body-lg text-stone">
                     If an account exists for that email, we&apos;ve sent a link to reset
                     your password. The link expires in 1 hour.
                 </p>
-                <p className="mt-4 text-white">
-                    <Link href="/id/signin">Back to log in</Link>
-                </p>
+                <div className="flex flex-col items-center gap-3">
+                    <ButtonLink href="/id/signin">Back to sign in</ButtonLink>
+                    <button
+                        type="button"
+                        onClick={handleUseDifferentEmail}
+                        className={`${textLinkClass} py-2 text-body-md`}
+                    >
+                        Use a different email
+                    </button>
+                </div>
             </div>
         );
     }
 
     return (
-        <form
-            onSubmit={handleSubmit}
-            aria-label="forgot password"
-            className="w-full max-w-sm"
-        >
-            <div className="w-full rounded-xl border border-[#2A2F36] bg-[#16191E] p-8 shadow-sm">
-                <h1 className="text-center text-xl font-bold text-[#F2F3F4]">
-                    Forgot your password?
-                </h1>
-                <p className="mt-2 text-center text-sm text-[#9AA1AB]">
-                    Enter your email and we&apos;ll send you a reset link.
-                </p>
+        <div className="w-full max-w-100">
+            <AuthHeading eyebrow="Recuperar contraseña" title="Forgot password" subtitle="Para ti y los tuyos" />
 
-                <div className="mt-6 flex flex-col gap-4">
-                    <div className="flex flex-col gap-1.5">
-                        <label htmlFor="email" className="text-sm text-[#9AA1AB]">
-                            Email
-                        </label>
-                        <input
-                            id="email"
-                            type="email"
-                            name="email"
-                            autoComplete="email"
-                            required
-                            className="h-10 w-full rounded-md border border-[#2A2F36] bg-[#0F1114] px-3 text-[#F2F3F4] outline-none focus:border-[#9AA1AB] focus-visible:ring-2 focus-visible:ring-[#9AA1AB]"
-                        />
-                    </div>
-                    <button
-                        type="submit"
-                        disabled={isPending}
-                        aria-disabled={isPending}
-                        className="mt-2 h-11 w-full rounded-lg bg-[#F2F3F4] font-semibold text-[#16191E] transition-colors hover:bg-[#9AA1AB] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#F2F3F4] disabled:opacity-50"
-                    >
-                        Send Reset Link
-                    </button>
-                    <p className="text-white">
-                        <Link href="/id/signin">Back to log in</Link>
-                    </p>
-                    <div
-                        className="flex h-8 items-end space-x-1"
-                        aria-live="polite"
-                        aria-atomic="true"
-                    >
-                    {errorMessage && (
-                    <>
-                        <ExclamationCircleIcon className="h-5 w-5 text-red-500" />
-                        <p className="text-sm text-red-500">{errorMessage}</p>
-                    </>
-                    )}
-                    </div>
+            <form
+                onSubmit={handleSubmit}
+                aria-label="forgot password"
+                className="flex flex-col gap-5"
+            >
+                {errorMessage && <AuthBanner variant="error">{errorMessage}</AuthBanner>}
+
+                <TextField
+                    ref={emailRef}
+                    id="email"
+                    label="Email address"
+                    type="email"
+                    name="email"
+                    autoComplete="email"
+                    placeholder="you@example.com"
+                    required
+                    helper="We'll send a link to reset your password."
+                />
+
+                {/* mt-1 + the form's 20px gap = 24px above the button. */}
+                <div className="mt-1">
+                    <SubmitButton pending={isPending} pendingLabel="Sending…">
+                        Send reset link
+                    </SubmitButton>
                 </div>
-            </div>
-        </form>
+            </form>
+
+            <p className="mt-6 text-center text-body-md text-stone">
+                Remembered it?{' '}
+                <Link href="/id/signin" className={textLinkClass}>
+                    Sign in
+                </Link>
+            </p>
+        </div>
     );
 }
