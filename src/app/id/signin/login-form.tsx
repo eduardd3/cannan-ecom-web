@@ -1,10 +1,14 @@
 'use client'
 import Form from 'next/form';
-import { ExclamationCircleIcon} from '@heroicons/react/24/outline';
 import { useActionState } from 'react';
 import {authCustomer} from '../../actions';
 import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
+import AuthHeading from '@/app/components/auth/auth-heading';
+import AuthBanner from '@/app/components/auth/auth-banner';
+import TextField from '@/app/components/auth/text-field';
+import PasswordField from '@/app/components/auth/password-field';
+import SubmitButton from '@/app/components/auth/submit-button';
 
 
 // signupEnabled arrives as a prop because SIGNUP_ENABLED is server-only and
@@ -18,93 +22,87 @@ export default function LoginForm({ signupEnabled }: { signupEnabled: boolean })
         authCustomer,
         undefined,
     );
+    //  Not every authCustomer message ends with a period; the banner wants one.
+    //  Done here so the server strings, shared with the admin login, stay put.
+    const errorText = errorMessage && (errorMessage.endsWith('.') ? errorMessage : `${errorMessage}.`);
+
     //  The page shell (header, footer, centering) lives in app/id/layout.tsx — this is just the card.
     return (
-        <div className="w-full max-w-sm rounded-xl border border-[#2A2F36] bg-[#16191E] p-8 shadow-sm">
-            <h1 className="text-center text-xl font-bold text-[#F2F3F4]">
-               myCANN Portal
-            </h1>
-            {justReset && (
-                <p className="mt-4 text-center text-sm text-[#9AA1AB]">
-                    Your password was reset. Log in with your new password.
-                </p>
-            )}
-            {justSignedUp && (
-                <p className="mt-4 text-center text-sm text-[#9AA1AB]">
-                    Account created. Check your email to confirm your address.
-                </p>
-            )}
+        <div className="w-full max-w-100">
+            <AuthHeading eyebrow="Bienvenidos" title="Sign in to myCANN" subtitle="Un espacio para ti" />
 
             <Form   //  Client action
                 action={formAction}
                 aria-label="customer login form"
-                className="mt-6 flex flex-col gap-4"
+                className="flex flex-col gap-5"
             >
-                <div className="flex flex-col gap-1.5">
-                    <label htmlFor="email" className="text-sm text-[#9AA1AB]">
-                        Email
-                    </label>
-                    <input
-                        id="email"
-                        type="email"
-                        name="email"
-                        autoComplete="email"
-                        required
-                        className="h-10 w-full rounded-md border border-[#2A2F36] bg-[#0F1114] px-3 text-[#F2F3F4] outline-none focus:border-[#9AA1AB] focus-visible:ring-2 focus-visible:ring-[#9AA1AB]"
-                    />
-                </div>
-
-                <div className="flex flex-col gap-1.5">
-                    <label htmlFor="password" className="text-sm text-[#9AA1AB]">
-                        Password
-                    </label>
-                    <input
-                        id="password"
-                        type="password"
-                        name="password"
-                        autoComplete="current-password"
-                        required
-                        className="h-10 w-full rounded-md border border-[#2A2F36] bg-[#0F1114] px-3 text-[#F2F3F4] outline-none focus:border-[#9AA1AB] focus-visible:ring-2 focus-visible:ring-[#9AA1AB]"
-                    />
-                    <Link href="/id/forgot-password" className="self-end text-sm text-[#9AA1AB] hover:text-[#F2F3F4]">
-                        Forgot password?
-                    </Link>
-                </div>
-                {/* Handling login attempt: system responds with the appropriate result */}
-                 <div
-                        className="flex h-8 items-end space-x-1"
-                        aria-live="polite"
-                        aria-atomic="true"
-                    >
-                    {errorMessage && (
+                {/* A failed attempt replaces the success notices: both at once
+                    would read as contradictory. */}
+                {errorText ? (
+                    <AuthBanner variant="error">{errorText}</AuthBanner>
+                ) : (
                     <>
-                        <ExclamationCircleIcon className="h-5 w-5 text-red-500" />
-                        <p className="text-sm text-red-500">{errorMessage}</p>
+                        {justSignedUp && (
+                            <AuthBanner variant="success">
+                                Account created. Check your email to verify your account.
+                            </AuthBanner>
+                        )}
+                        {justReset && (
+                            <AuthBanner variant="success">
+                                Your password was reset. Sign in with your new password.
+                            </AuthBanner>
+                        )}
                     </>
-                    )}
-                    </div>
+                )}
+
+                <TextField
+                    id="email"
+                    label="Email address"
+                    type="email"
+                    name="email"
+                    autoComplete="email"
+                    placeholder="you@example.com"
+                    required
+                />
+
+                <PasswordField
+                    id="password"
+                    label="Password"
+                    name="password"
+                    autoComplete="current-password"
+                    required
+                    labelAction={
+                        <Link
+                            href="/id/forgot-password"
+                            className="text-caption text-gold-ink underline-offset-4 hover:underline"
+                        >
+                            Forgot password?
+                        </Link>
+                    }
+                />
+
                 <input type="hidden" name="redirectTo" value={callbackUrl} />
-                <div>
-                    <button
-                        type="submit"
-                        disabled={isPending}
-                        aria-disabled={isPending}
-                        className="mt-2 h-11 w-full rounded-lg bg-[#F2F3F4] font-semibold text-[#16191E] transition-colors hover:bg-[#9AA1AB] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#F2F3F4] disabled:opacity-50"
-                    >
-                        Sign In
-                    </button>
-                
+                {/* mt-1 + the form's 20px gap = 24px above the button. */}
+                <div className="mt-1">
+                    <SubmitButton pending={isPending} pendingLabel="Signing in…">
+                        Sign in
+                    </SubmitButton>
                 </div>
-                
             </Form>
 
-            {signupEnabled && (
-                <div className="mt-3">
-                    <p className="text-white"> Don&apos;t have an account? <Link href='/id/signup'>
-                    Create an Account
-                    </Link></p>
-                </div>
-            )}
+            <div className="mt-6 flex flex-col items-center gap-3 text-center">
+                {signupEnabled && (
+                    <p className="text-body-md text-stone">
+                        New to myCANN?{' '}
+                        <Link href="/id/signup" className="text-gold-ink underline underline-offset-4 transition-colors hover:text-charcoal">
+                            Create an account
+                        </Link>
+                    </p>
+                )}
+                <p className="max-w-75 text-caption text-stone">
+                    An account is required to place an order and complete checkout.
+                </p>
+            </div>
         </div>
     );
 }

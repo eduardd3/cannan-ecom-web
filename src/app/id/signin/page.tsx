@@ -4,8 +4,8 @@ import { Suspense } from 'react';
 import { isSignupEnabled } from "@/lib/flags";
 
 export const metadata: Metadata = {
-    title: "Log In | Cannan",
-    description: "Log In Page",
+    title: "Sign In | Cannan",
+    description: "Sign In Page",
     robots: { index: false },
 };
 
