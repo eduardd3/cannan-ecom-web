@@ -9,7 +9,7 @@ export function ConfirmReset({name} : ConfirmPasswordReset) {
         <div>
             <p>Hello{name ? ` ${name}` : ''},</p>
             <p>
-                Your MyCANN password was just reset, and you were signed out
+                Your myCANN password was just reset, and you were signed out
                 everywhere else.
             </p>
             <p>

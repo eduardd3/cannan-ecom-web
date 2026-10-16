@@ -10,14 +10,14 @@ export function VerifyAccount({name, url}: VerifyAccountProps) {
         <div>
             <p>Hello{name ? ` ${name}` : ''},</p>
             <p>
-                Let&apos;s finish creating your MyCANN account. Confirm your email
+                Let&apos;s finish creating your myCANN account. Confirm your email
                 address by clicking the link below. It expires in 24 hours.
             </p>
             <p>
                 <a href={url}>Confirm Email</a>
             </p>
             <p>
-                If you did not create a MyCANN account, your email address may have
+                If you did not create a myCANN account, your email address may have
                 been entered by mistake and you can safely disregard this email.
             </p>
             <p>

@@ -66,7 +66,7 @@ export function ConfirmButton({ token }: { token: string }) {
                 Confirm your email
             </h1>
             <p className="mt-4 text-sm text-[#9AA1AB]">
-                Click below to confirm this email address for your MyCANN account.
+                Click below to confirm this email address for your myCANN account.
             </p>
 
             <button

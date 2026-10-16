@@ -18,7 +18,7 @@ export function sendWelcomeEmail (user: {email: string; name: string | null}) {
 export async function sendPasswordResetEmail (user: {email: string; name: string | null}, url: string) { 
     return sendEmail({ 
         to: user.email, 
-        subject: 'Reset your MyCANN password',
+        subject: 'Reset your myCANN password',
         react: <PasswordReset name={user.name} email={user.email} url={url} />,
     })
 }
@@ -26,7 +26,7 @@ export async function sendPasswordResetEmail (user: {email: string; name: string
 export async function sendPasswordChangedEmail (user: {email: string; name: string | null}) { 
     return sendEmail({ 
         to: user.email,
-        subject: 'Your MyCANN password was reset',
+        subject: 'Your myCANN password was reset',
         react: <ConfirmReset name={user.name} />
     })
 }
@@ -34,7 +34,7 @@ export async function sendPasswordChangedEmail (user: {email: string; name: stri
 export async function sendVerificationEmail (user: {email: string; name: string | null}, url: string) { 
     return sendEmail({ 
         to: user.email,
-        subject: 'Confirm your MyCANN account',
+        subject: 'Confirm your myCANN account',
         react: <VerifyAccount name={user.name} url={url} />
     })
 }

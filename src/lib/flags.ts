@@ -1,8 +1,8 @@
 /**
  * Public customer registration.
  *
- * Closed until checkout exists: accounts created now cannot buy anything, and
- * there is no password reset or email verification to support them with.
+ * Off, /id/signup and POST /api/signup both 404, and the Join links on
+ * /myCANN and the sign-in form are hidden. Existing accounts can still sign in.
  *
  * Opt-in rather than opt-out, so an unset variable in any environment fails
  * closed. Set SIGNUP_ENABLED=true to reopen — on Vercel that needs a redeploy

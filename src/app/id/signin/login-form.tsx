@@ -22,7 +22,7 @@ export default function LoginForm({ signupEnabled }: { signupEnabled: boolean })
     return (
         <div className="w-full max-w-sm rounded-xl border border-[#2A2F36] bg-[#16191E] p-8 shadow-sm">
             <h1 className="text-center text-xl font-bold text-[#F2F3F4]">
-               MyCANN Portal
+               myCANN Portal
             </h1>
             {justReset && (
                 <p className="mt-4 text-center text-sm text-[#9AA1AB]">
