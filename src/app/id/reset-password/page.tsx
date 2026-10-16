@@ -1,5 +1,8 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
+import AuthHeading from '@/app/components/auth/auth-heading';
+import ButtonLink from '@/app/components/auth/button-link';
+import { textLinkClass } from '@/app/components/auth/styles';
 import { ResetForm } from './reset-form';
 
 export const metadata: Metadata = {
@@ -20,16 +23,17 @@ export default async function ResetPasswordPage({
     // page load a way to probe tokens.
     if (typeof token !== 'string' || token.length === 0) {
         return (
-            <div className="w-full max-w-sm rounded-xl border border-[#2A2F36] bg-[#16191E] p-8 shadow-sm">
-                <h1 className="text-center text-xl font-bold text-[#F2F3F4]">
-                    Link invalid or expired
-                </h1>
-                <p className="mt-4 text-sm text-[#9AA1AB]">
-                    This password reset link is invalid or has expired.
+            <div className="w-full max-w-100 text-center">
+                <AuthHeading eyebrow="Enlace no válido" title="Link invalid or expired" subtitle="Un espacio para ti" />
+                <p className="mx-auto mb-8 max-w-95 text-body-lg text-stone">
+                    This password reset link is invalid or has expired. Please request a new one to continue.
                 </p>
-                <p className="mt-4 text-white">
-                    <Link href="/id/forgot-password">Request a new link</Link>
-                </p>
+                <div className="flex flex-col items-center gap-3">
+                    <ButtonLink href="/id/forgot-password">Request a new link</ButtonLink>
+                    <Link href="/id/signin" className={`${textLinkClass} py-2 text-body-md`}>
+                        Back to sign in
+                    </Link>
+                </div>
             </div>
         );
     }

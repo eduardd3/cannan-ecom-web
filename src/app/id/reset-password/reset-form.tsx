@@ -1,13 +1,30 @@
 'use client'
-import { ExclamationCircleIcon } from '@heroicons/react/24/outline';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
+import { flushSync } from 'react-dom';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import AuthHeading from '@/app/components/auth/auth-heading';
+import AuthBanner from '@/app/components/auth/auth-banner';
+import PasswordField from '@/app/components/auth/password-field';
+import SubmitButton from '@/app/components/auth/submit-button';
+import { textLinkClass } from '@/app/components/auth/styles';
+
+//  One object, so the message and the request-a-new-link action are always cleared together.
+type ResetError = { message: string; invalidLink?: boolean };
+
+const FALLBACK_ERROR = 'Something went wrong. Please try again.';
+
+//  Must match INVALID_LINK in app/api/reset-password/route.ts. The API sends
+//  400 for this and for a short password, so the status alone can't tell them
+//  apart. If the wording drifts, the banner just loses its action link.
+const INVALID_LINK = 'This reset link is invalid or has expired.';
 
 export function ResetForm({ token }: { token: string }) {
     const router = useRouter();
-    const [errorMessage, setErrorMessage] = useState<string | undefined>();
+    const [error, setError] = useState<ResetError | undefined>();
+    const [mismatch, setMismatch] = useState(false);
     const [isPending, setIsPending] = useState(false);
+    const confirmRef = useRef<HTMLInputElement>(null);
 
     // Drop the token from the address bar and history once it's in memory.
     useEffect(() => {
@@ -16,12 +33,15 @@ export function ResetForm({ token }: { token: string }) {
 
     async function handleSubmit(event: React.SubmitEvent<HTMLFormElement>) {
         event.preventDefault();
-        setErrorMessage(undefined);
+        setError(undefined);
 
         const formData = new FormData(event.currentTarget);
         const password = formData.get('password');
         if (password !== formData.get('confirm')) {
-            setErrorMessage('Passwords do not match.');
+            //  Render the error before focusing, so the field is announced
+            //  with aria-invalid and its message already in place.
+            flushSync(() => setMismatch(true));
+            confirmRef.current?.focus();
             return;
         }
 
@@ -34,14 +54,25 @@ export function ResetForm({ token }: { token: string }) {
             });
 
             if (!response.ok) {
+                //  Keyed off the status, not the API's wording.
+                if (response.status === 429) {
+                    setError({ message: 'Too many requests. Please try again later.' });
+                    return;
+                }
                 const body = await response.json().catch(() => null);
-                setErrorMessage(body?.error ?? 'Something went wrong :(');
+                const message: string = body?.error ?? FALLBACK_ERROR;
+                if (response.status === 400 && message === INVALID_LINK) {
+                    setError({ message: INVALID_LINK, invalidLink: true });
+                    return;
+                }
+                //  The banner wants a final period; not every API message has one.
+                setError({ message: message.endsWith('.') ? message : `${message}.` });
                 return;
             }
 
             router.push('/id/signin?reset=1');
         } catch {
-            setErrorMessage('Something went wrong :(');
+            setError({ message: FALLBACK_ERROR });
         } finally {
             setIsPending(false);
         }
@@ -49,72 +80,60 @@ export function ResetForm({ token }: { token: string }) {
 
     //  The page shell (header, footer, centering) lives in app/id/layout.tsx — this is just the card.
     return (
-        <form
-            onSubmit={handleSubmit}
-            aria-label="reset password"
-            className="w-full max-w-sm"
-        >
-            <div className="w-full rounded-xl border border-[#2A2F36] bg-[#16191E] p-8 shadow-sm">
-                <h1 className="text-center text-xl font-bold text-[#F2F3F4]">
-                    Reset your password
-                </h1>
+        <div className="w-full max-w-100">
+            <AuthHeading eyebrow="Nueva contraseña" title="Reset password" subtitle="Para ti y los tuyos" />
 
-                <div className="mt-6 flex flex-col gap-4">
-                    <div className="flex flex-col gap-1.5">
-                        <label htmlFor="password" className="text-sm text-[#9AA1AB]">
-                            New password
-                        </label>
-                        <input
-                            id="password"
-                            type="password"
-                            name="password"
-                            autoComplete="new-password"
-                            required
-                            minLength={6}
-                            className="h-10 w-full rounded-md border border-[#2A2F36] bg-[#0F1114] px-3 text-[#F2F3F4] outline-none focus:border-[#9AA1AB] focus-visible:ring-2 focus-visible:ring-[#9AA1AB]"
-                        />
-                    </div>
-
-                    <div className="flex flex-col gap-1.5">
-                        <label htmlFor="confirm" className="text-sm text-[#9AA1AB]">
-                            Confirm new password
-                        </label>
-                        <input
-                            id="confirm"
-                            type="password"
-                            name="confirm"
-                            autoComplete="new-password"
-                            required
-                            minLength={6}
-                            className="h-10 w-full rounded-md border border-[#2A2F36] bg-[#0F1114] px-3 text-[#F2F3F4] outline-none focus:border-[#9AA1AB] focus-visible:ring-2 focus-visible:ring-[#9AA1AB]"
-                        />
-                    </div>
-
-                    <button
-                        type="submit"
-                        disabled={isPending}
-                        aria-disabled={isPending}
-                        className="mt-2 h-11 w-full rounded-lg bg-[#F2F3F4] font-semibold text-[#16191E] transition-colors hover:bg-[#9AA1AB] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#F2F3F4] disabled:opacity-50"
+            <form
+                onSubmit={handleSubmit}
+                aria-label="reset password"
+                className="flex flex-col gap-5"
+            >
+                {error && (
+                    <AuthBanner
+                        variant="error"
+                        action={error.invalidLink ? { href: '/id/forgot-password', label: 'Request a new link' } : undefined}
                     >
-                        Reset Password
-                    </button>
-                    <p className="text-white">
-                        <Link href="/id/forgot-password">Request a new link</Link>
-                    </p>
-                    <div
-                        className="flex h-8 items-end space-x-1"
-                        aria-live="polite"
-                        aria-atomic="true"
-                    >
-                    {errorMessage && (
-                    <>
-                        <ExclamationCircleIcon className="h-5 w-5 text-red-500" />
-                        <p className="text-sm text-red-500">{errorMessage}</p>
-                    </>
-                    )}
-                    </div>
+                        {error.message}
+                    </AuthBanner>
+                )}
+
+                <PasswordField
+                    id="password"
+                    label="New password"
+                    name="password"
+                    autoComplete="new-password"
+                    required
+                    minLength={6}
+                    helper="Must be at least 6 characters."
+                    onChange={() => setMismatch(false)}
+                />
+
+                {/* No minLength here: the browser's too-short prompt would fire
+                    before the mismatch check. The field above and the API enforce it. */}
+                <PasswordField
+                    ref={confirmRef}
+                    id="confirm"
+                    label="Confirm new password"
+                    name="confirm"
+                    autoComplete="new-password"
+                    required
+                    error={mismatch ? "Passwords don't match." : undefined}
+                    onChange={() => setMismatch(false)}
+                />
+
+                {/* mt-1 + the form's 20px gap = 24px above the button. */}
+                <div className="mt-1">
+                    <SubmitButton pending={isPending} pendingLabel="Updating…">
+                        Update password
+                    </SubmitButton>
                 </div>
-            </div>
-        </form>
+            </form>
+
+            <p className="mt-6 text-center text-body-md">
+                <Link href="/id/signin" className={textLinkClass}>
+                    Back to sign in
+                </Link>
+            </p>
+        </div>
     );
 }
