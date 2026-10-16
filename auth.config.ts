@@ -36,6 +36,10 @@ export const authConfig = {
           return true;
         }
 
+        // The sign-in / join splash is only for signed-out visitors.
+        if (pathname === "/myCANN" && user) {
+          return Response.redirect(new URL("/myCANN/dashboard", nextUrl));
+        }
         if (pathname.startsWith("/myCANN/dashboard")) return !!user;
         if (pathname.startsWith("/purchases")) return !!user;
         // Checkout requires an account; false sends the visitor to pages.signIn.
