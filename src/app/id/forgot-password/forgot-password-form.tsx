@@ -7,7 +7,7 @@ import AuthBanner from '@/app/components/auth/auth-banner';
 import TextField from '@/app/components/auth/text-field';
 import SubmitButton from '@/app/components/auth/submit-button';
 import ButtonLink from '@/app/components/auth/button-link';
-import { textLinkClass } from '@/app/components/auth/styles';
+import { stateBodyClass, textLinkClass } from '@/app/components/auth/styles';
 
 const FALLBACK_ERROR = 'Something went wrong. Please try again.';
 
@@ -73,7 +73,7 @@ export default function ForgotPasswordForm() {
                     subtitle="Un espacio para ti"
                     titleRef={sentHeadingRef}
                 />
-                <p className="mx-auto mb-8 max-w-95 text-body-lg text-stone">
+                <p className={stateBodyClass}>
                     If an account exists for that email, we&apos;ve sent a link to reset
                     your password. The link expires in 1 hour.
                 </p>

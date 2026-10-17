@@ -2,7 +2,7 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import AuthHeading from '@/app/components/auth/auth-heading';
 import ButtonLink from '@/app/components/auth/button-link';
-import { textLinkClass } from '@/app/components/auth/styles';
+import { stateBodyClass, textLinkClass } from '@/app/components/auth/styles';
 import { ResetForm } from './reset-form';
 
 export const metadata: Metadata = {
@@ -25,7 +25,7 @@ export default async function ResetPasswordPage({
         return (
             <div className="w-full max-w-100 text-center">
                 <AuthHeading eyebrow="Enlace no válido" title="Link invalid or expired" subtitle="Un espacio para ti" />
-                <p className="mx-auto mb-8 max-w-95 text-body-lg text-stone">
+                <p className={stateBodyClass}>
                     This password reset link is invalid or has expired. Please request a new one to continue.
                 </p>
                 <div className="flex flex-col items-center gap-3">
