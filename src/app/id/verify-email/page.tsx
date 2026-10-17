@@ -1,5 +1,10 @@
 import type { Metadata } from 'next';
+import Link from 'next/link';
+import AuthHeading from '@/app/components/auth/auth-heading';
+import ButtonLink from '@/app/components/auth/button-link';
+import { stateBodyClass, textLinkClass } from '@/app/components/auth/styles';
 import { ResendButton } from '@/app/components/resend-button';
+import { getCurrentUserId } from '@/lib/cart/session';
 import { ConfirmButton } from './confirm-button';
 
 export const metadata: Metadata = {
@@ -15,24 +20,39 @@ export default async function VerifyEmailPage({
     searchParams: Promise<{ token?: string | string[] }>;
 }) {
     const { token } = await searchParams;
+    // Session only, never the token: picks which next step to offer.
+    const isSignedIn = (await getCurrentUserId()) !== null;
 
     // The token is only checked on confirm. Validating it here would make a
     // page load a way to probe tokens.
     if (typeof token !== 'string' || token.length === 0) {
         return (
-            <div className="w-full max-w-sm rounded-xl border border-[#2A2F36] bg-[#16191E] p-8 shadow-sm">
-                <h1 className="text-center text-xl font-bold text-[#F2F3F4]">
-                    Link invalid or expired
-                </h1>
-                <p className="mt-4 text-sm text-[#9AA1AB]">
-                    This confirmation link is invalid or has expired.
-                </p>
-                <p className="mt-4 text-sm text-[#9AA1AB]">
-                    <ResendButton />
-                </p>
+            <div className="w-full max-w-100 text-center">
+                <AuthHeading eyebrow="Enlace no válido" title="Link invalid or expired" subtitle="Un espacio para ti" />
+                <p className={stateBodyClass}>This confirmation link is invalid or has expired.</p>
+                <div className="flex flex-col items-center gap-3">
+                    {isSignedIn ? (
+                        <>
+                            {/* TODO(step 3): replace with the secondary "Send a new link" button. */}
+                            <p className="text-body-md">
+                                <ResendButton />
+                            </p>
+                            <Link href="/products" className={`${textLinkClass} py-2 text-body-md`}>
+                                Continue shopping
+                            </Link>
+                        </>
+                    ) : (
+                        <>
+                            <ButtonLink href="/id/signin">Sign in to get a new link</ButtonLink>
+                            <Link href="/id/signin" className={`${textLinkClass} py-2 text-body-md`}>
+                                Back to sign in
+                            </Link>
+                        </>
+                    )}
+                </div>
             </div>
         );
     }
 
-    return <ConfirmButton token={token} />;
+    return <ConfirmButton token={token} isSignedIn={isSignedIn} />;
 }
