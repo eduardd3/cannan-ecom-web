@@ -3,14 +3,14 @@ import type { ReactNode, Ref } from "react";
 
 //  A link navigates; a button triggers a request (e.g. resending a link), so it
 //  gets its own disabled state while that request is in flight.
-type BannerAction =
+export type AuthBannerAction =
   | { label: string; href: string }
   | { label: string; onClick: () => void; disabled?: boolean };
 
 type AuthBannerProps = {
   variant: "success" | "error";
   children: ReactNode;
-  action?: BannerAction;
+  action?: AuthBannerAction;
   //  Lets a form move focus to the banner when it appears, so keyboard users
   //  land next to its action. Makes it programmatically focusable only.
   bannerRef?: Ref<HTMLDivElement>;

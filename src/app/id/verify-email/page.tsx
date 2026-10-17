@@ -3,9 +3,9 @@ import Link from 'next/link';
 import AuthHeading from '@/app/components/auth/auth-heading';
 import ButtonLink from '@/app/components/auth/button-link';
 import { stateBodyClass, textLinkClass } from '@/app/components/auth/styles';
-import { ResendButton } from '@/app/components/resend-button';
 import { getCurrentUserId } from '@/lib/cart/session';
 import { ConfirmButton } from './confirm-button';
+import { ResendLink } from './resend-link';
 
 export const metadata: Metadata = {
     title: "Confirm Email | Cannan",
@@ -33,10 +33,7 @@ export default async function VerifyEmailPage({
                 <div className="flex flex-col items-center gap-3">
                     {isSignedIn ? (
                         <>
-                            {/* TODO(step 3): replace with the secondary "Send a new link" button. */}
-                            <p className="text-body-md">
-                                <ResendButton />
-                            </p>
+                            <ResendLink />
                             <Link href="/products" className={`${textLinkClass} py-2 text-body-md`}>
                                 Continue shopping
                             </Link>

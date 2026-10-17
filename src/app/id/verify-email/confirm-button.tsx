@@ -7,7 +7,8 @@ import AuthBanner from '@/app/components/auth/auth-banner';
 import SubmitButton from '@/app/components/auth/submit-button';
 import ButtonLink from '@/app/components/auth/button-link';
 import { stateBodyClass, textLinkClass } from '@/app/components/auth/styles';
-import { ResendButton } from '@/app/components/resend-button';
+import { useResendVerification } from '@/app/components/use-resend-verification';
+import { resendBanner } from './resend-link';
 
 const FALLBACK_ERROR = 'Something went wrong. Please try again.';
 
@@ -22,6 +23,7 @@ export function ConfirmButton({ token, isSignedIn }: { token: string; isSignedIn
     const [errorMessage, setErrorMessage] = useState<string | undefined>();
     const confirmedHeadingRef = useRef<HTMLHeadingElement>(null);
     const bannerRef = useRef<HTMLDivElement>(null);
+    const { resend, sending, result: resendResult } = useResendVerification();
 
     // Drop the token from the address bar and history once it's in memory.
     useEffect(() => {
@@ -94,6 +96,28 @@ export function ConfirmButton({ token, isSignedIn }: { token: string; isSignedIn
 
     const isInvalid = status === 'invalid';
 
+    //  The resend lives in the banner itself: the confirm button is gone by
+    //  the time it's offered. Its result takes over the same banner slot.
+    async function handleResend() {
+        await resend();
+        bannerRef.current?.focus();
+    }
+
+    //  'resend' is built in the JSX below: its handler reads a ref, so it
+    //  can't live in a value computed during render.
+    type BannerAction = { label: string; href: string } | 'resend';
+    let banner: { variant: 'success' | 'error'; text: string; action?: BannerAction } | null = null;
+    if (resendResult) {
+        const { variant, text, action, retryable } = resendBanner(resendResult);
+        banner = { variant, text, action: action ?? (retryable ? 'resend' : undefined) };
+    } else if (errorMessage) {
+        let action: BannerAction | undefined;
+        if (isInvalid) {
+            action = isSignedIn ? 'resend' : { label: 'Sign in to get a new link', href: '/id/signin' };
+        }
+        banner = { variant: 'error', text: errorMessage, action };
+    }
+
     return (
         <div className="w-full max-w-100 text-center">
             <AuthHeading eyebrow="Confirma tu correo" title="Confirm your email" subtitle="Un espacio para ti" />
@@ -102,25 +126,22 @@ export function ConfirmButton({ token, isSignedIn }: { token: string; isSignedIn
             </p>
 
             <form onSubmit={handleConfirm} aria-label="confirm email" className="flex flex-col gap-5">
-                {errorMessage && (
+                {banner && (
                     <AuthBanner
-                        variant="error"
+                        variant={banner.variant}
                         bannerRef={bannerRef}
                         action={
-                            isInvalid && !isSignedIn
-                                ? { label: 'Sign in to get a new link', href: '/id/signin' }
-                                : undefined
+                            banner.action === 'resend'
+                                ? {
+                                      label: sending ? 'Sending…' : 'Send a new link',
+                                      onClick: handleResend,
+                                      disabled: sending,
+                                  }
+                                : banner.action
                         }
                     >
-                        {errorMessage}
+                        {banner.text}
                     </AuthBanner>
-                )}
-
-                {/* TODO(step 3): replace with the banner's "Send a new link" action. */}
-                {isInvalid && isSignedIn && (
-                    <p className="text-body-md">
-                        <ResendButton />
-                    </p>
                 )}
 
                 {!isInvalid && (
