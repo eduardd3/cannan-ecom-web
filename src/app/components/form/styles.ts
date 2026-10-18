@@ -2,10 +2,13 @@
 
 export type ButtonVariant = "primary" | "secondary";
 
-//  Size, type, focus ring and disabled state common to every form button. The
-//  disabled: classes are inert on a link.
-const buttonBaseClass =
-  "flex h-12 w-full cursor-pointer items-center justify-center rounded-[2px] text-label-ui transition-colors focus:outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-antique-gold disabled:pointer-events-none disabled:opacity-75";
+//  Size, type and focus ring common to every full-width button.
+const buttonShapeClass =
+  "flex h-12 w-full items-center justify-center rounded-[2px] text-label-ui transition-colors focus:outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-antique-gold";
+
+//  Plus the pointer and the pending (disabled) state for the usable buttons.
+//  The disabled: classes are inert on a link.
+const buttonBaseClass = `${buttonShapeClass} cursor-pointer disabled:pointer-events-none disabled:opacity-75`;
 
 //  Primary: charcoal fill. Secondary: 1px charcoal outline, no fill; border-box
 //  keeps it the same 48px as primary.
@@ -19,6 +22,12 @@ const buttonVariantClass = {
 export function buttonClass(variant: ButtonVariant = "primary") {
   return `${buttonBaseClass} ${buttonVariantClass[variant]}`;
 }
+
+//  A full-width button that can't be used right now (cart Checkout while the
+//  cart has issues or checkout is closed). Hairline fill and stone text, so it
+//  reads as off, not as pending; put it on a disabled <button>. Built on the
+//  shape only, so no opacity dims the stone text further.
+export const disabledButtonClass = `${buttonShapeClass} bg-hairline text-stone`;
 
 //  Underlined gold-ink link below the forms. No font size: it inherits the
 //  surrounding text. Works on a <Link> or a <button type="button">.

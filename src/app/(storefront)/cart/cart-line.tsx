@@ -4,109 +4,136 @@ import Image from "next/image";
 import Link from "next/link";
 import { useState, useTransition } from "react";
 
+import FinalSaleLabel from "@/app/components/final-sale-label";
+import QuantitySelect from "@/app/components/form/quantity-select";
 import { removeCartItem, updateCartItemQuantity } from "@/lib/cart/actions";
 import { formatCents } from "@/lib/cart/format";
 import { MAX_QTY_PER_LINE } from "@/lib/cart/schemas";
 import type { CartLineView } from "@/lib/cart/types";
 
+type CartLineProps = {
+    line: CartLineView;
+    //  isCatalogEnabled(), from the server page: product pages 404 while the
+    //  catalog is closed, so the name only links when it's open.
+    catalogEnabled: boolean;
+    //  Shows FinalSaleLabel under the price.
+    //  TODO: pass this once products have a final-sale field in the schema.
+    finalSale?: boolean;
+    //  Called after each action with whether it capped the quantity, so
+    //  CartLines can show or clear the banner above the list.
+    onCapped: (capped: boolean) => void;
+};
+
 //  The actions revalidate the layout, so a successful change re-renders the
-//  server page with fresh lines and totals (and the header badge). This component only tracks the
-//  pending state and the message from the last action.
-export default function CartLine({ line }: { line: CartLineView }) {
+//  server page with fresh lines and totals (and the header badge). This
+//  component only tracks the pending state and a failed action's message.
+export default function CartLine({ line, catalogEnabled, finalSale, onCapped }: CartLineProps) {
     const [pending, startTransition] = useTransition();
     const [message, setMessage] = useState<string | null>(null);
 
     const unavailable = line.availability === "unavailable";
     const maxQty = Math.max(1, Math.min(line.stock, MAX_QTY_PER_LINE));
-    const productHref = `/products/${line.productSlug}`;
+    const productHref = line.productActive && catalogEnabled ? `/products/${line.productSlug}` : null;
+    //  Dims the image, name and prices of an unavailable line; Remove stays
+    //  at full strength so the way out is obvious.
+    const dim = unavailable ? "opacity-60" : "";
 
     function setQuantity(quantity: number) {
         startTransition(async () => {
             const result = await updateCartItemQuantity({ itemId: line.itemId, quantity });
-            setMessage(result.ok ? (result.notice ?? null) : result.message);
+            setMessage(result.ok ? null : result.message);
+            onCapped(result.ok && result.notice !== undefined);
         });
     }
 
     function remove() {
         startTransition(async () => {
             const result = await removeCartItem({ itemId: line.itemId });
-            if (!result.ok) setMessage(result.message);
+            if (result.ok) onCapped(false);
+            else setMessage(result.message);
         });
     }
 
-    return (
-        <li className={`flex gap-4 py-6 ${pending ? "opacity-60" : ""}`}>
-            {/* Links 404 for a line whose product went draft/archived; it's
-                already marked unavailable below, so that's accurate. */}
-            <Link href={productHref} className="relative h-24 w-24 shrink-0 overflow-hidden rounded bg-white">
-                {line.imageUrl && (
-                    <Image
-                        src={line.imageUrl}
-                        alt={line.imageAlt ?? line.productName}
-                        fill
-                        sizes="96px"
-                        className="object-contain"
-                    />
-                )}
-            </Link>
+    const image = line.imageUrl && (
+        <Image
+            src={line.imageUrl}
+            alt={line.imageAlt ?? line.productName}
+            fill
+            sizes="(min-width: 640px) 112px, 96px"
+            className="object-contain"
+        />
+    );
+    const imageBoxClass = `relative size-24 shrink-0 overflow-hidden bg-white sm:size-28 ${dim}`;
 
-            <div className="flex flex-1 flex-col gap-1">
-                <div className="flex justify-between gap-4">
-                    <div>
-                        <Link href={productHref} className="font-medium underline-offset-2 hover:underline">
-                            {line.productName}
-                        </Link>
+    return (
+        <li aria-busy={pending} className={`flex gap-4 py-6 first:pt-0 sm:gap-6 ${pending ? "opacity-60" : ""}`}>
+            {/* The name links too, so the image link is skipped by the
+                keyboard and screen readers instead of being read twice. */}
+            {productHref ? (
+                <Link href={productHref} tabIndex={-1} aria-hidden="true" className={imageBoxClass}>
+                    {image}
+                </Link>
+            ) : (
+                <div className={imageBoxClass}>{image}</div>
+            )}
+
+            <div className="flex min-w-0 flex-1 flex-col">
+                <div className={`flex justify-between gap-4 ${dim}`}>
+                    <div className="min-w-0">
+                        <h2 className="font-serif text-title-md text-charcoal">
+                            {productHref ? (
+                                <Link href={productHref} className="underline-offset-4 hover:underline">
+                                    {line.productName}
+                                </Link>
+                            ) : (
+                                line.productName
+                            )}
+                        </h2>
                         {line.variantLabel && (
-                            <p className="text-sm text-neutral-600">{line.variantLabel}</p>
+                            <p className="mt-1 text-caption text-stone">{line.variantLabel}</p>
                         )}
-                        <p className="text-sm text-neutral-600">{formatCents(line.unitPriceCents)} each</p>
+                        <p className="mt-0.5 text-caption text-stone">{formatCents(line.unitPriceCents)} each</p>
+                        {finalSale && (
+                            <div className="mt-1.5">
+                                <FinalSaleLabel />
+                            </div>
+                        )}
                     </div>
-                    <p className="font-medium">{formatCents(line.lineTotalCents)}</p>
+                    <p className="shrink-0 text-body-md font-medium text-charcoal">
+                        {formatCents(line.lineTotalCents)}
+                    </p>
                 </div>
 
-                {line.availability === "limited" && (
-                    <p className="text-sm text-amber-700">
-                        Only {line.stock} left. Lower the quantity to check out.
-                    </p>
-                )}
-                {unavailable && (
-                    <p className="text-sm text-red-700">
-                        No longer available. Remove it to check out.
-                    </p>
-                )}
-
-                <div className="mt-2 flex items-center gap-4">
-                    {!unavailable && (
-                        <label className="flex items-center gap-2 text-sm">
-                            Qty
-                            <select
-                                value={line.quantity}
-                                disabled={pending}
-                                onChange={(e) => setQuantity(Number(e.target.value))}
-                                className="rounded border px-2 py-1"
-                            >
-                                {/* Keep the current quantity selectable even when it's
-                                    over stock ("limited"), so the select shows the truth. */}
-                                {Array.from({ length: Math.max(maxQty, line.quantity) }, (_, i) => i + 1).map((n) => (
-                                    <option key={n} value={n} disabled={n > maxQty}>
-                                        {n}
-                                    </option>
-                                ))}
-                            </select>
-                        </label>
-                    )}
+                <div className="mt-4 flex items-center gap-5">
+                    <QuantitySelect
+                        value={line.quantity}
+                        max={maxQty}
+                        label={`Quantity for ${line.productName}`}
+                        onChange={setQuantity}
+                        disabled={pending || unavailable}
+                    />
                     <button
                         type="button"
                         onClick={remove}
                         disabled={pending}
-                        className="cursor-pointer text-sm underline-offset-2 hover:underline disabled:cursor-default"
+                        className="cursor-pointer text-label-ui text-stone underline underline-offset-4 transition-colors hover:text-charcoal disabled:cursor-default"
                     >
                         Remove
                     </button>
                 </div>
 
+                {line.availability === "limited" && (
+                    <p className="mt-3 text-caption text-error-ink">
+                        Only {line.stock} available. Lower the quantity to continue.
+                    </p>
+                )}
+                {unavailable && (
+                    <p className="mt-3 text-caption text-error-ink">
+                        No longer available. Remove it to continue.
+                    </p>
+                )}
                 {message && (
-                    <p role="status" className="text-sm text-neutral-700">
+                    <p role="status" className="mt-3 text-caption text-error-ink">
                         {message}
                     </p>
                 )}

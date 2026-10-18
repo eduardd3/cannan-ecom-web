@@ -104,13 +104,15 @@ function toCartLineView(item: CartItemWithDetails): CartLineView {
   const { variant } = item;
   const { product } = variant;
   const image = variant.images[0] ?? product.images[0] ?? null;
-  const purchasable = product.status === "ACTIVE" && variant.isActive;
+  const productActive = product.status === "ACTIVE";
+  const purchasable = productActive && variant.isActive;
 
   return {
     itemId: item.id,
     variantId: variant.id,
     productName: product.name,
     productSlug: product.slug,
+    productActive,
     variantLabel: formatVariantLabel(variant.name, variant.value),
     imageUrl: image ? getImageUrl(image.key) : null,
     imageAlt: image?.alt ?? null,

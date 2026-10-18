@@ -6,7 +6,7 @@ type StateBlockProps = {
   body: string;
   //  The actions, e.g. a ButtonLink and a text link. They stack in a column
   //  capped at 320px, so a full-width ButtonLink doesn't span the page.
-  children: ReactNode;
+  children?: ReactNode;
 };
 
 //  Centered heading, body and actions for a page's empty or signed-out state
@@ -17,7 +17,7 @@ export default function StateBlock({ title, body, children }: StateBlockProps) {
     <div className="flex flex-col items-center py-16 text-center">
       <h2 className="mb-3 font-serif text-headline-md font-normal text-charcoal">{title}</h2>
       <p className={stateBodyClass}>{body}</p>
-      <div className="flex w-full max-w-80 flex-col items-center gap-3">{children}</div>
+      {children && <div className="flex w-full max-w-80 flex-col items-center gap-3">{children}</div>}
     </div>
   );
 }
