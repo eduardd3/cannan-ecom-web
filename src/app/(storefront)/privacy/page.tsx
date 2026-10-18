@@ -5,7 +5,7 @@ import type { PolicySection } from "@/app/components/policy/types";
 import { SUPPORT_EMAIL, SUPPORT_MAILTO } from "@/lib/contact";
 
 export const metadata: Metadata = {
-  title: "Privacy | CANNAN",
+  title: "Privacy | Cannan",
   description: "What information Cannan collects, why, and how to control it.",
   alternates: { canonical: "/privacy" },
 };
@@ -31,10 +31,10 @@ const sections: PolicySection[] = [
         </li>
         <li>
           <strong>Technical information:</strong> your IP address, which is used
-          briefly to protect sign-in and account forms from abuse.
+          briefly to protect sign-in, account, and contact forms from abuse.
         </li>
         <li>
-          <strong>Messages:</strong> anything you send us by email.
+          <strong>Messages:</strong> anything you send us by email or through our contact form.
         </li>
       </ul>
     ),
@@ -145,7 +145,7 @@ export default function Privacy() {
     <PolicyTemplate
       eyebrow="Legal"
       title="Privacy Policy"
-      updated="October 8, 2026"
+      updated="October 17, 2026"
       lead={
         <p>
           This policy explains what information CANNAN LLC (&quot;Cannan,&quot;
