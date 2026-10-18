@@ -1,6 +1,17 @@
 import { describe, expect, it } from "vitest";
 
-import { parseOrderId } from "./format";
+import { formatOrderDay, parseOrderId } from "./format";
+
+describe("formatOrderDay", () => {
+  it("shows the shop's date with no leading zero or time", () => {
+    expect(formatOrderDay(new Date("2026-10-02T19:00:00Z"))).toBe("Oct 2, 2026");
+  });
+
+  it("uses the shop's time zone, not UTC", () => {
+    // 2026-10-03 03:00 UTC is still Oct 2 in Los Angeles.
+    expect(formatOrderDay(new Date("2026-10-03T03:00:00Z"))).toBe("Oct 2, 2026");
+  });
+});
 
 describe("parseOrderId", () => {
   it("accepts a positive Int4", () => {

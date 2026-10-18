@@ -39,6 +39,16 @@ export function formatOrderDate(date: Date): string {
   return dateTime.format(date);
 }
 
+const day = new Intl.DateTimeFormat("en-US", {
+  dateStyle: "medium",
+  timeZone: "America/Los_Angeles",
+});
+
+/** The date only, e.g. "Oct 2, 2026", for the customer's order pages. */
+export function formatOrderDay(date: Date): string {
+  return day.format(date);
+}
+
 // Written by fulfill.ts: Stripe's address plus the recipient's name.
 type ShippingAddress = {
   name?: string | null;
