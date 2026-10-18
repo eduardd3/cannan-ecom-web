@@ -4,12 +4,12 @@ import { useActionState } from 'react';
 import {authCustomer} from '../../actions';
 import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
-import AuthHeading from '@/app/components/auth/auth-heading';
-import AuthBanner from '@/app/components/auth/auth-banner';
-import TextField from '@/app/components/auth/text-field';
-import PasswordField from '@/app/components/auth/password-field';
-import SubmitButton from '@/app/components/auth/submit-button';
-import { textLinkClass } from '@/app/components/auth/styles';
+import PageHeading from '@/app/components/page-heading';
+import FormBanner from '@/app/components/form/form-banner';
+import TextField from '@/app/components/form/text-field';
+import PasswordField from '@/app/components/form/password-field';
+import SubmitButton from '@/app/components/form/submit-button';
+import { textLinkClass } from '@/app/components/form/styles';
 
 
 // signupEnabled arrives as a prop because SIGNUP_ENABLED is server-only and
@@ -30,7 +30,7 @@ export default function LoginForm({ signupEnabled }: { signupEnabled: boolean })
     //  The page shell (header, footer, centering) lives in app/id/layout.tsx — this is just the card.
     return (
         <div className="w-full max-w-100">
-            <AuthHeading eyebrow="Bienvenidos" title="Sign in to myCANN" subtitle="Un espacio para ti" />
+            <PageHeading eyebrow="Bienvenidos" title="Sign in to myCANN" subtitle="Un espacio para ti" />
 
             <Form   //  Client action
                 action={formAction}
@@ -40,18 +40,18 @@ export default function LoginForm({ signupEnabled }: { signupEnabled: boolean })
                 {/* A failed attempt replaces the success notices: both at once
                     would read as contradictory. */}
                 {errorText ? (
-                    <AuthBanner variant="error">{errorText}</AuthBanner>
+                    <FormBanner variant="error">{errorText}</FormBanner>
                 ) : (
                     <>
                         {justSignedUp && (
-                            <AuthBanner variant="success">
+                            <FormBanner variant="success">
                                 Account created. Check your email to verify your account.
-                            </AuthBanner>
+                            </FormBanner>
                         )}
                         {justReset && (
-                            <AuthBanner variant="success">
+                            <FormBanner variant="success">
                                 Your password was reset. Sign in with your new password.
-                            </AuthBanner>
+                            </FormBanner>
                         )}
                     </>
                 )}

@@ -2,12 +2,12 @@
 import { useRef, useState } from 'react';
 import { flushSync } from 'react-dom';
 import Link from 'next/link';
-import AuthHeading from '@/app/components/auth/auth-heading';
-import AuthBanner from '@/app/components/auth/auth-banner';
-import TextField from '@/app/components/auth/text-field';
-import SubmitButton from '@/app/components/auth/submit-button';
-import ButtonLink from '@/app/components/auth/button-link';
-import { stateBodyClass, textLinkClass } from '@/app/components/auth/styles';
+import PageHeading from '@/app/components/page-heading';
+import FormBanner from '@/app/components/form/form-banner';
+import TextField from '@/app/components/form/text-field';
+import SubmitButton from '@/app/components/form/submit-button';
+import ButtonLink from '@/app/components/form/button-link';
+import { stateBodyClass, textLinkClass } from '@/app/components/form/styles';
 
 const FALLBACK_ERROR = 'Something went wrong. Please try again.';
 
@@ -67,7 +67,7 @@ export default function ForgotPasswordForm() {
         //  Same message whether or not the account exists, and never the address.
         return (
             <div className="w-full max-w-100 text-center">
-                <AuthHeading
+                <PageHeading
                     eyebrow="Correo enviado"
                     title="Check your email"
                     subtitle="Un espacio para ti"
@@ -93,14 +93,14 @@ export default function ForgotPasswordForm() {
 
     return (
         <div className="w-full max-w-100">
-            <AuthHeading eyebrow="Recuperar contraseña" title="Forgot password" subtitle="Para ti y los tuyos" />
+            <PageHeading eyebrow="Recuperar contraseña" title="Forgot password" subtitle="Para ti y los tuyos" />
 
             <form
                 onSubmit={handleSubmit}
                 aria-label="forgot password"
                 className="flex flex-col gap-5"
             >
-                {errorMessage && <AuthBanner variant="error">{errorMessage}</AuthBanner>}
+                {errorMessage && <FormBanner variant="error">{errorMessage}</FormBanner>}
 
                 <TextField
                     ref={emailRef}

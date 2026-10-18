@@ -1,8 +1,8 @@
-//  Class strings shared by more than one /id element, so the variants can't drift.
+//  Class strings shared by the form components, so the variants can't drift.
 
 export type ButtonVariant = "primary" | "secondary";
 
-//  Size, type, focus ring and disabled state common to every /id button. The
+//  Size, type, focus ring and disabled state common to every form button. The
 //  disabled: classes are inert on a link.
 const buttonBaseClass =
   "flex h-12 w-full cursor-pointer items-center justify-center rounded-[2px] text-label-ui transition-colors focus:outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-antique-gold disabled:pointer-events-none disabled:opacity-75";

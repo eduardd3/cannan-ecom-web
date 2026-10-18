@@ -1,7 +1,7 @@
 'use client'
 import { useRef } from 'react';
-import AuthBanner from '@/app/components/auth/auth-banner';
-import { buttonClass } from '@/app/components/auth/styles';
+import FormBanner from '@/app/components/form/form-banner';
+import { buttonClass } from '@/app/components/form/styles';
 import { useResendVerification, type ResendResult } from '@/app/components/use-resend-verification';
 
 type ResendBanner = {
@@ -57,9 +57,9 @@ export function ResendLink() {
     return (
         <div className="flex w-full flex-col gap-5">
             {banner && (
-                <AuthBanner variant={banner.variant} action={banner.action} bannerRef={bannerRef}>
+                <FormBanner variant={banner.variant} action={banner.action} bannerRef={bannerRef}>
                     {banner.text}
-                </AuthBanner>
+                </FormBanner>
             )}
             <button
                 type="button"

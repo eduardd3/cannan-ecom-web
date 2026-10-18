@@ -1,8 +1,8 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
-import AuthHeading from '@/app/components/auth/auth-heading';
-import ButtonLink from '@/app/components/auth/button-link';
-import { stateBodyClass, textLinkClass } from '@/app/components/auth/styles';
+import PageHeading from '@/app/components/page-heading';
+import ButtonLink from '@/app/components/form/button-link';
+import { stateBodyClass, textLinkClass } from '@/app/components/form/styles';
 import { getCurrentUserId } from '@/lib/cart/session';
 import { ConfirmButton } from './confirm-button';
 import { ResendLink } from './resend-link';
@@ -28,7 +28,7 @@ export default async function VerifyEmailPage({
     if (typeof token !== 'string' || token.length === 0) {
         return (
             <div className="w-full max-w-100 text-center">
-                <AuthHeading eyebrow="Enlace no válido" title="Link invalid or expired" subtitle="Un espacio para ti" />
+                <PageHeading eyebrow="Enlace no válido" title="Link invalid or expired" subtitle="Un espacio para ti" />
                 <p className={stateBodyClass}>This confirmation link is invalid or has expired.</p>
                 <div className="flex flex-col items-center gap-3">
                     {isSignedIn ? (

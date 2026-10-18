@@ -2,12 +2,12 @@
 import { useState} from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link'
-import AuthHeading from '@/app/components/auth/auth-heading';
-import AuthBanner from '@/app/components/auth/auth-banner';
-import TextField from '@/app/components/auth/text-field';
-import PasswordField from '@/app/components/auth/password-field';
-import SubmitButton from '@/app/components/auth/submit-button';
-import { textLinkClass } from '@/app/components/auth/styles';
+import PageHeading from '@/app/components/page-heading';
+import FormBanner from '@/app/components/form/form-banner';
+import TextField from '@/app/components/form/text-field';
+import PasswordField from '@/app/components/form/password-field';
+import SubmitButton from '@/app/components/form/submit-button';
+import { textLinkClass } from '@/app/components/form/styles';
 
 //  One object, so the message and the sign-in action are always cleared together.
 type SignupError = { message: string; emailInUse?: boolean };
@@ -60,7 +60,7 @@ export default function SignupForm() {
     //  The page shell (header, footer, centering) lives in app/id/layout.tsx — this is just the card.
     return (
         <div className="w-full max-w-100">
-            <AuthHeading eyebrow="Bienvenido a myCANN" title="Create an account" subtitle="Para ti y los tuyos" />
+            <PageHeading eyebrow="Bienvenido a myCANN" title="Create an account" subtitle="Para ti y los tuyos" />
 
             <form
                 onSubmit={handleSubmit}
@@ -68,12 +68,12 @@ export default function SignupForm() {
                 className="flex flex-col gap-5"
             >
                 {error && (
-                    <AuthBanner
+                    <FormBanner
                         variant="error"
                         action={error.emailInUse ? { href: '/id/signin', label: 'Sign in instead' } : undefined}
                     >
                         {error.message}
-                    </AuthBanner>
+                    </FormBanner>
                 )}
 
                 <TextField

@@ -3,11 +3,11 @@ import { useEffect, useRef, useState } from 'react';
 import { flushSync } from 'react-dom';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import AuthHeading from '@/app/components/auth/auth-heading';
-import AuthBanner from '@/app/components/auth/auth-banner';
-import PasswordField from '@/app/components/auth/password-field';
-import SubmitButton from '@/app/components/auth/submit-button';
-import { textLinkClass } from '@/app/components/auth/styles';
+import PageHeading from '@/app/components/page-heading';
+import FormBanner from '@/app/components/form/form-banner';
+import PasswordField from '@/app/components/form/password-field';
+import SubmitButton from '@/app/components/form/submit-button';
+import { textLinkClass } from '@/app/components/form/styles';
 
 //  One object, so the message and the request-a-new-link action are always cleared together.
 type ResetError = { message: string; invalidLink?: boolean };
@@ -81,7 +81,7 @@ export function ResetForm({ token }: { token: string }) {
     //  The page shell (header, footer, centering) lives in app/id/layout.tsx — this is just the card.
     return (
         <div className="w-full max-w-100">
-            <AuthHeading eyebrow="Nueva contraseña" title="Reset password" subtitle="Para ti y los tuyos" />
+            <PageHeading eyebrow="Nueva contraseña" title="Reset password" subtitle="Para ti y los tuyos" />
 
             <form
                 onSubmit={handleSubmit}
@@ -89,12 +89,12 @@ export function ResetForm({ token }: { token: string }) {
                 className="flex flex-col gap-5"
             >
                 {error && (
-                    <AuthBanner
+                    <FormBanner
                         variant="error"
                         action={error.invalidLink ? { href: '/id/forgot-password', label: 'Request a new link' } : undefined}
                     >
                         {error.message}
-                    </AuthBanner>
+                    </FormBanner>
                 )}
 
                 <PasswordField

@@ -8,7 +8,7 @@ type ButtonLinkProps = {
   children: ReactNode;
 };
 
-//  A link that looks like SubmitButton, for the /id state screens
+//  A link that looks like SubmitButton, for the form state screens
 //  ("Back to sign in", "Request a new link").
 export default function ButtonLink({ href, variant, children }: ButtonLinkProps) {
   return (

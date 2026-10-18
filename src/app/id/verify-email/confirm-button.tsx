@@ -2,11 +2,11 @@
 import { useEffect, useRef, useState } from 'react';
 import { flushSync } from 'react-dom';
 import Link from 'next/link';
-import AuthHeading from '@/app/components/auth/auth-heading';
-import AuthBanner from '@/app/components/auth/auth-banner';
-import SubmitButton from '@/app/components/auth/submit-button';
-import ButtonLink from '@/app/components/auth/button-link';
-import { stateBodyClass, textLinkClass } from '@/app/components/auth/styles';
+import PageHeading from '@/app/components/page-heading';
+import FormBanner from '@/app/components/form/form-banner';
+import SubmitButton from '@/app/components/form/submit-button';
+import ButtonLink from '@/app/components/form/button-link';
+import { stateBodyClass, textLinkClass } from '@/app/components/form/styles';
 import { useResendVerification } from '@/app/components/use-resend-verification';
 import { resendBanner } from './resend-link';
 
@@ -77,7 +77,7 @@ export function ConfirmButton({ token, isSignedIn }: { token: string; isSignedIn
     if (status === 'confirmed') {
         return (
             <div className="w-full max-w-100 text-center">
-                <AuthHeading
+                <PageHeading
                     eyebrow="Correo confirmado"
                     title="Email confirmed"
                     subtitle="Para ti y los tuyos"
@@ -120,14 +120,14 @@ export function ConfirmButton({ token, isSignedIn }: { token: string; isSignedIn
 
     return (
         <div className="w-full max-w-100 text-center">
-            <AuthHeading eyebrow="Confirma tu correo" title="Confirm your email" subtitle="Un espacio para ti" />
+            <PageHeading eyebrow="Confirma tu correo" title="Confirm your email" subtitle="Un espacio para ti" />
             <p className={stateBodyClass}>
                 One last step. Confirm this address to finish setting up your myCANN account.
             </p>
 
             <form onSubmit={handleConfirm} aria-label="confirm email" className="flex flex-col gap-5">
                 {banner && (
-                    <AuthBanner
+                    <FormBanner
                         variant={banner.variant}
                         bannerRef={bannerRef}
                         action={
@@ -141,7 +141,7 @@ export function ConfirmButton({ token, isSignedIn }: { token: string; isSignedIn
                         }
                     >
                         {banner.text}
-                    </AuthBanner>
+                    </FormBanner>
                 )}
 
                 {!isInvalid && (

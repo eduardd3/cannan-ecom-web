@@ -8,7 +8,7 @@ type SubmitButtonProps = {
   children: ReactNode;
 };
 
-//  Full-width submit for the /id forms, charcoal unless variant says otherwise.
+//  Full-width form submit, charcoal unless variant says otherwise.
 //  pending comes from the form (useActionState on sign-in, fetch state on
 //  sign-up), so this works for both. No margin of its own: spacing belongs to
 //  the form.
