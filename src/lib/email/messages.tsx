@@ -5,6 +5,7 @@ import { PasswordReset } from '@/emails/passwordReset';
 import { ConfirmReset } from '@/emails/confirmreset';
 import { VerifyAccount } from '@/emails/verifyAccount';
 import { OrderConfirmation, type OrderConfirmationProps } from '@/emails/orderConfirmation';
+import { OrderShipped, type OrderShippedProps } from '@/emails/orderShipped';
 import { ContactMessage, type ContactMessageProps } from '@/emails/contactMessage';
 import { SENDER_ORDERS } from '@/lib/email/senders';
 import { SUPPORT_EMAIL } from '@/lib/contact';
@@ -50,6 +51,17 @@ export async function sendOrderConfirmationEmail (to: string, order: OrderConfir
         subject: `Your Cannan order #${order.orderId}`,
         react: <OrderConfirmation {...order} />,
         idempotencyKey: `order-confirmation/${order.orderId}`,
+    })
+}
+
+//  Same idea: one shipped email per order, even if two sends race.
+export async function sendOrderShippedEmail (to: string, order: OrderShippedProps) {
+    return sendEmail({
+        to,
+        from: SENDER_ORDERS,
+        subject: `Your Cannan order #${order.orderId} has shipped`,
+        react: <OrderShipped {...order} />,
+        idempotencyKey: `order-shipped/${order.orderId}`,
     })
 }
 

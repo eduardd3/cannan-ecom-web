@@ -13,6 +13,7 @@ import { requireStaff } from "@/lib/session";
 import { sendOrderConfirmation } from "./confirmation";
 import { fulfillOrder, updateTracking, type FulfillInput, type FulfillResult } from "./fulfillment";
 import { approveReviewedOrder, refundReviewedOrder } from "./review";
+import { sendShippedEmail } from "./shipped-email";
 import { normalizeTrackingNumber, parseCarrier } from "./shipping";
 
 // What the forms render. null before the first submit.
@@ -112,7 +113,12 @@ async function shipmentAction(
 }
 
 export async function fulfillOrderAction(_prev: FulfillActionState, formData: FormData): Promise<FulfillActionState> {
-  return shipmentAction(formData, fulfillOrder);
+  return shipmentAction(formData, async (input) => {
+    const result = await fulfillOrder(input);
+    // After the response, so the admin isn't waiting on Resend.
+    if (result.ok) after(() => sendShippedEmail(input.orderId));
+    return result;
+  });
 }
 
 export async function updateTrackingAction(_prev: FulfillActionState, formData: FormData): Promise<FulfillActionState> {

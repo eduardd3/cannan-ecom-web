@@ -43,7 +43,7 @@ export async function sendOrderConfirmation(orderId: number): Promise<Confirmati
     });
     if (!order) return "not_found";
     if (order.confirmationEmailSentAt) return "already_sent";
-    // FULFILLED was PAID first, but by then the shipped email (not built yet)
+    // FULFILLED was PAID first, but by then the shipped email (./shipped-email)
     // is the one that matters, so only PAID sends.
     if (order.status !== "PAID") return "not_paid";
 
