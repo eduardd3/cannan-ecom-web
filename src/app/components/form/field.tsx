@@ -21,11 +21,17 @@ export type FieldControlProps = {
   "aria-invalid"?: true;
 };
 
-//  Border, size and type shared by input, select and textarea. Focus shows as
-//  the gold border; no ring, no inner shadow. An error keeps its red border on
-//  focus so the state isn't lost.
+//  Border, corners and focus shared by every control, with no width or
+//  padding, so a compact control (QuantitySelect) sets its own instead of
+//  overriding these. Focus shows as the gold border; no ring, no inner
+//  shadow. An error keeps its red border on focus so the state isn't lost.
+export function controlBaseClass(error: string | undefined) {
+  return `rounded-[2px] border bg-white text-charcoal transition-colors focus:outline-none ${error ? "border-error-ink" : "border-hairline focus:border-antique-gold"}`;
+}
+
+//  Full-width size and type for input, select and textarea.
 export function controlClass(error: string | undefined) {
-  return `w-full rounded-[2px] border bg-white px-4 text-body-md text-charcoal transition-colors focus:outline-none ${error ? "border-error-ink" : "border-hairline focus:border-antique-gold"}`;
+  return `w-full px-4 text-body-md ${controlBaseClass(error)}`;
 }
 
 //  Label row, control, and the helper or error below it. children renders the
