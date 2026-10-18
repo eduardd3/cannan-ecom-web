@@ -59,15 +59,25 @@ const ENV_PREFIX =
     process.env.VERCEL_ENV === 'preview' ? '[Preview] ' : '[Dev] ';
 
 //  Contact form → support inbox. Reply-To is the customer, so answering is a
-//  plain reply. The name is in the subject because Gmail threads identical
-//  subjects from one sender together. No customer copy: the form accepts any
-//  address, so an auto-reply would let anyone send our mail to strangers.
-export async function sendContactEmail (msg: ContactMessageProps) {
+//  plain reply, and the subject and body read fine when quoted back to them.
+//  The name is in the subject because Gmail threads identical subjects between
+//  the same participants (always us → us here) together. No customer copy: the
+//  form accepts any address, so an auto-reply would let anyone send our mail
+//  to strangers.
+export async function sendContactEmail (
+    { account, ...msg }: ContactMessageProps & { account?: { userId: string; email: string | null } },
+) {
     const order = msg.orderNumber ? ` · Order #${msg.orderNumber}` : '';
     return sendEmail({
         to: SUPPORT_EMAIL,
         replyTo: msg.email,
-        subject: `${ENV_PREFIX}Contact: ${msg.topic} · ${msg.name}${order}`,
+        subject: `${ENV_PREFIX}Your message to Cannan · ${msg.topic} · ${msg.name}${order}`,
         react: <ContactMessage {...msg} />,
+        //  Signed-in visitors only. Headers, not body, so a reply never quotes
+        //  them back; Gmail shows them under ⋮ → Show original.
+        headers: account ? {
+            'X-Cannan-Contact-User-Id': account.userId,
+            ...(account.email ? { 'X-Cannan-Contact-Account-Email': account.email } : {}),
+        } : undefined,
     })
 }

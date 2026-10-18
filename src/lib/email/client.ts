@@ -18,6 +18,9 @@ type SendArgs = {
     from?: string,
     //  Resend drops a repeat send with the same key for 24 hours.
     idempotencyKey?: string,
+    //  Extra MIME headers, e.g. internal details the recipient's mail client
+    //  hides but "Show original" reveals.
+    headers?: Record<string, string>,
 };
 
 export type SendResult = {ok: true, id: string } | {ok: false, error: string};
