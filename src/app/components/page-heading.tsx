@@ -2,7 +2,8 @@ import type { Ref } from "react";
 import GoldRule from "@/app/components/gold-rule";
 
 type PageHeadingProps = {
-  eyebrow: string;
+  //  Optional for a state with no eyebrow, e.g. "Order not found".
+  eyebrow?: string;
   title: string;
   subtitle?: string;
   //  Lets a form move focus to the title when it swaps to a new state, so
@@ -17,7 +18,7 @@ type PageHeadingProps = {
 export default function PageHeading({ eyebrow, title, subtitle, titleRef }: PageHeadingProps) {
   return (
     <div className="flex flex-col items-center text-center">
-      <p className="mb-2 text-label-eyebrow text-gold-ink uppercase">{eyebrow}</p>
+      {eyebrow && <p className="mb-2 text-label-eyebrow text-gold-ink uppercase">{eyebrow}</p>}
       <h1
         ref={titleRef}
         tabIndex={titleRef ? -1 : undefined}

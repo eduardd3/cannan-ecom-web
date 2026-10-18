@@ -1,11 +1,11 @@
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
-import Link from "next/link";
 import Stripe from "stripe"; // value import: `instanceof Stripe.errors.StripeError` needs it at runtime
 
 import { formatCents } from "@/lib/cart/format";
 import { getCurrentUserId } from "@/lib/cart/session";
 import { getStripe } from "@/lib/stripe";
+import ReturnStatus from "./return-status";
 
 export const metadata: Metadata = {
     title: "Order Status | Cannan",
@@ -13,6 +13,8 @@ export const metadata: Metadata = {
     referrer: "no-referrer",
     robots: { index: false },
 };
+
+const viewOrders = { label: "View your orders", href: "/purchases" };
 
 //  Where Stripe sends the customer after the embedded form (buildReturnUrl).
 //  Read-only: it shows what Stripe says about the session. Creating the order,
@@ -45,12 +47,11 @@ export default async function CheckoutReturnPage({
         }
         console.error("Failed to retrieve checkout session", error);
         return (
-            <StatusCard title="We couldn't load your order">
-                <p className="mt-4 text-sm text-[#9AA1AB]">
-                    If you completed payment, your order is safe. Refresh this page in
-                    a moment to see its status.
-                </p>
-            </StatusCard>
+            <ReturnStatus
+                title="We couldn't load your order"
+                body="If you completed payment, your order is safe. Refresh this page in a moment to see its status."
+                primary={viewOrders}
+            />
         );
     }
 
@@ -66,76 +67,43 @@ export default async function CheckoutReturnPage({
 
     if (session.status === "expired") {
         return (
-            <StatusCard title="Checkout expired">
-                <p className="mt-4 text-sm text-[#9AA1AB]">
-                    This checkout session expired before payment. You haven&apos;t been
-                    charged, and your cart is still saved.
-                </p>
-                <p className="mt-4 text-white">
-                    <Link href="/cart">Back to cart</Link>
-                </p>
-            </StatusCard>
+            <ReturnStatus
+                eyebrow="Pago no completado"
+                title="Checkout expired"
+                body="You haven't been charged, and your cart is still saved."
+                primary={{ label: "Return to cart", href: "/cart" }}
+            />
         );
     }
 
     //  complete. "unpaid" here means a delayed payment method (e.g. bank
     //  debit) that hasn't cleared yet; the webhook settles it either way.
-    const email = session.customer_details?.email;
+    const email = session.customer_details?.email ?? undefined;
     const total = session.amount_total;
     const paid = session.payment_status !== "unpaid";
 
     return (
-        <StatusCard title={paid ? "Thank you for your order" : "Payment processing"}>
-            <p className="mt-4 text-sm text-[#9AA1AB]">
-                {paid
-                    ? "We've received your payment and are getting your order ready."
-                    : "Your payment is still processing. Your order is placed once it clears."}
-            </p>
-            {(total !== null || email) && (
-                <dl className="mt-4 flex flex-col gap-1 text-sm">
-                    {total !== null && (
-                        <div className="flex justify-between">
-                            <dt className="text-[#9AA1AB]">Total</dt>
-                            <dd className="font-semibold text-[#F2F3F4]">{formatCents(total)}</dd>
-                        </div>
-                    )}
-                    {email && (
-                        <div className="flex justify-between">
-                            <dt className="text-[#9AA1AB]">Email</dt>
-                            <dd className="text-[#F2F3F4]">{email}</dd>
-                        </div>
-                    )}
-                </dl>
-            )}
-            <p className="mt-6 text-white">
-                <Link href="/purchases">View your purchases</Link>
-            </p>
-            <p className="mt-2 text-white">
-                <Link href="/">Continue shopping</Link>
-            </p>
-        </StatusCard>
-    );
-}
-
-//  The page shell (header, footer, centering) lives in app/id/layout.tsx — this is just the card.
-function StatusCard({ title, children }: { title: string; children: React.ReactNode }) {
-    return (
-        <div className="w-full max-w-sm rounded-xl border border-[#2A2F36] bg-[#16191E] p-8 shadow-sm">
-            <h1 className="text-center text-xl font-bold text-[#F2F3F4]">{title}</h1>
-            {children}
-        </div>
+        <ReturnStatus
+            eyebrow="Gracias"
+            title={paid ? "Thank you for your order" : "Your payment is processing"}
+            body={
+                paid
+                    ? "We've received your payment and are preparing your order. A confirmation is on its way to your email."
+                    : "We'll email you as soon as it's confirmed. Your order ships after that."
+            }
+            details={{ total: total !== null ? formatCents(total) : undefined, email }}
+            primary={viewOrders}
+        />
     );
 }
 
 function NotFound() {
     return (
-        <StatusCard title="Order not found">
-            <p className="mt-4 text-sm text-[#9AA1AB]">
-                This link is invalid or doesn&apos;t belong to your account.
-            </p>
-            <p className="mt-4 text-white">
-                <Link href="/cart">Back to cart</Link>
-            </p>
-        </StatusCard>
+        <ReturnStatus
+            title="Order not found"
+            body="We couldn't find this checkout."
+            primary={viewOrders}
+            showContact
+        />
     );
 }
