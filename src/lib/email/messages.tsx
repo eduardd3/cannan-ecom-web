@@ -5,7 +5,9 @@ import { PasswordReset } from '@/emails/passwordReset';
 import { ConfirmReset } from '@/emails/confirmreset';
 import { VerifyAccount } from '@/emails/verifyAccount';
 import { OrderConfirmation, type OrderConfirmationProps } from '@/emails/orderConfirmation';
+import { ContactMessage, type ContactMessageProps } from '@/emails/contactMessage';
 import { SENDER_ORDERS } from '@/lib/email/senders';
+import { SUPPORT_EMAIL } from '@/lib/contact';
 
 export function sendWelcomeEmail (user: {email: string; name: string | null}) {
     return sendEmail ({
@@ -48,5 +50,24 @@ export async function sendOrderConfirmationEmail (to: string, order: OrderConfir
         subject: `Your Cannan order #${order.orderId}`,
         react: <OrderConfirmation {...order} />,
         idempotencyKey: `order-confirmation/${order.orderId}`,
+    })
+}
+
+//  Marks test sends so they stand out in the real support inbox.
+const ENV_PREFIX =
+    process.env.VERCEL_ENV === 'production' ? '' :
+    process.env.VERCEL_ENV === 'preview' ? '[Preview] ' : '[Dev] ';
+
+//  Contact form → support inbox. Reply-To is the customer, so answering is a
+//  plain reply. The name is in the subject because Gmail threads identical
+//  subjects from one sender together. No customer copy: the form accepts any
+//  address, so an auto-reply would let anyone send our mail to strangers.
+export async function sendContactEmail (msg: ContactMessageProps) {
+    const order = msg.orderNumber ? ` · Order #${msg.orderNumber}` : '';
+    return sendEmail({
+        to: SUPPORT_EMAIL,
+        replyTo: msg.email,
+        subject: `${ENV_PREFIX}Contact: ${msg.topic} · ${msg.name}${order}`,
+        react: <ContactMessage {...msg} />,
     })
 }

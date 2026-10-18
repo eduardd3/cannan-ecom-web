@@ -32,6 +32,10 @@ export const signupLimiter = limiter("signup", 5, "1 h");
 export const forgotPasswordLimiter = limiter("forgot-password", 5, "1 h");
 // Token endpoints: stops token guessing and, on reset, bcrypt-hash flooding.
 export const tokenLimiter = limiter("token", 10, "15 m");
+// Contact form, per IP: the short window stops bursts, the daily one a slow drip
+// into the support inbox.
+export const contactLimiter = limiter("contact", 3, "10 m");
+export const contactDailyLimiter = limiter("contact-day", 10, "24 h");
 
 export type LimitResult = { ok: boolean; retryAfterSec: number };
 
