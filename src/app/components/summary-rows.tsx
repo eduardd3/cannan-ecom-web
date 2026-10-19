@@ -8,9 +8,10 @@ export function SummaryList({ children, className = "" }: { children: ReactNode;
 
 //  Stone label on the left, charcoal value on the right. The value wraps
 //  (break-words) so a long email address can't push past the panel.
-export function SummaryRow({ label, value }: { label: string; value: ReactNode }) {
+//  className is appended last, e.g. the hairline above an order's Total.
+export function SummaryRow({ label, value, className = "" }: { label: string; value: ReactNode; className?: string }) {
   return (
-    <div className="flex items-baseline justify-between gap-4 text-body-md">
+    <div className={`flex items-baseline justify-between gap-4 text-body-md ${className}`}>
       <dt className="shrink-0 text-stone">{label}</dt>
       <dd className="min-w-0 text-right font-medium break-words text-charcoal">{value}</dd>
     </div>

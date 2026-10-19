@@ -1,45 +1,36 @@
-import Image from "next/image";
 import Link from "next/link";
 
 import { formatCents } from "@/lib/cart/format";
 import type { CustomerOrderItem } from "@/lib/orders/customer-queries";
+import OrderThumb from "./order-thumb";
 
-//  One item of a past order, on the order page.
+//  One item of a past order, on the order page. The name and image link
+//  only while the product is ACTIVE (productHref is null otherwise).
 export default function OrderLine({ item }: { item: CustomerOrderItem }) {
-    const image = (
-        <div className="relative h-20 w-20 shrink-0 overflow-hidden rounded bg-white">
-            {item.imageUrl && (
-                <Image
-                    src={item.imageUrl}
-                    alt={item.imageAlt ?? item.productName}
-                    fill
-                    sizes="80px"
-                    className="object-contain"
-                />
-            )}
-        </div>
-    );
+    const unitLine = `${item.quantity} × ${formatCents(item.unitPriceCents)}`;
 
     return (
-        <li className="flex gap-4 py-5">
-            {item.productHref ? <Link href={item.productHref}>{image}</Link> : image}
+        <li className="flex items-start gap-4 py-5 first:pt-0">
+            <OrderThumb url={item.imageUrl} alt={item.imageAlt ?? item.productName} href={item.productHref} />
 
-            <div className="flex flex-1 justify-between gap-4">
-                <div>
+            <div className="min-w-0 flex-1">
+                <h3 className="font-serif text-title-md break-words text-charcoal">
                     {item.productHref ? (
-                        <Link href={item.productHref} className="font-medium underline-offset-2 hover:underline">
+                        <Link href={item.productHref} target="_blank" rel="noopener noreferrer" className="underline-offset-4 hover:underline">
                             {item.productName}
                         </Link>
                     ) : (
-                        <p className="font-medium">{item.productName}</p>
+                        item.productName
                     )}
-                    {item.variantLabel && <p className="text-sm text-neutral-600">{item.variantLabel}</p>}
-                    <p className="text-sm text-neutral-600">
-                        {item.quantity} × {formatCents(item.unitPriceCents)}
-                    </p>
-                </div>
-                <p className="font-medium">{formatCents(item.unitPriceCents * item.quantity)}</p>
+                </h3>
+                <p className="mt-0.5 text-caption text-stone">
+                    {item.variantLabel ? `${item.variantLabel} · ${unitLine}` : unitLine}
+                </p>
             </div>
+
+            <p className="shrink-0 text-body-md font-medium text-charcoal">
+                {formatCents(item.unitPriceCents * item.quantity)}
+            </p>
         </li>
     );
 }

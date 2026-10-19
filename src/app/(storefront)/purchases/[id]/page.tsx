@@ -1,19 +1,27 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
+import type { ReactNode } from "react";
 
 import Container from "@/app/components/container";
+import { textLinkClass } from "@/app/components/form/styles";
+import GoldRule from "@/app/components/gold-rule";
+import HelpLine from "@/app/components/help-line";
+import { SummaryList, SummaryRow } from "@/app/components/summary-rows";
 import { formatCents } from "@/lib/cart/format";
 import { getCurrentUserId } from "@/lib/cart/session";
 import { getCustomerOrder, type CustomerOrder } from "@/lib/orders/customer-queries";
-import { addressLines, CUSTOMER_STATUS_LABEL, formatOrderDate, parseOrderId } from "@/lib/orders/format";
+import { addressLines, formatOrderDay, parseOrderId } from "@/lib/orders/format";
 import { CARRIER_LABEL, trackingUrl } from "@/lib/orders/shipping";
 import OrderLine from "../order-line";
+import OrderStatusLabel from "../order-status-label";
 
 export async function generateMetadata({ params }: PageProps<"/purchases/[id]">): Promise<Metadata> {
     const { id } = await params;
     return { title: `Order #${id} | Cannan`, robots: { index: false } };
 }
+
+const sectionHeadingClass = "font-serif text-headline-md font-normal text-charcoal";
 
 export default async function PurchaseDetailPage({ params }: PageProps<"/purchases/[id]">) {
     const { id: rawId } = await params;
@@ -31,96 +39,146 @@ export default async function PurchaseDetailPage({ params }: PageProps<"/purchas
     if (!order) notFound();
 
     const address = addressLines(order.shippingAddress);
-    const refundNote =
-        order.status === "REFUNDED"
-            ? "This order was refunded to your original payment method."
-            : order.status === "CANCELED"
-              ? "This order was canceled and won't ship."
-              : order.refundedCents > 0
-                ? `${formatCents(order.refundedCents)} of this order was refunded to your original payment method.`
-                : null;
 
     return (
-        <Container className="py-10">
-            <Link href="/purchases" className="text-sm text-neutral-600 underline-offset-2 hover:underline">
-                ← Purchases
-            </Link>
-            <div className="mt-2 flex flex-wrap items-baseline justify-between gap-x-6 gap-y-1">
-                <h1 className="text-xl font-semibold">Order #{order.id}</h1>
-                <p className="font-medium">{CUSTOMER_STATUS_LABEL[order.status]}</p>
-            </div>
-            <p className="text-sm text-neutral-600">Placed {formatOrderDate(order.createdAt)}</p>
-
-            {refundNote && (
-                <p className="mt-4 rounded border border-neutral-300 bg-neutral-50 px-4 py-3 text-sm">
-                    {refundNote} Questions?{" "}
-                    <Link href="/contact" className="underline underline-offset-2">
-                        Contact us
-                    </Link>
-                    .
+        <Container className="py-10 md:py-16">
+            {/* Same 760px column as the orders list. */}
+            <div className="mx-auto max-w-190">
+                {/* Underlined on hover only, unlike textLinkClass: it's navigation, not a link in a sentence. */}
+                <Link
+                    href="/purchases"
+                    className="text-caption text-gold-ink underline-offset-4 transition-colors hover:text-charcoal hover:underline"
+                >
+                    ← Your orders
+                </Link>
+                <h1 className="mt-4 font-serif text-headline-lg text-charcoal">Order #{order.id}</h1>
+                <p className="mt-1.5 text-caption text-stone">
+                    Placed {formatOrderDay(order.createdAt)} · <OrderStatusLabel status={order.status} />
                 </p>
-            )}
+                <GoldRule className="my-6" />
 
-            {order.shipment && <Shipment shipment={order.shipment} />}
+                <StatusNote order={order} />
 
-            <ul className="mt-6 divide-y border-y">
-                {order.items.map((item) => (
-                    <OrderLine key={item.id} item={item} />
-                ))}
-            </ul>
+                <section aria-labelledby="items-heading" className="mt-12">
+                    <h2 id="items-heading" className={`${sectionHeadingClass} mb-6`}>
+                        Items
+                    </h2>
+                    <ul className="divide-y divide-hairline">
+                        {order.items.map((item) => (
+                            <OrderLine key={item.id} item={item} />
+                        ))}
+                    </ul>
+                </section>
 
-            <div className="mt-6 flex flex-col-reverse gap-8 sm:flex-row sm:justify-between">
-                {address.length > 0 && (
-                    <div>
-                        <h2 className="font-medium">Shipping address</h2>
-                        <address className="mt-1 text-sm not-italic text-neutral-600">
-                            {address.map((line, i) => (
-                                <p key={i}>{line}</p>
-                            ))}
-                        </address>
-                    </div>
-                )}
-
-                <dl className="grid min-w-56 grid-cols-[1fr_auto] gap-x-6 gap-y-1 text-sm sm:ml-auto">
-                    <dt className="text-neutral-600">Subtotal</dt>
-                    <dd className="text-right">{formatCents(order.subtotalCents)}</dd>
-                    <dt className="text-neutral-600">Shipping</dt>
-                    <dd className="text-right">{formatCents(order.shippingCents)}</dd>
-                    <dt className="text-neutral-600">Tax</dt>
-                    <dd className="text-right">{formatCents(order.taxCents)}</dd>
-                    <dt className="mt-1 text-base font-semibold">Total</dt>
-                    <dd className="mt-1 text-right text-base font-semibold">{formatCents(order.totalCents)}</dd>
-                    {order.refundedCents > 0 && (
-                        <>
-                            <dt className="text-neutral-600">Refunded</dt>
-                            <dd className="text-right">−{formatCents(order.refundedCents)}</dd>
-                        </>
+                <div className="mt-12 grid grid-cols-1 gap-10 md:grid-cols-2 md:gap-16">
+                    {address.length > 0 && (
+                        <section aria-labelledby="address-heading">
+                            <h2 id="address-heading" className={`${sectionHeadingClass} mb-4`}>
+                                Shipping address
+                            </h2>
+                            <address className="text-body-md text-stone not-italic">
+                                {address.map((line, i) => (
+                                    <p key={i} className={i === 0 ? "font-medium text-charcoal" : undefined}>
+                                        {line}
+                                    </p>
+                                ))}
+                            </address>
+                        </section>
                     )}
-                </dl>
+
+                    {/* What was charged, whatever the status: a canceled or
+                        refunded order still shows its totals. */}
+                    <section aria-labelledby="summary-heading">
+                        <h2 id="summary-heading" className={`${sectionHeadingClass} mb-4`}>
+                            Order summary
+                        </h2>
+                        <SummaryList>
+                            <SummaryRow label="Subtotal" value={formatCents(order.subtotalCents)} />
+                            <SummaryRow
+                                label="Shipping"
+                                value={order.shippingCents === 0 ? "Free" : formatCents(order.shippingCents)}
+                            />
+                            <SummaryRow label="Tax" value={formatCents(order.taxCents)} />
+                            <SummaryRow
+                                label="Total"
+                                value={formatCents(order.totalCents)}
+                                className="border-t border-hairline pt-3"
+                            />
+                            {order.refundedCents > 0 && (
+                                <SummaryRow
+                                    label="Refunded"
+                                    value={<span className="text-stone">−{formatCents(order.refundedCents)}</span>}
+                                />
+                            )}
+                        </SummaryList>
+                    </section>
+                </div>
+
+                <HelpLine lead="Need help with this order?" className="mt-12" />
             </div>
         </Container>
     );
 }
 
-function Shipment({ shipment }: { shipment: NonNullable<CustomerOrder["shipment"]> }) {
-    const href = trackingUrl(shipment.carrier, shipment.trackingNumber);
+//  Linen panel under the heading. The switch covers every status, so a new
+//  one won't compile until it has a note. NEEDS_REVIEW reads as PAID.
+function StatusNote({ order }: { order: CustomerOrder }) {
+    let note: ReactNode;
+    let ruleClass = "border-gold-ink";
+
+    switch (order.status) {
+        case "PAID":
+        case "NEEDS_REVIEW":
+            note = "We're preparing your order. It ships within 1 business day.";
+            break;
+        case "FULFILLED":
+            note = <ShippedNote shipment={order.shipment} />;
+            break;
+        case "REFUNDED":
+            note = "This order was refunded. Refunds can take several business days to appear on your statement.";
+            ruleClass = "border-hairline";
+            break;
+        case "CANCELED":
+            note = "This order was canceled.";
+            ruleClass = "border-hairline";
+            break;
+        default: {
+            const unhandled: never = order.status;
+            throw new Error(`No status note for ${String(unhandled)}`);
+        }
+    }
+
+    const partialRefund = order.refundedCents > 0 && order.status !== "REFUNDED";
 
     return (
-        <dl className="mt-6 grid gap-x-6 gap-y-1 rounded border border-neutral-300 px-4 py-3 text-sm sm:grid-cols-[auto_1fr]">
-            <dt className="text-neutral-600">Shipped</dt>
-            <dd>{formatOrderDate(shipment.shippedAt)}</dd>
-            <dt className="text-neutral-600">Carrier</dt>
-            <dd>{CARRIER_LABEL[shipment.carrier]}</dd>
-            <dt className="text-neutral-600">Tracking</dt>
-            <dd className="break-all font-mono">
-                {href ? (
-                    <a href={href} target="_blank" rel="noopener noreferrer" className="underline underline-offset-2">
-                        {shipment.trackingNumber}
+        <div className={`border-l-2 bg-linen px-5 py-4 text-body-md text-charcoal ${ruleClass}`}>
+            <p>{note}</p>
+            {partialRefund && (
+                <p className="mt-1.5 text-stone">A partial refund of {formatCents(order.refundedCents)} was issued.</p>
+            )}
+        </div>
+    );
+}
+
+function ShippedNote({ shipment }: { shipment: CustomerOrder["shipment"] }) {
+    //  The query returns a shipment only when carrier and tracking are both set.
+    if (!shipment) return "Your order has shipped.";
+
+    const href = trackingUrl(shipment.carrier, shipment.trackingNumber);
+    const lead =
+        shipment.carrier === "OTHER" ? "Your order has shipped." : `Shipped with ${CARRIER_LABEL[shipment.carrier]}.`;
+
+    return (
+        <>
+            {lead} Tracking <span className="break-all">{shipment.trackingNumber}</span>
+            {href && (
+                <>
+                    {" "}
+                    <a href={href} target="_blank" rel="noopener noreferrer" className={textLinkClass}>
+                        Track package<span className="sr-only"> (opens in a new tab)</span>
                     </a>
-                ) : (
-                    shipment.trackingNumber
-                )}
-            </dd>
-        </dl>
+                </>
+            )}
+        </>
     );
 }
