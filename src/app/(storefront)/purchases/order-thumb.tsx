@@ -15,9 +15,17 @@ export default function OrderThumb({ url, alt, href }: OrderThumbProps) {
     const image = url && <Image src={url} alt={alt} fill sizes="56px" className="object-contain" />;
 
     //  The name links too, so the image link is skipped by the keyboard and
-    //  screen readers instead of being read twice.
+    //  screen readers instead of being read twice. A new tab, like the name,
+    //  so the customer keeps their order page.
     return href ? (
-        <Link href={href} tabIndex={-1} aria-hidden="true" className={boxClass}>
+        <Link
+            href={href}
+            target="_blank"
+            rel="noopener noreferrer"
+            tabIndex={-1}
+            aria-hidden="true"
+            className={boxClass}
+        >
             {image}
         </Link>
     ) : (

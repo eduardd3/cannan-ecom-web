@@ -18,6 +18,7 @@ export default function OrderLine({ item }: { item: CustomerOrderItem }) {
                     {item.productHref ? (
                         <Link href={item.productHref} target="_blank" rel="noopener noreferrer" className="underline-offset-4 hover:underline">
                             {item.productName}
+                            <span className="sr-only"> (opens in a new tab)</span>
                         </Link>
                     ) : (
                         item.productName
