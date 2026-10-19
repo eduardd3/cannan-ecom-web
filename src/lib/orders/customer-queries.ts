@@ -19,6 +19,13 @@ const firstImage = {
   take: 1,
 } satisfies Prisma.ProductImageFindManyArgs;
 
+// The list's thumbnail is decorative (alt=""), so it needs only the key.
+const listImage = {
+  select: { key: true },
+  orderBy: { position: "asc" },
+  take: 1,
+} satisfies Prisma.ProductImageFindManyArgs;
+
 const itemSelect = {
   orderBy: { id: "asc" },
   select: {
@@ -70,18 +77,31 @@ export async function listCustomerOrders(userId: number) {
       subtotalCents: true,
       shippingCents: true,
       taxCents: true,
-      items: { select: { quantity: true } },
+      // In the detail page's order, so the thumbnail is its first item. The
+      // image key is all the list reads from the product.
+      items: {
+        orderBy: { id: "asc" },
+        select: {
+          quantity: true,
+          variant: { select: { images: listImage, product: { select: { images: listImage } } } },
+        },
+      },
     },
   });
 
   return {
-    orders: orders.slice(0, CUSTOMER_ORDER_LIMIT).map((order) => ({
-      id: order.id,
-      createdAt: order.createdAt,
-      status: order.status,
-      totalCents: order.subtotalCents + order.shippingCents + order.taxCents,
-      itemCount: order.items.reduce((sum, item) => sum + item.quantity, 0),
-    })),
+    orders: orders.slice(0, CUSTOMER_ORDER_LIMIT).map((order) => {
+      const first = order.items[0];
+      const image = first ? (first.variant.images[0] ?? first.variant.product.images[0] ?? null) : null;
+      return {
+        id: order.id,
+        createdAt: order.createdAt,
+        status: order.status,
+        totalCents: order.subtotalCents + order.shippingCents + order.taxCents,
+        itemCount: order.items.reduce((sum, item) => sum + item.quantity, 0),
+        firstImageUrl: image ? getImageUrl(image.key) : null,
+      };
+    }),
     truncated: orders.length > CUSTOMER_ORDER_LIMIT,
   };
 }
