@@ -62,7 +62,7 @@ export async function sendOrderConfirmation(orderId: number): Promise<Confirmati
       tax: formatCents(order.taxCents),
       total: formatCents(order.subtotalCents + order.shippingCents + order.taxCents),
       address: addressLines(order.shippingAddress),
-      purchasesUrl: `${ORIGIN}/purchases`,
+      ordersUrl: `${ORIGIN}/orders`,
     });
     if (!result.ok) {
       console.error(`Order ${orderId}: confirmation email failed to send`);

@@ -12,8 +12,8 @@ export default function Dashboard() {
         <Container className="flex flex-col gap-4 py-10">
             <h1 className="text-xl font-semibold">Dashboard</h1>
             <p>
-                <Link href="/purchases" className="underline underline-offset-2">
-                    View your purchases
+                <Link href="/orders" className="underline underline-offset-2">
+                    View your orders
                 </Link>
             </p>
         </Container>

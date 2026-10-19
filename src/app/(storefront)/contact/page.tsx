@@ -53,7 +53,7 @@ export default async function ContactPage() {
         >
           <SupportBlock label="Track an order">
             <p>Order details and tracking are in your account.</p>
-            <Link href="/purchases" className={`${textLinkClass} mt-2 inline-block`}>
+            <Link href="/orders" className={`${textLinkClass} mt-2 inline-block`}>
               Your orders
             </Link>
           </SupportBlock>

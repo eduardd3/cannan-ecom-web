@@ -57,7 +57,7 @@ export async function sendShippedEmail(orderId: number): Promise<ShippedEmailRes
       trackingUrl: trackingUrl(order.carrier, order.trackingNumber),
       items: order.items,
       address: addressLines(order.shippingAddress),
-      orderUrl: `${ORIGIN}/purchases/${order.id}`,
+      orderUrl: `${ORIGIN}/orders/${order.id}`,
     });
     if (!result.ok) {
       console.error(`Order ${orderId}: shipped email failed to send`);

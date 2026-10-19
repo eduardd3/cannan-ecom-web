@@ -16,20 +16,20 @@ import { CARRIER_LABEL, trackingUrl } from "@/lib/orders/shipping";
 import OrderLine from "../order-line";
 import OrderStatusLabel from "../order-status-label";
 
-export async function generateMetadata({ params }: PageProps<"/purchases/[id]">): Promise<Metadata> {
+export async function generateMetadata({ params }: PageProps<"/orders/[id]">): Promise<Metadata> {
     const { id } = await params;
     return { title: `Order #${id} | Cannan`, robots: { index: false } };
 }
 
 const sectionHeadingClass = "font-serif text-headline-md font-normal text-charcoal";
 
-export default async function PurchaseDetailPage({ params }: PageProps<"/purchases/[id]">) {
+export default async function OrderDetailPage({ params }: PageProps<"/orders/[id]">) {
     const { id: rawId } = await params;
 
     //  The proxy handles signed-out visitors; this covers a session revoked
     //  since the JWT was issued.
     const userId = await getCurrentUserId();
-    if (!userId) redirect(`/id/signin?callbackUrl=/purchases/${encodeURIComponent(rawId)}`);
+    if (!userId) redirect(`/id/signin?callbackUrl=/orders/${encodeURIComponent(rawId)}`);
 
     const id = parseOrderId(rawId);
     if (!id) notFound();
@@ -46,7 +46,7 @@ export default async function PurchaseDetailPage({ params }: PageProps<"/purchas
             <div className="mx-auto max-w-190">
                 {/* Underlined on hover only, unlike textLinkClass: it's navigation, not a link in a sentence. */}
                 <Link
-                    href="/purchases"
+                    href="/orders"
                     className="text-caption text-gold-ink underline-offset-4 transition-colors hover:text-charcoal hover:underline"
                 >
                     ← Your orders

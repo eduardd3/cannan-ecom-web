@@ -14,7 +14,7 @@ export const metadata: Metadata = {
     robots: { index: false },
 };
 
-const viewOrders = { label: "View your orders", href: "/purchases" };
+const viewOrders = { label: "View your orders", href: "/orders" };
 
 //  Where Stripe sends the customer after the embedded form (buildReturnUrl).
 //  Read-only: it shows what Stripe says about the session. Creating the order,

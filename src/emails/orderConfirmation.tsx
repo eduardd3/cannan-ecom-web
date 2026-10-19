@@ -10,7 +10,7 @@ export interface OrderConfirmationProps {
     tax: string
     total: string
     address: string[]
-    purchasesUrl: string
+    ordersUrl: string
 }
 
 const CELL = { padding: '4px 12px 4px 0', verticalAlign: 'top' } as const;
@@ -56,7 +56,7 @@ export function OrderConfirmation(props: OrderConfirmationProps) {
             )}
 
             <p>
-                You can view your order any time in <a href={props.purchasesUrl}>your purchases</a>.
+                You can view your order any time in <a href={props.ordersUrl}>your orders</a>.
             </p>
             <p>
                 If you have any questions about your order, please contact us

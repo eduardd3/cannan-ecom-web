@@ -31,7 +31,7 @@ const footerColumns = [
         links: [
             { href: "/shipping", label: "Shipping" },
             { href: "/returns", label: "Returns & Refunds" },
-            { href: "/purchases", label: "Your orders" },
+            { href: "/orders", label: "Your orders" },
         ],
     },
 ];

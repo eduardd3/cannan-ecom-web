@@ -9,7 +9,7 @@ export const ORDER_STATUS_LABEL: Record<OrderStatus, string> = {
   CANCELED: "Canceled",
 };
 
-// What the customer sees on /purchases. A review is internal, so a
+// What the customer sees on /orders. A review is internal, so a
 // NEEDS_REVIEW order reads the same as a PAID one.
 export const CUSTOMER_STATUS_LABEL: Record<OrderStatus, string> = {
   NEEDS_REVIEW: "Processing",

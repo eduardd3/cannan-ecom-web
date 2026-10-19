@@ -25,7 +25,7 @@ type OrderSummary = Awaited<ReturnType<typeof listCustomerOrders>>["orders"][num
 
 //  Same 760px column as the order page, so the heading doesn't shift when a
 //  customer clicks into an order.
-function OrdersPage({ children }: { children: React.ReactNode }) {
+function OrdersColumn({ children }: { children: React.ReactNode }) {
     return (
         <Container className="py-10 md:py-16">
             <div className="mx-auto max-w-190">
@@ -36,11 +36,11 @@ function OrdersPage({ children }: { children: React.ReactNode }) {
     );
 }
 
-export default async function PurchasesPage() {
+export default async function OrdersPage() {
     //  The proxy handles signed-out visitors; this covers a session revoked
     //  since the JWT was issued.
     const userId = await getCurrentUserId();
-    if (!userId) redirect("/id/signin?callbackUrl=/purchases");
+    if (!userId) redirect("/id/signin?callbackUrl=/orders");
 
     //  Only the fetch is wrapped, as on the cart page: a try around JSX
     //  can't catch render errors.
@@ -48,17 +48,17 @@ export default async function PurchasesPage() {
     try {
         result = await listCustomerOrders(userId);
     } catch (error) {
-        console.error("Failed to load purchases", error);
+        console.error("Failed to load orders", error);
         return (
-            <OrdersPage>
+            <OrdersColumn>
                 <StateBlock title="We couldn't load your orders." body="Please try again shortly." />
-            </OrdersPage>
+            </OrdersColumn>
         );
     }
 
     if (result.orders.length === 0) {
         return (
-            <OrdersPage>
+            <OrdersColumn>
                 <StateBlock
                     title="You haven't placed an order yet."
                     body="Your orders will appear here after you place them."
@@ -67,12 +67,12 @@ export default async function PurchasesPage() {
                     {/* mt-9 plus the column's 12px gap = 48px below the button. */}
                     <HelpLine lead="Can't find an order?" className="mt-9" />
                 </StateBlock>
-            </OrdersPage>
+            </OrdersColumn>
         );
     }
 
     return (
-        <OrdersPage>
+        <OrdersColumn>
             <ul className="divide-y divide-hairline">
                 {result.orders.map((order) => (
                     <li key={order.id}>
@@ -93,7 +93,7 @@ export default async function PurchasesPage() {
             ) : (
                 <HelpLine lead="Can't find an order?" className="mt-8 text-center" />
             )}
-        </OrdersPage>
+        </OrdersColumn>
     );
 }
 
@@ -102,7 +102,7 @@ export default async function PurchasesPage() {
 function OrderRow({ order }: { order: OrderSummary }) {
     return (
         <Link
-            href={`/purchases/${order.id}`}
+            href={`/orders/${order.id}`}
             className="group flex items-center gap-4 py-5 focus:outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-antique-gold"
         >
             <OrderThumb url={order.firstImageUrl} alt="" />

@@ -72,7 +72,7 @@ describe("sendShippedEmail", () => {
       carrier: "USPS",
       trackingNumber: "9400100000000000000000",
       trackingUrl: expect.stringContaining("usps.com"),
-      orderUrl: expect.stringMatching(new RegExp(`/purchases/${order.id}$`)),
+      orderUrl: expect.stringMatching(new RegExp(`/orders/${order.id}$`)),
     });
     expect(await sentAt(order.id)).toBeInstanceOf(Date);
 

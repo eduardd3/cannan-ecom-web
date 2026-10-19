@@ -33,6 +33,14 @@ const nextConfig: NextConfig = {
         destination: "/myCANN",
         permanent: true,
       },
+      //  Order history moved from /purchases to /orders. Confirmation and
+      //  shipped emails already sent link to the old paths. :path* also
+      //  matches the bare /purchases.
+      {
+        source: "/purchases/:path*",
+        destination: "/orders/:path*",
+        permanent: true,
+      },
     ];
   },
 };

@@ -1,6 +1,6 @@
 // lib/orders/customer-queries.ts
 //
-// Customer READ side for /purchases. Every query is scoped to the signed-in
+// Customer READ side for /orders. Every query is scoped to the signed-in
 // user's id, and selects only what the customer may see: no review reason,
 // staff, Stripe ids, or inventory history.
 import "server-only";
