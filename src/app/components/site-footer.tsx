@@ -43,9 +43,9 @@ export default function SiteFooter() {
     return (
         <footer className="shrink-0 border-t border-hairline bg-linen">
             {/* Same Container as the header, so the columns start on the
-                header's gutter and stop at the same max width. */}
+                header's gutter and stop at the same max width.  items-center text-center*/}
             <Container className="pt-16 pb-12">
-                <div className="mb-16 flex flex-col items-center text-center">
+                <div className="mb-16 flex flex-col items-start text-center">
                     <span className="mb-2 font-serif text-wordmark text-charcoal uppercase">CANNAN</span>
                     <p className={`mb-4 text-gold-ink ${eyebrow}`}>Since 2022</p>
                     <GoldRule className="mb-4" />

@@ -25,6 +25,14 @@ const nextConfig: NextConfig = {
         destination: "/",
         permanent: true,
       },
+      //  /about-myCANN was a "Coming Soon" placeholder that was never written.
+      //  The /myCANN doorway now explains what an account is for, so send the
+      //  old URL there instead of leaving a 404.
+      {
+        source: "/about-myCANN",
+        destination: "/myCANN",
+        permanent: true,
+      },
     ];
   },
 };
