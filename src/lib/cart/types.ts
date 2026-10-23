@@ -38,7 +38,7 @@ export type CartLineView = {
   productName: string;
   productSlug: string;
   productActive: boolean; // product.status is ACTIVE, so /products/[slug] exists
-  variantLabel: string | null; // e.g. "Size: Large"; null for a default variant
+  variantLabel: string | null; // e.g. "Roja · 12 in"; null for a default variant
   imageUrl: string | null;
   imageAlt: string | null;
   unitPriceCents: number; // read fresh from ProductVariant, never from the cart

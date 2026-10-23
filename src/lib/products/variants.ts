@@ -11,12 +11,13 @@ import "server-only";
 
 import { Prisma } from "@/generated/prisma/client";
 
+import { formatVariantLabel } from "@/lib/catalog/format";
 import { adjustStock } from "@/lib/inventory/adjust";
 import { prisma } from "@/lib/prisma";
-import { optionLabel, type VariantOption } from "./variant-fields";
+import type { OptionNames, OptionValues } from "./variant-fields";
 
 export type VariantFields = {
-  option: VariantOption; // null = the product's default variant
+  option: OptionValues; // both null = the product's default variant
   priceCents: number;
   sku: string; // normalized
   amazonAsin: string | null;
@@ -43,7 +44,7 @@ async function run(fn: (tx: Prisma.TransactionClient) => Promise<VariantResult>)
     return await prisma.$transaction(fn);
   } catch (err) {
     if (err instanceof Rollback) return err.result;
-    // Backstop for the checks below: SKU and (product, name, value) are unique.
+    // Backstop for the checks below: SKU and (product, option values) are unique.
     if (err instanceof Prisma.PrismaClientKnownRequestError && err.code === "P2002") {
       const target = String(err.meta?.target ?? "");
       if (target.includes("sku")) return fail("Another variant just took that SKU.", "sku");
@@ -55,46 +56,44 @@ async function run(fn: (tx: Prisma.TransactionClient) => Promise<VariantResult>)
 
 /**
  * Locks the product row. Every variant write on a product takes this lock
- * first, so the rules below (one default, no duplicates, keep one active
- * while listed) are checked against variants nobody else is changing.
+ * first, so the rules below (values match the product's option names, no
+ * duplicates, keep one active while listed) are checked against variants
+ * and option names nobody else is changing.
  */
 async function lockProduct(tx: Prisma.TransactionClient, productId: number) {
-  const [product] = await tx.$queryRaw<{ status: string }[]>`
-    SELECT "status" FROM "Product" WHERE "id" = ${productId} FOR UPDATE`;
+  const [product] = await tx.$queryRaw<({ status: string } & OptionNames)[]>`
+    SELECT "status", "option1Name", "option2Name" FROM "Product" WHERE "id" = ${productId} FOR UPDATE`;
   return product ?? null;
 }
 
-type Sibling = { id: number; name: string | null; value: string | null; isActive: boolean };
+type Sibling = { id: number; isActive: boolean } & OptionValues;
 
 /**
- * The option rules, checked against the product's other variants:
- *  - no two variants with the same option, ignoring case (the unique index
- *    is case-sensitive and treats a null pair as distinct);
- *  - among ACTIVE variants, either one default or only named options. A
- *    "Default" choice next to "Size: Large" would make no sense to a shopper.
+ * The option rules. A CHECK can't compare a variant with its product, so:
+ *  - values are set exactly where the product has option names;
+ *  - no two variants of a product with the same values, ignoring case (the
+ *    unique index is case-sensitive). With no options, that means one variant.
  */
-function optionProblem(option: VariantOption, active: boolean, siblings: Sibling[]): string | null {
-  const key = (name: string, value: string) => `${name.toLowerCase()}\u0000${value.toLowerCase()}`;
-  if (option) {
-    const mine = key(option.name, option.value);
-    const twin = siblings.find((s) => s.name && s.value && key(s.name, s.value) === mine);
-    if (twin) {
-      const label = optionLabel({ name: twin.name!, value: twin.value! });
-      return `This product already has ${label}${twin.isActive ? "" : " (turned off; turn it back on instead)"}.`;
-    }
+function optionProblem(names: OptionNames, option: OptionValues, siblings: Sibling[]): string | null {
+  const pairs = [
+    [names.option1Name, option.option1Value],
+    [names.option2Name, option.option2Value],
+  ] as const;
+  for (const [name, value] of pairs) {
+    if (name && !value) return `Enter a ${name}.`;
+    if (!name && value) return "This product has no option for that value. Set option names on the product first.";
   }
-  if (!active) return null;
 
-  const activeSiblings = siblings.filter((s) => s.isActive);
-  const activeDefault = activeSiblings.some((s) => s.name === null);
-  if (!option && activeDefault) return "This product already has an active default variant.";
-  if (!option && activeSiblings.length > 0) {
-    return "This product's variants have options. Give this one an option too (e.g. Size: Large).";
+  const key = (values: OptionValues) =>
+    [values.option1Value, values.option2Value].map((value) => value?.toLowerCase() ?? "").join("\u0000");
+  const twin = siblings.find((sibling) => key(sibling) === key(option));
+  if (!twin) return null;
+  const off = twin.isActive ? "" : " (turned off; turn it back on instead)";
+  const label = formatVariantLabel(twin);
+  if (!label) {
+    return `This product has no options, so it has just one variant${off}. Products with options are set up in the product details.`;
   }
-  if (option && activeDefault) {
-    return "This product has a default variant with no option. Turn it off, or give it an option, before adding options.";
-  }
-  return null;
+  return `This product already has ${label}${off}.`;
 }
 
 /**
@@ -105,17 +104,18 @@ async function lockVariant(tx: Prisma.TransactionClient, variantId: number) {
   const ref = await tx.productVariant.findUnique({ where: { id: variantId }, select: { productId: true } });
   if (!ref) return null;
   const product = await lockProduct(tx, ref.productId);
+  if (!product) return null;
   const variant = await tx.productVariant.findUniqueOrThrow({
     where: { id: variantId },
-    select: { productId: true, name: true, value: true, isActive: true },
+    select: { productId: true, option1Value: true, option2Value: true, isActive: true },
   });
-  return { ...variant, productStatus: product?.status ?? null };
+  return { ...variant, product };
 }
 
 async function siblingsOf(tx: Prisma.TransactionClient, productId: number, exceptId: number | null) {
   return tx.productVariant.findMany({
     where: { productId, ...(exceptId !== null && { id: { not: exceptId } }) },
-    select: { id: true, name: true, value: true, isActive: true },
+    select: { id: true, option1Value: true, option2Value: true, isActive: true },
   });
 }
 
@@ -143,10 +143,11 @@ export async function createProductVariant(
   adminId: number,
 ): Promise<VariantResult> {
   return run(async (tx) => {
-    if (!(await lockProduct(tx, productId))) return fail("This product no longer exists.");
+    const product = await lockProduct(tx, productId);
+    if (!product) return fail("This product no longer exists.");
 
     const siblings = await siblingsOf(tx, productId, null);
-    const problem = optionProblem(fields.option, true, siblings);
+    const problem = optionProblem(product, fields.option, siblings);
     if (problem) return fail(problem, "option");
     await assertSkuFree(tx, fields.sku, null);
 
@@ -154,8 +155,7 @@ export async function createProductVariant(
     const variant = await tx.productVariant.create({
       data: {
         productId,
-        name: fields.option?.name ?? null,
-        value: fields.option?.value ?? null,
+        ...fields.option,
         priceCents: fields.priceCents,
         sku: fields.sku,
         amazonAsin: fields.amazonAsin,
@@ -196,15 +196,14 @@ export async function updateProductVariant(variantId: number, fields: VariantFie
     if (!current) return fail("This variant no longer exists.");
 
     const siblings = await siblingsOf(tx, current.productId, variantId);
-    const problem = optionProblem(fields.option, current.isActive, siblings);
+    const problem = optionProblem(current.product, fields.option, siblings);
     if (problem) return fail(problem, "option");
     await assertSkuFree(tx, fields.sku, variantId);
 
     await tx.productVariant.update({
       where: { id: variantId },
       data: {
-        name: fields.option?.name ?? null,
-        value: fields.option?.value ?? null,
+        ...fields.option,
         priceCents: fields.priceCents,
         sku: fields.sku,
         amazonAsin: fields.amazonAsin,
@@ -232,10 +231,11 @@ export async function setVariantActive(variantId: number, active: boolean): Prom
 
     const siblings = await siblingsOf(tx, current.productId, variantId);
     if (active) {
-      const option = current.name && current.value ? { name: current.name, value: current.value } : null;
-      const problem = optionProblem(option, true, siblings);
+      // Re-checked: a variant switched off before its product's options were
+      // set (a re-seeded product, say) may not match them.
+      const problem = optionProblem(current.product, current, siblings);
       if (problem) return fail(problem, "isActive");
-    } else if (current.productStatus === "ACTIVE" && !siblings.some((s) => s.isActive)) {
+    } else if (current.product.status === "ACTIVE" && !siblings.some((s) => s.isActive)) {
       return fail("This is the product's only active variant. Unlist the product before turning it off.", "isActive");
     }
 

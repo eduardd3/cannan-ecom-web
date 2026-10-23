@@ -43,21 +43,30 @@ export function parseAsin(value: string): Parsed<string | null> {
   return /^[A-Z0-9]{10}$/.test(asin) ? { ok: true, value: asin } : { ok: false };
 }
 
-export type VariantOption = { name: string; value: string } | null;
+/** Both null = the product's default variant. */
+export type OptionValues = { option1Value: string | null; option2Value: string | null };
+
+/** The product's option names; both null = no options. */
+export type OptionNames = { option1Name: string | null; option2Name: string | null };
+
+/** Trimmed with inner spaces collapsed; blank is null. */
+function normalizeOption(value: string): string | null {
+  return value.trim().replace(/\s+/g, " ") || null;
+}
 
 /**
- * Both blank is the product's default variant (null). Both filled is a named
- * option like Size: Large. One without the other is an error.
+ * Option names (product form) or values (variant form), option 1 first.
+ * Option 2 alone is an error. Whether values match the product's names is
+ * checked against the product, in lib/products/variants.
  */
-export function parseOption(name: string, value: string): Parsed<VariantOption> | { ok: false; message: string } {
-  const n = name.trim().replace(/\s+/g, " ");
-  const v = value.trim().replace(/\s+/g, " ");
-  if (!n && !v) return { ok: true, value: null };
-  if (!n || !v) return { ok: false, message: "Fill in both the option name and value, or leave both blank." };
-  if (n.length > MAX_OPTION_LENGTH || v.length > MAX_OPTION_LENGTH) {
-    return { ok: false, message: `Keep option names and values to ${MAX_OPTION_LENGTH} characters or fewer.` };
+export function parseOptionPair(first: string, second: string): Parsed<[string | null, string | null]> | { ok: false; message: string } {
+  const a = normalizeOption(first);
+  const b = normalizeOption(second);
+  if (b && !a) return { ok: false, message: "Fill in option 1 before option 2." };
+  if ((a?.length ?? 0) > MAX_OPTION_LENGTH || (b?.length ?? 0) > MAX_OPTION_LENGTH) {
+    return { ok: false, message: `Keep options to ${MAX_OPTION_LENGTH} characters or fewer.` };
   }
-  return { ok: true, value: { name: n, value: v } };
+  return { ok: true, value: [a, b] };
 }
 
 /** A whole number from 0 to max. Blank is `blank`. */
@@ -67,9 +76,4 @@ export function parseWholeNumber(value: string, max: number, blank: number | nul
   if (!/^\d+$/.test(trimmed)) return { ok: false };
   const n = Number(trimmed);
   return n <= max ? { ok: true, value: n } : { ok: false };
-}
-
-/** How a variant is labeled in admin lists: its option, or "Default". */
-export function optionLabel(option: VariantOption): string {
-  return option ? `${option.name}: ${option.value}` : "Default";
 }

@@ -88,70 +88,104 @@ enum Carrier {
   OTHER
 }
 
+// Where a collection's second filter (after product type) gets its values.
+enum FacetSource {
+  CATEGORY // the collection's Category rows (Devotion, Orisha)
+  VARIANT_OPTION // values of the variant option named facetLabel (Color)
+}
+
 // Separate product lines; every product belongs to exactly one. The default
 // collection is what general listings show (one default, partial unique in SQL).
 // Rows are inserted by the migration, so production gets them too.
 model Collection {
-  id          Int      @id @default(autoincrement())
-  slug        String   @unique
+  id          Int         @id @default(autoincrement())
+  slug        String      @unique
   name        String
   description String
-  isDefault   Boolean  @default(false)
-  position    Int      @default(0)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  isDefault   Boolean     @default(false)
+  position    Int         @default(0) // order in the collection switcher
+  // The second facet's name ("Devotion", "Orisha", "Color"); null = none.
+  facetLabel  String?
+  facetSource FacetSource @default(CATEGORY)
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+
+  products   Product[]
+  categories Category[]
+}
+
+// What an object is (Statues, Candles), shared by every collection. A table,
+// not an enum, so new types don't need a migration. Rows are inserted by the
+// migration, so production gets them too.
+model ProductType {
+  id        Int      @id @default(autoincrement())
+  slug      String   @unique
+  name      String // plural, as shown in filters: "Framed prints"
+  position  Int      @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   products Product[]
 }
 
-// Browsing tags, shared across collections. Always shown scoped to one
-// collection so a category page never mixes product lines.
+// The per-collection facet a product honors: a Devotion in Signature, an
+// Orisha in Orishas. Each belongs to one collection, and a product's category
+// must be in the product's collection (lib/products/save checks; a CHECK
+// can't span tables). Collections whose facet comes from variant options
+// (facetSource VARIANT_OPTION) have none.
 model Category {
-  id          Int      @id @default(autoincrement())
-  slug        String   @unique
-  name        String
-  description String?
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id           Int        @id @default(autoincrement())
+  slug         String     @unique
+  name         String
+  description  String?
+  collectionId Int
+  collection   Collection @relation(fields: [collectionId], references: [id], onDelete: Restrict)
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
 
-  products ProductCategory[]
-}
+  products Product[]
 
-model ProductCategory {
-  productId  Int
-  product    Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
-  categoryId Int
-  category   Category @relation(fields: [categoryId], references: [id], onDelete: Cascade)
-
-  @@id([productId, categoryId])
-  @@index([categoryId])
+  @@index([collectionId])
 }
 
 model Product {
-  id           Int           @id @default(autoincrement())
-  slug         String        @unique
-  name         String
-  description  String
-  status       ProductStatus @default(DRAFT)
-  collectionId Int
-  collection   Collection    @relation(fields: [collectionId], references: [id], onDelete: Restrict)
+  id            Int           @id @default(autoincrement())
+  slug          String        @unique
+  name          String
+  description   String
+  status        ProductStatus @default(DRAFT)
+  collectionId  Int
+  collection    Collection    @relation(fields: [collectionId], references: [id], onDelete: Restrict)
+  productTypeId Int
+  productType   ProductType   @relation(fields: [productTypeId], references: [id], onDelete: Restrict)
+  // Optional: Bibles and crucifixes honor no one in particular.
+  categoryId    Int?
+  category      Category?     @relation(fields: [categoryId], references: [id], onDelete: Restrict)
+  // Variant option names, shared by every variant so they can't drift
+  // ("Size" vs "Sizes"). Both null = one default variant. Option 1 shows
+  // first in the picker; option2Name needs option1Name (CHECK in SQL).
+  option1Name   String?
+  option2Name   String?
+  material      String? // "Resin, painted finish"; shown in Details
+  isFinalSale   Boolean       @default(false) // seasonal pieces; see the Returns policy
   // First time the product went ACTIVE; never cleared. From then on its URL
   // may be indexed, so a slug change keeps the old one as a redirect.
   // An ACTIVE product always has it (CHECK in SQL).
-  publishedAt  DateTime?
+  publishedAt   DateTime?
   // Shown first in the homepage's featured pieces (while visible); set from
   // the admin product page.
-  featured     Boolean       @default(false)
-  createdAt    DateTime      @default(now())
-  updatedAt    DateTime      @updatedAt
+  featured      Boolean       @default(false)
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
 
   variants      ProductVariant[]
   images        ProductImage[]
-  categories    ProductCategory[]
   slugRedirects ProductSlugRedirect[]
 
   @@index([status])
   @@index([collectionId, status])
+  @@index([productTypeId])
+  @@index([categoryId])
 }
 
 // A published product's former slugs. /products/<old> redirects (308) to the
@@ -174,25 +208,33 @@ model ProductVariant {
   productId Int
   product   Product @relation(fields: [productId], references: [id], onDelete: Cascade)
 
-  name       String?
-  value      String?
-  priceCents Int
-  stock      Int // running total of InventoryAdjustment.delta; CHECK (stock >= 0) in SQL
-  sku        String   @unique
-  amazonAsin String?
-  position   Int      @default(0)
-  isActive   Boolean  @default(true)
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
+  // Values for the product's option1Name/option2Name: set exactly when the
+  // product's name is (lib/products/variants and the seed check; a CHECK
+  // can't span tables). option2Value needs option1Value (CHECK in SQL).
+  option1Value String?
+  option2Value String?
+  // Inches, all three or none, each > 0 (CHECK in SQL). Decimal so 3.5 is
+  // exact; the query layer converts before anything reaches the client.
+  heightIn     Decimal? @db.Decimal(6, 2)
+  widthIn      Decimal? @db.Decimal(6, 2)
+  depthIn      Decimal? @db.Decimal(6, 2)
+  priceCents   Int
+  stock        Int // running total of InventoryAdjustment.delta; CHECK (stock >= 0) in SQL
+  sku          String   @unique
+  amazonAsin   String?
+  position     Int      @default(0)
+  isActive     Boolean  @default(true)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
 
   cartItems            CartItem[]
   orderItems           OrderItem[]
   images               ProductImage[]
   inventoryAdjustments InventoryAdjustment[]
 
-  // Also serves as the productId index. NULLs are distinct in Postgres, so
-  // this does not stop two (null, null) variants on one product.
-  @@unique([productId, name, value])
+  // Also serves as the productId index. NULLS NOT DISTINCT in SQL, so a
+  // product has at most one (null, null) default variant.
+  @@unique([productId, option1Value, option2Value])
 }
 
 model ProductImage {
@@ -243,10 +285,10 @@ model CartItem {
 }
 
 model Order {
-  id           Int         @id @default(autoincrement())
-  userId       Int
-  user         User        @relation(fields: [userId], references: [id], onDelete: Restrict)
-  status       OrderStatus @default(PAID)
+  id                 Int         @id @default(autoincrement())
+  userId             Int
+  user               User        @relation(fields: [userId], references: [id], onDelete: Restrict)
+  status             OrderStatus @default(PAID)
   // Why the order went to NEEDS_REVIEW. Required while in review (CHECK in
   // SQL) and kept after it's resolved, as history.
   reviewReason       String?
@@ -254,16 +296,16 @@ model Order {
   // NEEDS_REVIEW, and only on orders that had a reviewReason (CHECK in SQL).
   reviewResolvedAt   DateTime?
   reviewResolvedById Int?
-  reviewResolvedBy   User?     @relation("OrderReviewResolvedBy", fields: [reviewResolvedById], references: [id], onDelete: SetNull)
+  reviewResolvedBy   User?       @relation("OrderReviewResolvedBy", fields: [reviewResolvedById], references: [id], onDelete: SetNull)
 
   // Set together when the order ships (PAID → FULFILLED); a FULFILLED order
   // must have all three (CHECK in SQL). Kept if the order later changes
   // status, as history.
-  carrier        Carrier?
-  trackingNumber String?
-  fulfilledAt    DateTime?
-  fulfilledById  Int?
-  fulfilledBy    User?     @relation("OrderFulfilledBy", fields: [fulfilledById], references: [id], onDelete: SetNull)
+  carrier             Carrier?
+  trackingNumber      String?
+  fulfilledAt         DateTime?
+  fulfilledById       Int?
+  fulfilledBy         User?     @relation("OrderFulfilledBy", fields: [fulfilledById], references: [id], onDelete: SetNull)
   // The last time carrier or tracking was corrected after shipping, and by
   // whom. Only on shipped orders (CHECK in SQL); fulfilledAt stays the ship date.
   trackingUpdatedAt   DateTime?
@@ -292,7 +334,7 @@ model Order {
   disputeReason   String?
   disputedAt      DateTime?
 
-  email          String
+  email           String
   shippingAddress Json?
 
   // When the order confirmation email went out. Sent once the order is PAID
@@ -301,7 +343,7 @@ model Order {
   // When the shipped email (carrier and tracking) went out. Only on orders
   // that have shipped (CHECK in SQL); null means not sent yet. Tracking
   // corrections don't send another.
-  shippedEmailSentAt DateTime?
+  shippedEmailSentAt      DateTime?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt

@@ -33,8 +33,8 @@ export type ProductImageView = {
 
 export type ProductVariantView = {
   id: number;
-  name: string | null; // option name, e.g. "Size"; null on a default variant
-  value: string | null; // e.g. "Large"
+  option1Value: string | null; // e.g. "Roja"; null on a default variant
+  option2Value: string | null; // e.g. "12 in"; only alongside option1Value
   priceCents: number;
   stock: number; // a hint for the UI; addToCart and the webhook re-check it
 };
@@ -43,6 +43,8 @@ export type ProductDetailView = {
   slug: string;
   name: string;
   description: string;
+  option1Name: string | null; // e.g. "Color"; null = one default variant
+  option2Name: string | null; // e.g. "Size"
   images: ProductImageView[]; // by position
   variants: ProductVariantView[]; // active only, by position
 };

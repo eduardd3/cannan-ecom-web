@@ -13,7 +13,7 @@ import {
   MAX_POSITION,
   normalizeSku,
   parseAsin,
-  parseOption,
+  parseOptionPair,
   parsePriceCents,
   parseWholeNumber,
 } from "./variant-fields";
@@ -28,8 +28,8 @@ import {
 // The form's values as typed. A failure echoes them back: React resets the
 // form after every action, so the form uses them as defaults.
 export type VariantFormValues = {
-  optionName: string;
-  optionValue: string;
+  option1Value: string;
+  option2Value: string;
   price: string;
   sku: string;
   amazonAsin: string;
@@ -49,8 +49,8 @@ const idSchema = z.coerce.number().int().positive();
 function readValues(formData: FormData): VariantFormValues {
   const text = (name: string) => String(formData.get(name) ?? "");
   return {
-    optionName: text("optionName"),
-    optionValue: text("optionValue"),
+    option1Value: text("option1Value"),
+    option2Value: text("option2Value"),
     price: text("price"),
     sku: text("sku"),
     amazonAsin: text("amazonAsin"),
@@ -62,10 +62,12 @@ function readValues(formData: FormData): VariantFormValues {
 type Failure = { ok: false; field?: VariantField; message: string };
 
 function parseFields(values: VariantFormValues): { ok: true; fields: VariantFields } | Failure {
-  const option = parseOption(values.optionName, values.optionValue);
+  // Whether these match the product's option names is checked in ./variants.
+  const option = parseOptionPair(values.option1Value, values.option2Value);
   if (!option.ok) {
-    return { ok: false, field: "option", message: "message" in option ? option.message : "Check the option." };
+    return { ok: false, field: "option", message: "message" in option ? option.message : "Check the options." };
   }
+  const [option1Value, option2Value] = option.value;
 
   const priceCents = parsePriceCents(values.price);
   if (priceCents === null) {
@@ -87,7 +89,7 @@ function parseFields(values: VariantFormValues): { ok: true; fields: VariantFiel
 
   return {
     ok: true,
-    fields: { option: option.value, priceCents, sku, amazonAsin: asin.value, position: position.value },
+    fields: { option: { option1Value, option2Value }, priceCents, sku, amazonAsin: asin.value, position: position.value },
   };
 }
 

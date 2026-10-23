@@ -39,7 +39,7 @@ export async function getDefaultCollection() {
  */
 export async function listCategoriesInCollection(collectionId: number): Promise<CategoryView[]> {
   return prisma.category.findMany({
-    where: { products: { some: { product: { ...visibleProduct, collectionId } } } },
+    where: { collectionId, products: { some: visibleProduct } },
     select: { slug: true, name: true },
     orderBy: { name: "asc" },
   });
@@ -56,7 +56,7 @@ export async function listProducts({
     where: {
       ...visibleProduct,
       collectionId,
-      ...(categorySlug && { categories: { some: { category: { slug: categorySlug } } } }),
+      ...(categorySlug && { category: { slug: categorySlug } }),
     },
     select: productCardSelect,
     orderBy: [{ createdAt: "desc" }, { id: "desc" }],
@@ -126,13 +126,15 @@ export const getProductBySlug = cache(async (slug: string): Promise<ProductDetai
       slug: true,
       name: true,
       description: true,
+      option1Name: true,
+      option2Name: true,
       images: {
         select: { key: true, alt: true, variantId: true },
         orderBy: [{ position: "asc" }, { id: "asc" }],
       },
       variants: {
         where: { isActive: true },
-        select: { id: true, name: true, value: true, priceCents: true, stock: true },
+        select: { id: true, option1Value: true, option2Value: true, priceCents: true, stock: true },
         orderBy: [{ position: "asc" }, { id: "asc" }],
       },
     },
@@ -143,6 +145,8 @@ export const getProductBySlug = cache(async (slug: string): Promise<ProductDetai
     slug: product.slug,
     name: product.name,
     description: product.description,
+    option1Name: product.option1Name,
+    option2Name: product.option2Name,
     images: product.images.map((image) => ({
       url: getImageUrl(image.key),
       alt: image.alt,

@@ -39,7 +39,13 @@ export default async function EditCategoryPage({ params }: PageProps<"/adm/categ
         <CategoryForm
           saved={{
             id: category.id,
-            values: { name: category.name, slug: category.slug, description: category.description ?? "" },
+            values: {
+              name: category.name,
+              slug: category.slug,
+              description: category.description ?? "",
+              collectionId: String(category.collectionId),
+            },
+            collectionName: category.collection.name,
             listedProductCount: category.products.filter((product) => product.status === "ACTIVE").length,
           }}
         />

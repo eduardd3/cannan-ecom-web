@@ -16,7 +16,10 @@ export type ProductFields = {
   slug: string; // already validated with slugProblem
   description: string;
   collectionId: number;
-  categoryIds: number[];
+  productTypeId: number;
+  categoryId: number | null; // must be in collectionId's collection
+  option1Name: string | null; // option2Name needs option1Name (parsed that way)
+  option2Name: string | null;
 };
 
 export type ProductField = keyof ProductFields | "status";
@@ -79,20 +82,40 @@ async function assertSlugFree(tx: Prisma.TransactionClient, slug: string, produc
   }
 }
 
-/** Collection and categories come from select lists; a stale form could still send a deleted id. */
+/**
+ * Collection, type, and category come from select lists; a stale form could
+ * still send a deleted id. The category must belong to the product's
+ * collection, which no constraint enforces (it spans two tables).
+ */
 async function assertRefsExist(tx: Prisma.TransactionClient, fields: ProductFields) {
-  const [collection, categoryCount] = await Promise.all([
+  const [collection, productType, category] = await Promise.all([
     tx.collection.findUnique({ where: { id: fields.collectionId }, select: { id: true } }),
-    tx.category.count({ where: { id: { in: fields.categoryIds } } }),
+    tx.productType.findUnique({ where: { id: fields.productTypeId }, select: { id: true } }),
+    fields.categoryId === null
+      ? null
+      : tx.category.findUnique({ where: { id: fields.categoryId }, select: { collectionId: true } }),
   ]);
   if (!collection) throw new Rollback(fail("Pick a collection.", "collectionId"));
-  if (categoryCount !== new Set(fields.categoryIds).size) {
-    throw new Rollback(fail("A selected category no longer exists. Reload and try again.", "categoryIds"));
+  if (!productType) throw new Rollback(fail("Pick a type.", "productTypeId"));
+  if (fields.categoryId !== null) {
+    if (!category) throw new Rollback(fail("That category no longer exists. Reload and try again.", "categoryId"));
+    if (category.collectionId !== fields.collectionId) {
+      throw new Rollback(fail("Pick a category from this product's collection.", "categoryId"));
+    }
   }
 }
 
-function categoryLinks(categoryIds: number[]) {
-  return [...new Set(categoryIds)].map((categoryId) => ({ categoryId }));
+function productData(fields: ProductFields) {
+  return {
+    name: fields.name,
+    slug: fields.slug,
+    description: fields.description,
+    collectionId: fields.collectionId,
+    productTypeId: fields.productTypeId,
+    categoryId: fields.categoryId,
+    option1Name: fields.option1Name,
+    option2Name: fields.option2Name,
+  };
 }
 
 // ---------------------------------------------------------------------------
@@ -110,14 +133,7 @@ export async function createProduct(fields: ProductFields): Promise<SaveProductR
     await assertRefsExist(tx, fields);
 
     const product = await tx.product.create({
-      data: {
-        name: fields.name,
-        slug: fields.slug,
-        description: fields.description,
-        collectionId: fields.collectionId,
-        status: "DRAFT",
-        categories: { create: categoryLinks(fields.categoryIds) },
-      },
+      data: { ...productData(fields), status: "DRAFT" },
       select: { id: true },
     });
     return { ok: true, id: product.id };
@@ -140,6 +156,10 @@ export async function createProduct(fields: ProductFields): Promise<SaveProductR
  *
  * Featured: left as is when omitted. It only matters while the product is
  * visible, so it's kept (not cleared) when a product is unlisted.
+ *
+ * Option names: once the product has variants, they can be renamed but not
+ * added or removed, since every variant's values must match them and variants
+ * can't be deleted. (Changing the option set comes with the admin forms in 4.2.)
  */
 export async function updateProduct(
   productId: number,
@@ -149,11 +169,25 @@ export async function updateProduct(
     await lockSlugs(tx);
     // Lock the row: two admins saving at once would otherwise both read the
     // old slug and both try to keep it as a redirect.
-    const [product] = await tx.$queryRaw<{ slug: string; publishedAt: Date | null }[]>`
-      SELECT "slug", "publishedAt" FROM "Product" WHERE "id" = ${productId} FOR UPDATE`;
+    // Also what lib/products/variants locks, so option names can't change
+    // under a variant write.
+    const [product] = await tx.$queryRaw<
+      { slug: string; publishedAt: Date | null; option1Name: string | null; option2Name: string | null }[]
+    >`
+      SELECT "slug", "publishedAt", "option1Name", "option2Name" FROM "Product" WHERE "id" = ${productId} FOR UPDATE`;
     if (!product) return fail("This product no longer exists.");
 
     await assertRefsExist(tx, fields);
+
+    const levelChanged =
+      (product.option1Name === null) !== (fields.option1Name === null) ||
+      (product.option2Name === null) !== (fields.option2Name === null);
+    if (levelChanged && (await tx.productVariant.count({ where: { productId } })) > 0) {
+      return fail(
+        "This product already has variants, so options can be renamed but not added or removed.",
+        "option1Name",
+      );
+    }
 
     if (fields.status === "ACTIVE") {
       const activeVariants = await tx.productVariant.count({ where: { productId, isActive: true } });
@@ -175,14 +209,10 @@ export async function updateProduct(
     await tx.product.update({
       where: { id: productId },
       data: {
-        name: fields.name,
-        slug: fields.slug,
-        description: fields.description,
-        collectionId: fields.collectionId,
+        ...productData(fields),
         status: fields.status,
         featured: fields.featured,
         publishedAt: product.publishedAt ?? (fields.status === "ACTIVE" ? new Date() : null),
-        categories: { deleteMany: {}, create: categoryLinks(fields.categoryIds) },
       },
     });
     return { ok: true, id: productId };

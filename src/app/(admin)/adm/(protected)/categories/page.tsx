@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 
-import { listAdminCategories } from "@/lib/categories/queries";
+import { listAdminCategories, listCategoryCollections } from "@/lib/categories/queries";
 import { requireStaff } from "@/lib/session";
 import CategoryForm from "./category-form";
 
@@ -12,14 +12,15 @@ export const metadata: Metadata = {
 
 export default async function CategoriesPage() {
   await requireStaff();
-  const categories = await listAdminCategories();
+  const [categories, collections] = await Promise.all([listAdminCategories(), listCategoryCollections()]);
 
   return (
     <div className="mx-auto flex w-full max-w-3xl flex-col gap-6">
       <div>
         <h1 className="text-2xl font-bold text-adm-fg">Categories</h1>
         <p className="mt-1 text-sm text-adm-muted">
-          Browsing tags for products. The storefront only lists a category once a listed product uses it.
+          What a product honors, within one collection: a Devotion in Signature, an Orisha in Orishas. The
+          storefront only lists a category once a listed product uses it.
         </p>
       </div>
 
@@ -27,7 +28,7 @@ export default async function CategoriesPage() {
         <h2 id="add-heading" className="mb-4 font-semibold text-adm-fg">
           Add category
         </h2>
-        <CategoryForm />
+        <CategoryForm collections={collections} />
       </section>
 
       <div className="overflow-x-auto rounded-xl border border-adm-border bg-adm-surface">
@@ -38,6 +39,7 @@ export default async function CategoriesPage() {
             <thead className="border-b border-adm-border text-adm-muted">
               <tr>
                 <th className="px-4 py-3 font-medium">Category</th>
+                <th className="px-4 py-3 font-medium">Collection</th>
                 <th className="px-4 py-3 text-right font-medium">Products</th>
               </tr>
             </thead>
@@ -53,6 +55,7 @@ export default async function CategoriesPage() {
                     </Link>
                     <div className="font-mono text-xs text-adm-muted">{category.slug}</div>
                   </td>
+                  <td className="px-4 py-3">{category.collectionName}</td>
                   <td className="px-4 py-3 text-right tabular-nums">{category.productCount}</td>
                 </tr>
               ))}

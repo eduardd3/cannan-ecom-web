@@ -17,6 +17,7 @@ import {
   MAX_OPTION_LENGTH,
   MAX_POSITION,
   MAX_SKU_LENGTH,
+  type OptionNames,
 } from "@/lib/products/variant-fields";
 import type { VariantField } from "@/lib/products/variants";
 import StockCount from "../../inventory/stock-count";
@@ -24,8 +25,8 @@ import StockCount from "../../inventory/stock-count";
 export type VariantRow = {
   id: number;
   sku: string;
-  name: string | null;
-  value: string | null;
+  option1Value: string | null;
+  option2Value: string | null;
   label: string | null;
   priceCents: number;
   stock: number;
@@ -43,8 +44,8 @@ const SECONDARY_BUTTON =
 
 function valuesOf(variant: VariantRow): VariantFormValues {
   return {
-    optionName: variant.name ?? "",
-    optionValue: variant.value ?? "",
+    option1Value: variant.option1Value ?? "",
+    option2Value: variant.option2Value ?? "",
     price: formatPriceInput(variant.priceCents),
     sku: variant.sku,
     amazonAsin: variant.amazonAsin ?? "",
@@ -96,10 +97,12 @@ function Field({
  */
 function VariantForm({
   productId,
+  optionNames,
   variant,
   onDone,
 }: {
   productId: number;
+  optionNames: OptionNames;
   variant?: VariantRow;
   onDone?: () => void;
 }) {
@@ -116,15 +119,22 @@ function VariantForm({
     <form action={action} className="flex flex-col gap-4">
       <input type="hidden" name={editing ? "variantId" : "productId"} value={editing ? variant.id : productId} />
 
-      <fieldset className="grid gap-4 sm:grid-cols-2">
-        <legend className="mb-2 text-sm text-adm-muted">
-          Option <span className="text-xs">(leave both blank for a product with just one version)</span>
-        </legend>
-        <Field label="Name" name="optionName" field="option" state={state} defaultValue={values?.optionName}
-          placeholder="e.g. Size" maxLength={MAX_OPTION_LENGTH} />
-        <Field label="Value" name="optionValue" field="option" state={state} defaultValue={values?.optionValue}
-          placeholder="e.g. Large" maxLength={MAX_OPTION_LENGTH} />
-      </fieldset>
+      {/* Names come from the product's details; a product without them has one variant. */}
+      {optionNames.option1Name ? (
+        <fieldset className="grid gap-4 sm:grid-cols-2">
+          <legend className="mb-2 text-sm text-adm-muted">Options</legend>
+          <Field label={optionNames.option1Name} name="option1Value" field="option" state={state}
+            defaultValue={values?.option1Value} required maxLength={MAX_OPTION_LENGTH} />
+          {optionNames.option2Name && (
+            <Field label={optionNames.option2Name} name="option2Value" field="option" state={state}
+              defaultValue={values?.option2Value} required maxLength={MAX_OPTION_LENGTH} />
+          )}
+        </fieldset>
+      ) : (
+        <p className="text-sm text-adm-muted">
+          This product has no options, so it has a single variant. Option names are set in the product details.
+        </p>
+      )}
       {optionInvalid && state && !state.ok && (
         <p role="alert" className="-mt-2 text-sm text-red-700">
           {state.message}
@@ -196,14 +206,14 @@ function ActiveToggle({ variant }: { variant: VariantRow }) {
 
 const COLUMNS = 5;
 
-function Row({ productId, variant }: { productId: number; variant: VariantRow }) {
+function Row({ productId, optionNames, variant }: { productId: number; optionNames: OptionNames; variant: VariantRow }) {
   const [editing, setEditing] = useState(false);
 
   if (editing) {
     return (
       <tr>
         <td colSpan={COLUMNS} className="bg-adm-bg px-6 py-4">
-          <VariantForm productId={productId} variant={variant} onDone={() => setEditing(false)} />
+          <VariantForm productId={productId} optionNames={optionNames} variant={variant} onDone={() => setEditing(false)} />
         </td>
       </tr>
     );
@@ -234,7 +244,15 @@ function Row({ productId, variant }: { productId: number; variant: VariantRow })
   );
 }
 
-export default function Variants({ productId, variants }: { productId: number; variants: VariantRow[] }) {
+export default function Variants({
+  productId,
+  optionNames,
+  variants,
+}: {
+  productId: number;
+  optionNames: OptionNames;
+  variants: VariantRow[];
+}) {
   return (
     <>
       {variants.length === 0 ? (
@@ -254,7 +272,7 @@ export default function Variants({ productId, variants }: { productId: number; v
           </thead>
           <tbody className="divide-y divide-adm-border text-adm-fg">
             {variants.map((variant) => (
-              <Row key={variant.id} productId={productId} variant={variant} />
+              <Row key={variant.id} productId={productId} optionNames={optionNames} variant={variant} />
             ))}
           </tbody>
         </table>
@@ -262,7 +280,7 @@ export default function Variants({ productId, variants }: { productId: number; v
       <details className="border-t border-adm-border px-6 py-4" open={variants.length === 0}>
         <summary className="cursor-pointer text-sm font-medium text-adm-fg">Add a variant</summary>
         <div className="mt-4">
-          <VariantForm productId={productId} />
+          <VariantForm productId={productId} optionNames={optionNames} />
         </div>
       </details>
     </>

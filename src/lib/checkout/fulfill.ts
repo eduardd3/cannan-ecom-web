@@ -8,7 +8,7 @@ import "server-only";
 
 import { Prisma } from "@/generated/prisma/client";
 
-import { formatVariantLabel } from "@/lib/cart/queries";
+import { formatVariantLabel } from "@/lib/catalog/format";
 import { adjustStock } from "@/lib/inventory/adjust";
 import { prisma } from "@/lib/prisma";
 import { getStripe } from "@/lib/stripe";
@@ -88,7 +88,7 @@ async function createOrder(
   //    instead of silently losing a paid order.
   const variants = await tx.productVariant.findMany({
     where: { id: { in: variantIds } },
-    select: { id: true, sku: true, name: true, value: true, product: { select: { name: true } } },
+    select: { id: true, sku: true, option1Value: true, option2Value: true, product: { select: { name: true } } },
   });
   const variantsById = new Map(variants.map((variant) => [variant.id, variant]));
   const missing = variantIds.filter((id) => !variantsById.has(id));
@@ -120,7 +120,7 @@ async function createOrder(
             quantity: line.quantity,
             unitPriceCents: line.unitPriceCents, // what Stripe charged
             productName: variant.product.name,
-            variantLabel: formatVariantLabel(variant.name, variant.value),
+            variantLabel: formatVariantLabel(variant),
             sku: variant.sku,
           };
         }),

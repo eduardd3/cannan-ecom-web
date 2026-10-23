@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useActionState, useRef, useState, type ReactNode } from "react";
+import { useActionState, useState, type ReactNode } from "react";
 
 import type { ProductStatus } from "@/generated/prisma/enums";
 import {
@@ -18,6 +18,7 @@ import {
 } from "@/lib/products/format";
 import type { ProductField } from "@/lib/products/save";
 import { MAX_SLUG_LENGTH, productPath, slugify } from "@/lib/products/slug";
+import { MAX_OPTION_LENGTH } from "@/lib/products/variant-fields";
 
 const FORM_ID = "product-form";
 
@@ -33,8 +34,9 @@ const STATUS_HINT: Record<ProductStatus, string> = {
 };
 
 type Options = {
-  collections: { id: number; name: string; isDefault: boolean }[];
-  categories: { id: number; name: string }[];
+  collections: { id: number; name: string; isDefault: boolean; facetLabel: string | null }[];
+  productTypes: { id: number; name: string }[];
+  categories: { id: number; name: string; collectionId: number }[];
 };
 
 // What the edit page knows about the saved product.
@@ -90,12 +92,11 @@ export default function ProductForm({
   const defaultCollection =
     values?.collectionId ?? String(options.collections.find((c) => c.isDefault)?.id ?? options.collections[0]?.id ?? "");
 
-  // Picked categories submit as hidden inputs; the picker itself has no name.
-  const [categoryIds, setCategoryIds] = useState<string[]>(values?.categoryIds ?? []);
-  const [pick, setPick] = useState("");
-  const pickerRef = useRef<HTMLSelectElement>(null);
-  const picked = options.categories.filter((c) => categoryIds.includes(String(c.id)));
-  const unpicked = options.categories.filter((c) => !categoryIds.includes(String(c.id)));
+  // The category list follows the collection: a category belongs to one.
+  const [collectionId, setCollectionId] = useState(defaultCollection);
+  const [categoryId, setCategoryId] = useState(values?.categoryId ?? "");
+  const selectedCollection = options.collections.find((c) => String(c.id) === collectionId);
+  const categories = options.categories.filter((c) => String(c.collectionId) === collectionId);
 
   const renaming = editing && slug !== saved.values.slug;
   const canList = (saved?.activeVariantCount ?? 0) > 0;
@@ -211,7 +212,11 @@ export default function ProductForm({
             Collection
             <select
               name="collectionId"
-              defaultValue={defaultCollection}
+              value={collectionId}
+              onChange={(event) => {
+                setCollectionId(event.target.value);
+                setCategoryId("");
+              }}
               aria-invalid={invalid("collectionId")}
               className={`${fieldClass(invalid("collectionId"))} w-fit`}
             >
@@ -224,9 +229,31 @@ export default function ProductForm({
             <FieldError id="collection-error" state={state} field="collectionId" />
           </label>
 
-          <div className="flex flex-col gap-2 text-sm text-adm-muted">
+          <label className="flex flex-col gap-1 text-sm text-adm-muted">
+            Type
+            <select
+              name="productTypeId"
+              required
+              defaultValue={values?.productTypeId ?? ""}
+              aria-invalid={invalid("productTypeId")}
+              aria-describedby="type-error"
+              className={`${fieldClass(invalid("productTypeId"))} w-fit`}
+            >
+              <option value="" disabled>
+                Choose a type
+              </option>
+              {options.productTypes.map((productType) => (
+                <option key={productType.id} value={productType.id}>
+                  {productType.name}
+                </option>
+              ))}
+            </select>
+            <FieldError id="type-error" state={state} field="productTypeId" />
+          </label>
+
+          <div className="flex flex-col gap-1 text-sm text-adm-muted">
             <div className="flex flex-wrap items-baseline justify-between gap-2">
-              <label htmlFor="category-picker">Categories</label>
+              <label htmlFor="category">{selectedCollection?.facetLabel ?? "Category"} (optional)</label>
               {/* New tab so nothing typed here is lost; reload this page to see new categories. */}
               <Link
                 href="/adm/categories"
@@ -237,70 +264,64 @@ export default function ProductForm({
                 Manage categories
               </Link>
             </div>
-            {options.categories.length === 0 ? (
-              <p>No categories yet.</p>
+            {categories.length === 0 ? (
+              <p className="text-xs">No categories in this collection.</p>
             ) : (
-              <>
-                <div className="flex flex-wrap gap-2">
-                  <select
-                    id="category-picker"
-                    ref={pickerRef}
-                    value={pick}
-                    onChange={(event) => setPick(event.target.value)}
-                    disabled={unpicked.length === 0}
-                    aria-invalid={invalid("categoryIds")}
-                    aria-describedby="categories-error"
-                    className={`${fieldClass(invalid("categoryIds"))} w-fit disabled:opacity-50`}
-                  >
-                    <option value="">{unpicked.length === 0 ? "All categories added" : "Choose a category"}</option>
-                    {unpicked.map((category) => (
-                      <option key={category.id} value={category.id}>
-                        {category.name}
-                      </option>
-                    ))}
-                  </select>
-                  <button
-                    type="button"
-                    disabled={!pick}
-                    onClick={() => {
-                      setCategoryIds((ids) => [...ids, pick]);
-                      setPick("");
-                    }}
-                    className="cursor-pointer rounded-md border border-adm-border px-3 py-2 text-sm text-adm-fg transition-colors hover:bg-adm-border disabled:cursor-not-allowed disabled:opacity-50"
-                  >
-                    Add
-                  </button>
-                </div>
-                {picked.length === 0 ? (
-                  <p className="text-xs">None selected.</p>
-                ) : (
-                  <ul className="flex flex-wrap gap-2">
-                    {picked.map((category) => (
-                      <li
-                        key={category.id}
-                        className="flex items-center gap-1 rounded-full border border-adm-border py-0.5 pl-3 pr-1 text-adm-fg"
-                      >
-                        {category.name}
-                        <input type="hidden" name="categoryIds" value={category.id} />
-                        <button
-                          type="button"
-                          aria-label={`Remove ${category.name}`}
-                          onClick={() => {
-                            setCategoryIds((ids) => ids.filter((id) => id !== String(category.id)));
-                            pickerRef.current?.focus();
-                          }}
-                          className="flex size-6 cursor-pointer items-center justify-center rounded-full text-adm-muted transition-colors hover:bg-adm-border hover:text-adm-fg"
-                        >
-                          <span aria-hidden="true">×</span>
-                        </button>
-                      </li>
-                    ))}
-                  </ul>
-                )}
-              </>
+              <select
+                id="category"
+                name="categoryId"
+                value={categoryId}
+                onChange={(event) => setCategoryId(event.target.value)}
+                aria-invalid={invalid("categoryId")}
+                aria-describedby="category-error"
+                className={`${fieldClass(invalid("categoryId"))} w-fit`}
+              >
+                <option value="">None</option>
+                {categories.map((category) => (
+                  <option key={category.id} value={category.id}>
+                    {category.name}
+                  </option>
+                ))}
+              </select>
             )}
-            <FieldError id="categories-error" state={state} field="categoryIds" />
+            <FieldError id="category-error" state={state} field="categoryId" />
           </div>
+
+          <fieldset className="flex flex-col gap-2 text-sm text-adm-muted">
+            <legend>
+              Options <span className="text-xs">(leave blank for a product with a single variant)</span>
+            </legend>
+            <div className="grid gap-4 sm:grid-cols-2">
+              <label className="flex flex-col gap-1">
+                Option 1 name
+                <input
+                  name="option1Name"
+                  type="text"
+                  maxLength={MAX_OPTION_LENGTH}
+                  placeholder="e.g. Color"
+                  defaultValue={values?.option1Name}
+                  aria-invalid={invalid("option1Name")}
+                  aria-describedby="options-error"
+                  className={fieldClass(invalid("option1Name"))}
+                />
+              </label>
+              <label className="flex flex-col gap-1">
+                Option 2 name
+                <input
+                  name="option2Name"
+                  type="text"
+                  maxLength={MAX_OPTION_LENGTH}
+                  placeholder="e.g. Size"
+                  defaultValue={values?.option2Name}
+                  aria-invalid={invalid("option1Name")}
+                  aria-describedby="options-error"
+                  className={fieldClass(invalid("option1Name"))}
+                />
+              </label>
+            </div>
+            <p className="text-xs">Option 1 shows first in the picker. Once there are variants, options can be renamed but not added or removed.</p>
+            <FieldError id="options-error" state={state} field="option1Name" />
+          </fieldset>
 
           {!editing && submitBar}
         </form>

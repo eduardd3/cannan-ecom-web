@@ -2,14 +2,15 @@ import { afterAll, beforeEach, describe, expect, it } from "vitest";
 
 import { getRedirectedSlug } from "@/lib/catalog/queries";
 import { prisma } from "@/lib/prisma";
-import { createVariant, resetDb } from "../../../test/db";
+import { catalogRefs, createVariant, resetDb } from "../../../test/db";
 import { createProduct, updateProduct, type ProductFields } from "./save";
 
 let collectionId: number;
+let productTypeId: number;
 
 beforeEach(async () => {
   await resetDb();
-  collectionId = (await prisma.collection.findFirstOrThrow({ where: { isDefault: true } })).id;
+  ({ collectionId, productTypeId } = await catalogRefs());
 });
 
 afterAll(async () => {
@@ -22,7 +23,10 @@ function fields(overrides: Partial<ProductFields> = {}): ProductFields {
     slug: "san-judas-candle",
     description: "A seven-day candle.",
     collectionId,
-    categoryIds: [],
+    productTypeId,
+    categoryId: null,
+    option1Name: null,
+    option2Name: null,
     ...overrides,
   };
 }
@@ -44,16 +48,16 @@ async function save(
   productId: number,
   overrides: Partial<ProductFields> & { status?: "DRAFT" | "ACTIVE" | "ARCHIVED"; featured?: boolean },
 ) {
-  const product = await prisma.product.findUniqueOrThrow({
-    where: { id: productId },
-    include: { categories: true },
-  });
+  const product = await prisma.product.findUniqueOrThrow({ where: { id: productId } });
   return updateProduct(productId, {
     name: product.name,
     slug: product.slug,
     description: product.description,
     collectionId: product.collectionId,
-    categoryIds: product.categories.map((link) => link.categoryId),
+    productTypeId: product.productTypeId,
+    categoryId: product.categoryId,
+    option1Name: product.option1Name,
+    option2Name: product.option2Name,
     status: product.status,
     ...overrides,
   });
@@ -65,17 +69,20 @@ async function redirectsOf(productId: number) {
 }
 
 describe("createProduct", () => {
-  it("creates a draft with its categories", async () => {
-    const [candles, saints] = await Promise.all([
-      prisma.category.create({ data: { slug: "candles", name: "Candles" } }),
-      prisma.category.create({ data: { slug: "saints", name: "Saints" } }),
-    ]);
+  it("creates a draft with its type, category, and option names", async () => {
+    const category = await prisma.category.create({ data: { slug: "san-judas", name: "San Judas", collectionId } });
 
-    const id = await created({ categoryIds: [candles.id, saints.id, candles.id] });
+    const id = await created({ categoryId: category.id, option1Name: "Color", option2Name: "Size" });
 
-    const product = await prisma.product.findUniqueOrThrow({ where: { id }, include: { categories: true } });
-    expect(product).toMatchObject({ status: "DRAFT", publishedAt: null, slug: "san-judas-candle" });
-    expect(product.categories.map((link) => link.categoryId).sort()).toEqual([candles.id, saints.id].sort());
+    expect(await prisma.product.findUniqueOrThrow({ where: { id } })).toMatchObject({
+      status: "DRAFT",
+      publishedAt: null,
+      slug: "san-judas-candle",
+      productTypeId,
+      categoryId: category.id,
+      option1Name: "Color",
+      option2Name: "Size",
+    });
   });
 
   it("refuses a slug another product uses now", async () => {
@@ -94,9 +101,39 @@ describe("createProduct", () => {
     });
   });
 
-  it("refuses a category that doesn't exist", async () => {
-    expect(await createProduct(fields({ categoryIds: [999] }))).toMatchObject({ ok: false, field: "categoryIds" });
+  it("refuses a category or type that doesn't exist", async () => {
+    expect(await createProduct(fields({ categoryId: 999 }))).toMatchObject({ ok: false, field: "categoryId" });
+    expect(await createProduct(fields({ productTypeId: 999 }))).toMatchObject({ ok: false, field: "productTypeId" });
     expect(await prisma.product.count()).toBe(0);
+  });
+
+  it("refuses a category from another collection", async () => {
+    const other = await prisma.collection.findFirstOrThrow({ where: { isDefault: false } });
+    const category = await prisma.category.create({ data: { slug: "oshun", name: "Oshún", collectionId: other.id } });
+
+    expect(await createProduct(fields({ categoryId: category.id }))).toMatchObject({ ok: false, field: "categoryId" });
+  });
+});
+
+describe("updateProduct: option names", () => {
+  it("renames options on a product with variants", async () => {
+    const { productId } = await createVariant({ stock: 0 });
+    await prisma.product.update({ where: { id: productId }, data: { option1Name: "Size" } });
+
+    expect(await save(productId, { option1Name: "Talla" })).toEqual({ ok: true, id: productId });
+  });
+
+  it("won't add or remove an option once there are variants", async () => {
+    const { productId } = await createVariant({ stock: 0 }); // a default variant, no options
+
+    expect(await save(productId, { option1Name: "Size" })).toMatchObject({ ok: false, field: "option1Name" });
+    expect((await prisma.product.findUniqueOrThrow({ where: { id: productId } })).option1Name).toBeNull();
+  });
+
+  it("changes options freely before there are variants", async () => {
+    const id = await created();
+    expect(await save(id, { option1Name: "Color", option2Name: "Size" })).toEqual({ ok: true, id });
+    expect(await save(id, { option1Name: null, option2Name: null })).toEqual({ ok: true, id });
   });
 });
 

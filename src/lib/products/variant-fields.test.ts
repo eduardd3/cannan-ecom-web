@@ -2,10 +2,11 @@ import { describe, expect, it } from "vitest";
 
 import {
   formatPriceInput,
+  MAX_OPTION_LENGTH,
   MAX_SKU_LENGTH,
   normalizeSku,
   parseAsin,
-  parseOption,
+  parseOptionPair,
   parsePriceCents,
   parseWholeNumber,
 } from "./variant-fields";
@@ -57,18 +58,22 @@ describe("parseAsin", () => {
   });
 });
 
-describe("parseOption", () => {
-  it("treats both blank as the default variant", () => {
-    expect(parseOption(" ", "")).toEqual({ ok: true, value: null });
+describe("parseOptionPair", () => {
+  it("treats blanks as none", () => {
+    expect(parseOptionPair(" ", "")).toEqual({ ok: true, value: [null, null] });
+    expect(parseOptionPair("Color", " ")).toEqual({ ok: true, value: ["Color", null] });
   });
 
   it("trims and collapses spaces", () => {
-    expect(parseOption(" Size ", " Extra   Large ")).toEqual({ ok: true, value: { name: "Size", value: "Extra Large" } });
+    expect(parseOptionPair(" Siete   colores ", " 12 in ")).toEqual({ ok: true, value: ["Siete colores", "12 in"] });
   });
 
-  it("refuses one without the other", () => {
-    expect(parseOption("Size", "")).toMatchObject({ ok: false, message: /both/ });
-    expect(parseOption("", "Large")).toMatchObject({ ok: false, message: /both/ });
+  it("refuses option 2 without option 1", () => {
+    expect(parseOptionPair("", "12 in")).toMatchObject({ ok: false, message: /option 1/ });
+  });
+
+  it("refuses overlong options", () => {
+    expect(parseOptionPair("x".repeat(MAX_OPTION_LENGTH + 1), "")).toMatchObject({ ok: false });
   });
 });
 

@@ -63,7 +63,10 @@ export default async function EditProductPage({ params }: PageProps<"/adm/produc
             slug: product.slug,
             description: product.description,
             collectionId: String(product.collectionId),
-            categoryIds: product.categoryIds.map(String),
+            productTypeId: String(product.productTypeId),
+            categoryId: product.categoryId === null ? "" : String(product.categoryId),
+            option1Name: product.option1Name ?? "",
+            option2Name: product.option2Name ?? "",
             status: product.status,
             featured: product.featured,
           },
@@ -75,7 +78,11 @@ export default async function EditProductPage({ params }: PageProps<"/adm/produc
           <h2 id="variants-heading" className="px-6 pt-6 font-semibold text-adm-fg">
             Variants
           </h2>
-          <Variants productId={product.id} variants={product.variants} />
+          <Variants
+            productId={product.id}
+            optionNames={{ option1Name: product.option1Name, option2Name: product.option2Name }}
+            variants={product.variants}
+          />
         </section>
 
         <section aria-labelledby="images-heading" className={CARD}>

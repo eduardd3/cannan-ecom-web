@@ -16,7 +16,7 @@ export type CategoryFields = {
   description: string | null;
 };
 
-export type CategoryField = keyof CategoryFields;
+export type CategoryField = keyof CategoryFields | "collectionId";
 
 type Failure = { ok: false; field?: CategoryField; message: string };
 
@@ -71,9 +71,16 @@ async function assertUnique(tx: Prisma.TransactionClient, fields: CategoryFields
   if (bySlug) throw new Rollback(fail(`"${bySlug.name}" already uses that slug.`, "slug"));
 }
 
-export async function createCategory(fields: CategoryFields): Promise<SaveCategoryResult> {
+/**
+ * A category belongs to one collection, set here and never changed: products
+ * using it must be in that collection (lib/products/save checks), so moving
+ * it would strand them.
+ */
+export async function createCategory(fields: CategoryFields & { collectionId: number }): Promise<SaveCategoryResult> {
   return run(async (tx) => {
     await lockCategories(tx);
+    const collection = await tx.collection.findUnique({ where: { id: fields.collectionId }, select: { id: true } });
+    if (!collection) return fail("Pick a collection.", "collectionId");
     await assertUnique(tx, fields, null);
     const category = await tx.category.create({ data: fields, select: { id: true } });
     return { ok: true, id: category.id };
@@ -82,7 +89,8 @@ export async function createCategory(fields: CategoryFields): Promise<SaveCatego
 
 /**
  * Slug changes aren't redirected: the slug only appears in storefront filter
- * links (?category=), and an unknown one shows the unfiltered list.
+ * links (?category=), and an unknown one shows the unfiltered list. The
+ * collection isn't editable (see createCategory).
  */
 export async function updateCategory(categoryId: number, fields: CategoryFields): Promise<SaveCategoryResult> {
   return run(async (tx) => {
@@ -96,8 +104,8 @@ export async function updateCategory(categoryId: number, fields: CategoryFields)
 }
 
 /**
- * Only an unused category can be deleted: ProductCategory cascades, so
- * deleting one in use would silently take it off its products.
+ * Only an unused category can be deleted. The foreign key also refuses it
+ * (Restrict); this check gives a readable message instead.
  */
 export async function deleteCategory(categoryId: number): Promise<DeleteCategoryResult> {
   return prisma.$transaction(async (tx) => {
@@ -107,7 +115,7 @@ export async function deleteCategory(categoryId: number): Promise<DeleteCategory
       SELECT "id" FROM "Category" WHERE "id" = ${categoryId} FOR UPDATE`;
     if (rows.length === 0) return { ok: true }; // already gone
 
-    const inUse = await tx.productCategory.count({ where: { categoryId } });
+    const inUse = await tx.product.count({ where: { categoryId } });
     if (inUse > 0) {
       return {
         ok: false,

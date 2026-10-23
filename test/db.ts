@@ -4,7 +4,8 @@ import { prisma } from "@/lib/prisma";
 
 const LOCAL_HOSTS = new Set(["localhost", "127.0.0.1", "::1", "[::1]"]);
 
-// Tests own every table except Collection, whose rows come from a migration.
+// Tests own every table except Collection and ProductType, whose rows come
+// from migrations.
 const TABLES = [
   "InventoryAdjustment",
   "OrderItem",
@@ -13,7 +14,6 @@ const TABLES = [
   "Cart",
   "ProductImage",
   "ProductSlugRedirect",
-  "ProductCategory",
   "ProductVariant",
   "Product",
   "Category",
@@ -36,10 +36,18 @@ export async function createUser(role: "CUSTOMER" | "ADMIN" = "CUSTOMER") {
   return prisma.user.create({ data: { email: `user${sequence}@example.com`, role } });
 }
 
-/** A product with one variant. Opening stock goes in through the ledger, as in the seed. */
+/** The default collection and the first product type, both from migrations. */
+export async function catalogRefs() {
+  const [collection, productType] = await Promise.all([
+    prisma.collection.findFirstOrThrow({ where: { isDefault: true } }),
+    prisma.productType.findFirstOrThrow({ orderBy: { position: "asc" } }),
+  ]);
+  return { collectionId: collection.id, productTypeId: productType.id };
+}
+
+/** A product with one default variant. Opening stock goes in through the ledger, as in the seed. */
 export async function createVariant({ stock, priceCents = 1500 }: { stock: number; priceCents?: number }) {
   sequence += 1;
-  const collection = await prisma.collection.findFirstOrThrow({ where: { isDefault: true } });
   const product = await prisma.product.create({
     data: {
       slug: `product-${sequence}`,
@@ -47,7 +55,7 @@ export async function createVariant({ stock, priceCents = 1500 }: { stock: numbe
       description: "Test product",
       status: "ACTIVE",
       publishedAt: new Date(), // required while ACTIVE (CHECK in SQL)
-      collectionId: collection.id,
+      ...(await catalogRefs()),
       variants: { create: { sku: `SKU-${sequence}`, priceCents, stock: 0 } },
     },
     include: { variants: true },

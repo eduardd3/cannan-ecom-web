@@ -25,6 +25,7 @@ export type CategoryFormValues = {
   name: string;
   slug: string;
   description: string;
+  collectionId: string; // add form only; fixed once created
 };
 
 export type CategoryActionState =
@@ -38,7 +39,12 @@ const idSchema = z.coerce.number().int().positive();
 
 function readValues(formData: FormData): CategoryFormValues {
   const text = (name: string) => String(formData.get(name) ?? "");
-  return { name: text("name"), slug: text("slug"), description: text("description") };
+  return {
+    name: text("name"),
+    slug: text("slug"),
+    description: text("description"),
+    collectionId: text("collectionId"),
+  };
 }
 
 type Parsed = { ok: true; fields: CategoryFields } | { ok: false; field?: CategoryField; message: string };
@@ -82,8 +88,10 @@ export async function createCategoryAction(
   const values = readValues(formData);
   const parsed = parseFields(values);
   if (!parsed.ok) return { ...parsed, values };
+  const collectionId = idSchema.safeParse(values.collectionId);
+  if (!collectionId.success) return { ok: false, field: "collectionId", message: "Pick a collection.", values };
 
-  const result = await createCategory(parsed.fields);
+  const result = await createCategory({ ...parsed.fields, collectionId: collectionId.data });
   if (!result.ok) return { ...result, values };
 
   revalidateCategories();

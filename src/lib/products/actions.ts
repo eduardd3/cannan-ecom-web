@@ -12,6 +12,7 @@ import { requireStaff } from "@/lib/session";
 import { MAX_DESCRIPTION_LENGTH, MAX_NAME_LENGTH, parseProductStatus } from "./format";
 import { createProduct, updateProduct, type ProductField, type ProductFields } from "./save";
 import { slugProblem } from "./slug";
+import { parseOptionPair } from "./variant-fields";
 
 // The form's values as typed. A failure echoes them back: React resets the
 // form after every action, so the form uses them as defaults.
@@ -20,7 +21,10 @@ export type ProductFormValues = {
   slug: string;
   description: string;
   collectionId: string;
-  categoryIds: string[];
+  productTypeId: string;
+  categoryId: string; // "" = none
+  option1Name: string;
+  option2Name: string;
   status: string;
   featured: boolean;
 };
@@ -39,7 +43,10 @@ function readValues(formData: FormData): ProductFormValues {
     slug: text("slug"),
     description: text("description"),
     collectionId: text("collectionId"),
-    categoryIds: formData.getAll("categoryIds").map(String),
+    productTypeId: text("productTypeId"),
+    categoryId: text("categoryId"),
+    option1Name: text("option1Name"),
+    option2Name: text("option2Name"),
     status: text("status"),
     //  An unchecked checkbox isn't submitted at all.
     featured: formData.get("featured") === "on",
@@ -73,12 +80,30 @@ function parseFields(values: ProductFormValues): Parsed {
   const collectionId = idSchema.safeParse(values.collectionId);
   if (!collectionId.success) return { ok: false, field: "collectionId", message: "Pick a collection." };
 
-  const categoryIds = z.array(idSchema).safeParse(values.categoryIds);
-  if (!categoryIds.success) return { ok: false, message: "That request wasn't valid." };
+  const productTypeId = idSchema.safeParse(values.productTypeId);
+  if (!productTypeId.success) return { ok: false, field: "productTypeId", message: "Pick a type." };
+
+  const categoryId = values.categoryId === "" ? null : idSchema.safeParse(values.categoryId);
+  if (categoryId && !categoryId.success) return { ok: false, message: "That request wasn't valid." };
+
+  const optionNames = parseOptionPair(values.option1Name, values.option2Name);
+  if (!optionNames.ok) {
+    return { ok: false, field: "option1Name", message: "message" in optionNames ? optionNames.message : "Check the options." };
+  }
+  const [option1Name, option2Name] = optionNames.value;
 
   return {
     ok: true,
-    fields: { name, slug, description, collectionId: collectionId.data, categoryIds: categoryIds.data },
+    fields: {
+      name,
+      slug,
+      description,
+      collectionId: collectionId.data,
+      productTypeId: productTypeId.data,
+      categoryId: categoryId ? categoryId.data : null,
+      option1Name,
+      option2Name,
+    },
   };
 }
 

@@ -5,7 +5,7 @@ import "server-only";
 
 import type { Prisma } from "@/generated/prisma/client";
 
-import { formatVariantLabel } from "@/lib/cart/queries";
+import { formatVariantLabel } from "@/lib/catalog/format";
 import { prisma } from "@/lib/prisma";
 import { checkStockConsistency } from "./adjust";
 import { LOW_STOCK_THRESHOLD } from "./rules";
@@ -32,8 +32,8 @@ export async function listInventory(filter: StockFilter | null) {
       select: {
         id: true,
         sku: true,
-        name: true,
-        value: true,
+        option1Value: true,
+        option2Value: true,
         stock: true,
         isActive: true,
         product: { select: { name: true, status: true, collection: { select: { name: true } } } },
@@ -51,7 +51,7 @@ export async function listInventory(filter: StockFilter | null) {
       productName: variant.product.name,
       productStatus: variant.product.status,
       collectionName: variant.product.collection.name,
-      variantLabel: formatVariantLabel(variant.name, variant.value),
+      variantLabel: formatVariantLabel(variant),
       stock: variant.stock,
       isActive: variant.isActive,
     })),
@@ -68,8 +68,8 @@ export async function getVariantInventory(variantId: number) {
     select: {
       id: true,
       sku: true,
-      name: true,
-      value: true,
+      option1Value: true,
+      option2Value: true,
       stock: true,
       isActive: true,
       amazonAsin: true,
@@ -95,7 +95,7 @@ export async function getVariantInventory(variantId: number) {
   const consistency = await checkStockConsistency(variantId);
   return {
     ...variant,
-    variantLabel: formatVariantLabel(variant.name, variant.value),
+    variantLabel: formatVariantLabel(variant),
     ledgerConsistent: consistency?.consistent ?? false,
     ledgerSum: consistency?.ledgerSum ?? 0,
   };

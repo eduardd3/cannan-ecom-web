@@ -7,6 +7,7 @@ import { useState, useTransition } from "react";
 import { addToCart } from "@/lib/cart/actions";
 import { formatCents } from "@/lib/cart/format";
 import { MAX_QTY_PER_LINE } from "@/lib/cart/schemas";
+import { formatVariantLabel } from "@/lib/catalog/format";
 import type { ProductDetailView, ProductVariantView } from "@/lib/catalog/types";
 
 //  Gallery, variant picker, quantity, and add-to-cart in one component, since
@@ -41,10 +42,10 @@ export default function ProductPurchase({
   ];
   const mainImage = images[imageIndex] ?? images[0];
 
-  //  A product with one null/null variant has nothing to pick.
-  const showPicker = variants.length > 1 || Boolean(variants[0].name && variants[0].value);
-  const optionNames = new Set(variants.map((v) => v.name));
-  const optionName = optionNames.size === 1 ? variants[0].name : null;
+  //  A product without option names has one default variant: nothing to pick.
+  //  Temporary until handoff 3's picker: one button per variant, both values.
+  const showPicker = product.option1Name !== null;
+  const optionName = [product.option1Name, product.option2Name].filter(Boolean).join(" · ");
 
   function selectVariant(next: ProductVariantView) {
     setVariantId(next.id);
@@ -109,7 +110,7 @@ export default function ProductPurchase({
 
         {showPicker && (
           <fieldset>
-            <legend className="text-sm font-medium">{optionName ?? "Option"}</legend>
+            <legend className="text-sm font-medium">{optionName}</legend>
             <div className="mt-2 flex flex-wrap gap-2">
               {variants.map((v) => (
                 <button
@@ -121,8 +122,7 @@ export default function ProductPurchase({
                     v.id === variant.id ? "border-[#16191E] bg-[#16191E] text-white" : "hover:border-[#16191E]"
                   } ${v.stock <= 0 ? "line-through opacity-60" : ""}`}
                 >
-                  {/* Mixed option names: "Size: Large" instead of a bare value. */}
-                  {optionName ? v.value : [v.name, v.value].filter(Boolean).join(": ")}
+                  {formatVariantLabel(v)}
                 </button>
               ))}
             </div>

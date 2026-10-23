@@ -5,6 +5,7 @@
 import "server-only";
 
 import type { Prisma } from "@/generated/prisma/client";
+import { formatVariantLabel } from "@/lib/catalog/format";
 import { getImageUrl } from "@/lib/storage";
 import { prisma } from "@/lib/prisma";
 import type { CartLineView, CartView, LineAvailability } from "./types";
@@ -92,14 +93,6 @@ export function getAvailability(
   return "ok";
 }
 
-export function formatVariantLabel(
-  name: string | null,
-  value: string | null,
-): string | null {
-  // Both null means the product's default variant: no label to show.
-  return name && value ? `${name}: ${value}` : null;
-}
-
 function toCartLineView(item: CartItemWithDetails): CartLineView {
   const { variant } = item;
   const { product } = variant;
@@ -113,7 +106,7 @@ function toCartLineView(item: CartItemWithDetails): CartLineView {
     productName: product.name,
     productSlug: product.slug,
     productActive,
-    variantLabel: formatVariantLabel(variant.name, variant.value),
+    variantLabel: formatVariantLabel(variant),
     imageUrl: image ? getImageUrl(image.key) : null,
     imageAlt: image?.alt ?? null,
     unitPriceCents: variant.priceCents,

@@ -19,8 +19,11 @@ const FIELD =
 type Saved = {
   id: number;
   values: CategoryFormValues;
+  collectionName: string; // fixed once created
   listedProductCount: number; // ACTIVE products using it
 };
+
+type CollectionOption = { id: number; name: string; isDefault: boolean };
 
 function fieldClass(invalid: boolean) {
   return `${FIELD} ${invalid ? "border-red-500" : "border-adm-border"}`;
@@ -38,9 +41,9 @@ function FieldError({ id, state, field }: { id: string; state: CategoryActionSta
 /**
  * Add (no `saved`) or edit a category. Adding keeps you on the list, so the
  * fields clear after each success. The slug follows the name until it's
- * edited by hand, on add only.
+ * edited by hand, on add only. The collection is picked on add only.
  */
-export default function CategoryForm({ saved }: { saved?: Saved }) {
+export default function CategoryForm({ saved, collections = [] }: { saved?: Saved; collections?: CollectionOption[] }) {
   const editing = saved !== undefined;
   const [state, action, pending] = useActionState(editing ? updateCategoryAction : createCategoryAction, null);
 
@@ -65,10 +68,38 @@ export default function CategoryForm({ saved }: { saved?: Saved }) {
   const invalid = (field: CategoryField) => Boolean(state && !state.ok && state.field === field);
 
   const renaming = editing && slug !== saved.values.slug;
+  const defaultCollection =
+    values?.collectionId || String(collections.find((c) => c.isDefault)?.id ?? collections[0]?.id ?? "");
 
   return (
     <form action={action} className="flex flex-col gap-6">
       {saved && <input type="hidden" name="categoryId" value={saved.id} />}
+
+      {saved ? (
+        <p className="text-sm text-adm-muted">
+          Collection: <span className="text-adm-fg">{saved.collectionName}</span>
+        </p>
+      ) : (
+        <label className="flex flex-col gap-1 text-sm text-adm-muted">
+          Collection
+          {/* Keyed on the echoed value so a failed add keeps the pick (uncontrolled selects reset). */}
+          <select
+            key={defaultCollection}
+            name="collectionId"
+            defaultValue={defaultCollection}
+            aria-invalid={invalid("collectionId")}
+            aria-describedby="collection-error"
+            className={`${fieldClass(invalid("collectionId"))} w-fit`}
+          >
+            {collections.map((collection) => (
+              <option key={collection.id} value={collection.id}>
+                {collection.name}
+              </option>
+            ))}
+          </select>
+          <FieldError id="collection-error" state={state} field="collectionId" />
+        </label>
+      )}
 
       <label className="flex flex-col gap-1 text-sm text-adm-muted">
         Name
