@@ -30,7 +30,8 @@ export function isCheckoutEnabled(): boolean {
 }
 
 /**
- * The public product catalog: the /products listing and /products/[slug].
+ * The public product catalog: the /collections pages (and the /products
+ * redirect to them) and /products/[slug].
  *
  * Closed while the products page is still being built and tested. Off, the
  * listing shows its empty state without querying the database, and product

@@ -9,7 +9,9 @@ type SelectFieldProps = Omit<ComponentProps<"select">, "id" | "children" | "mult
   FieldProps & {
     //  The disabled first option shown until a choice is made, e.g.
     //  "Select a topic…". Pass defaultValue="" (or value="") to start on it.
-    placeholder: string;
+    //  Leave it out when one of the options is always selected (a filter's
+    //  "All").
+    placeholder?: string;
     options: SelectOption[];
   };
 
@@ -30,7 +32,7 @@ export default function SelectField({
 }: SelectFieldProps) {
   //  Stone while the placeholder shows, like an input's placeholder text. Only
   //  known for a controlled select; an uncontrolled one stays charcoal.
-  const showingPlaceholder = selectProps.value === "";
+  const showingPlaceholder = placeholder !== undefined && selectProps.value === "";
 
   return (
     <Field id={id} label={label} optional={optional} labelAction={labelAction} helper={helper} error={error}>
@@ -42,9 +44,11 @@ export default function SelectField({
             className={`h-12 cursor-pointer appearance-none pr-11 ${controlClass(error)} ${showingPlaceholder ? "text-stone" : ""} ${className}`}
             {...selectProps}
           >
-            <option value="" disabled>
-              {placeholder}
-            </option>
+            {placeholder !== undefined && (
+              <option value="" disabled>
+                {placeholder}
+              </option>
+            )}
             {options.map(({ value, label }) => (
               <option key={value} value={value} className="text-charcoal">
                 {label}

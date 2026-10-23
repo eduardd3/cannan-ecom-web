@@ -2,7 +2,8 @@
 //
 // Types only, like lib/cart/types.ts: safe to import from client components.
 
-export type CategoryView = {
+// A link in the collection page's switcher.
+export type SwitcherCollectionView = {
   slug: string;
   name: string;
 };
@@ -14,7 +15,7 @@ export type CollectionView = {
   description: string;
 };
 
-// A product card on the listing page and the homepage.
+// A product card on the collection page and the homepage.
 export type ProductCardView = {
   slug: string;
   name: string;

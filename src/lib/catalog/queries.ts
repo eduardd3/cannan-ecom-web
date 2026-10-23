@@ -10,11 +10,12 @@ import { cache } from "react";
 import type { Prisma } from "@/generated/prisma/client";
 import { getImageUrl } from "@/lib/storage";
 import { prisma } from "@/lib/prisma";
+import type { ListingCollection, ListingProduct } from "./listing";
 import type {
-  CategoryView,
   CollectionView,
   ProductCardView,
   ProductDetailView,
+  SwitcherCollectionView,
 } from "./types";
 
 const visibleProduct = {
@@ -23,47 +24,78 @@ const visibleProduct = {
 } satisfies Prisma.ProductWhereInput;
 
 /**
- * The collection the storefront lists. A partial unique index allows at most
- * one; null only if someone unset it.
+ * Where /products sends shoppers: the default collection (a partial unique
+ * index allows at most one) and its category slugs, so an old ?category= link
+ * can carry over. Null when there's no default, or it has nothing visible yet
+ * (the collection page would 404).
  */
-export async function getDefaultCollection() {
-  return prisma.collection.findFirst({
-    where: { isDefault: true },
-    select: { id: true, name: true, description: true },
+export async function getDefaultCollectionTarget(): Promise<{ slug: string; categorySlugs: string[] } | null> {
+  const collection = await prisma.collection.findFirst({
+    where: { isDefault: true, products: { some: visibleProduct } },
+    select: { slug: true, categories: { select: { slug: true } } },
+  });
+  if (!collection) return null;
+  return { slug: collection.slug, categorySlugs: collection.categories.map((category) => category.slug) };
+}
+
+/** Collections with at least one visible product, in switcher order. */
+export async function listSwitcherCollections(): Promise<SwitcherCollectionView[]> {
+  return prisma.collection.findMany({
+    where: { products: { some: visibleProduct } },
+    select: { slug: true, name: true },
+    orderBy: [{ position: "asc" }, { id: "asc" }],
   });
 }
 
 /**
- * Categories with at least one visible product in the collection, so no
- * filter leads to an empty grid.
+ * A collection and every visible product in it, newest first, for
+ * lib/catalog/listing to filter. One fetch keeps the filters, prices, and
+ * ordering consistent with each other. Null when the slug is unknown or the
+ * collection has nothing visible: it isn't public yet, so the page 404s.
+ * Wrapped in cache() because generateMetadata and the page both call it.
  */
-export async function listCategoriesInCollection(collectionId: number): Promise<CategoryView[]> {
-  return prisma.category.findMany({
-    where: { collectionId, products: { some: visibleProduct } },
-    select: { slug: true, name: true },
-    orderBy: { name: "asc" },
-  });
-}
+export const getCollectionListing = cache(
+  async (slug: string): Promise<{ collection: ListingCollection; products: ListingProduct[] } | null> => {
+    const collection = await prisma.collection.findUnique({
+      where: { slug },
+      select: {
+        slug: true,
+        name: true,
+        description: true,
+        facetLabel: true,
+        facetSource: true,
+        products: {
+          where: visibleProduct,
+          select: {
+            slug: true,
+            name: true,
+            option1Name: true,
+            option2Name: true,
+            productType: { select: { slug: true, name: true, position: true } },
+            category: { select: { slug: true, name: true } },
+            images: { select: { key: true, alt: true }, orderBy: [{ position: "asc" }, { id: "asc" }], take: 1 },
+            variants: {
+              where: { isActive: true },
+              select: { priceCents: true, stock: true, option1Value: true, option2Value: true },
+            },
+          },
+          orderBy: [{ createdAt: "desc" }, { id: "desc" }],
+        },
+      },
+    });
+    if (!collection || collection.products.length === 0) return null;
 
-export async function listProducts({
-  collectionId,
-  categorySlug,
-}: {
-  collectionId: number;
-  categorySlug?: string;
-}): Promise<ProductCardView[]> {
-  const products = await prisma.product.findMany({
-    where: {
-      ...visibleProduct,
-      collectionId,
-      ...(categorySlug && { category: { slug: categorySlug } }),
-    },
-    select: productCardSelect,
-    orderBy: [{ createdAt: "desc" }, { id: "desc" }],
-  });
-
-  return products.map(toProductCard);
-}
+    const { products, ...rest } = collection;
+    return {
+      collection: rest,
+      products: products.map(({ images, ...product }) => ({
+        ...product,
+        imageUrl: images[0] ? getImageUrl(images[0].key) : null,
+        imageAlt: images[0]?.alt ?? null,
+      })),
+    };
+  },
+);
 
 // What a product card needs: the first image and the active variants' prices.
 const productCardSelect = {
