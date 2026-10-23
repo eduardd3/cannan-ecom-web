@@ -6,7 +6,7 @@ import type { PolicySection } from "@/app/components/policy/types";
 import { SUPPORT_EMAIL, SUPPORT_MAILTO } from "@/lib/contact";
 
 export const metadata: Metadata = {
-  title: "Terms of Service | CANNAN",
+  title: "Terms of Service | Cannan",
   description: "The terms that apply when you use www.shopcannan.com and buy from Cannan.",
   alternates: { canonical: "/terms" },
 };
@@ -112,7 +112,7 @@ export default function Terms() {
     <PolicyTemplate
       eyebrow="Legal"
       title="Terms of Service"
-      updated="October 8, 2026"
+      updated="October 16, 2026"
       lead={
         <p>
           These terms apply when you use www.shopcannan.com or buy from CANNAN LLC

@@ -2,11 +2,10 @@
 
 import { useEffect, useState } from "react";
 
-//  How far down the viewport a section's top must pass to become current.
-const ACTIVE_LINE = 0.45;
-//  Matches scroll-mt-28 / top-28 in the template: the sticky header's height
-//  plus a little air, so "fully visible" means visible below the header.
-const HEADER_OFFSET_PX = 112;
+//  1px below where scroll-mt-28 (112px) parks a section after a jump, so the
+//  jumped-to section is current and the one above it, which ends at 112px,
+//  is not.
+const ACTIVE_LINE_PX = 113;
 
 type Props = {
   items: { id: string; title: string }[];
@@ -16,57 +15,35 @@ type Props = {
 //  template: it highlights the section being read.
 //
 //  IntersectionObserver instead of a scroll listener: the callback runs only
-//  when a section crosses the active line, not on every scroll frame, so
-//  there is no layout read per frame and nothing to throttle, and it stays
-//  correct through resizes and reflow without cached offsets.
+//  when a section boundary crosses the active line, not on every scroll
+//  frame, so there is no layout read per frame and nothing to throttle, and
+//  it stays correct through resizes and reflow without cached offsets.
+//
+//  The template's sections touch (spacing is inside each one), so the section
+//  spanning the line just below the header is the first one, in page order,
+//  that still overlaps the area from that line down.
 export default function ActiveSectionNav({ items }: Props) {
   const [activeId, setActiveId] = useState<string | null>(null);
 
   useEffect(() => {
-    const sections = items
-      .map(({ id }) => document.getElementById(id))
-      .filter((el): el is HTMLElement => el !== null);
-    if (sections.length === 0) return;
+    const below = new Set<string>();
 
-    const last = sections[sections.length - 1];
-    let lastFullyVisible = false;
-
-    //  The current section is the last one whose top has passed the active
-    //  line. A short last section (e.g. "Contact") may never reach that line
-    //  before the page runs out, so it also wins once it is fully on screen.
-    const pick = () => {
-      if (lastFullyVisible) {
-        setActiveId(last.id);
-        return;
-      }
-      const line = window.innerHeight * ACTIVE_LINE;
-      let current: string | null = null;
-      for (const section of sections) {
-        if (section.getBoundingClientRect().top <= line) current = section.id;
-      }
-      setActiveId(current);
-    };
-
-    //  Shrinks the observed area to the band above the active line, so a
-    //  section's top crossing that line fires the callback.
-    const lineObserver = new IntersectionObserver(pick, {
-      rootMargin: `0px 0px -${(1 - ACTIVE_LINE) * 100}% 0px`,
-    });
-    const lastObserver = new IntersectionObserver(
-      ([entry]) => {
-        lastFullyVisible = entry.isIntersecting;
-        pick();
+    const observer = new IntersectionObserver(
+      (entries) => {
+        for (const entry of entries) {
+          if (entry.isIntersecting) below.add(entry.target.id);
+          else below.delete(entry.target.id);
+        }
+        setActiveId(items.find(({ id }) => below.has(id))?.id ?? null);
       },
-      { rootMargin: `-${HEADER_OFFSET_PX}px 0px 0px 0px`, threshold: 1 },
+      { rootMargin: `-${ACTIVE_LINE_PX}px 0px 0px 0px` },
     );
 
-    sections.forEach((section) => lineObserver.observe(section));
-    lastObserver.observe(last);
-
-    return () => {
-      lineObserver.disconnect();
-      lastObserver.disconnect();
-    };
+    for (const { id } of items) {
+      const section = document.getElementById(id);
+      if (section) observer.observe(section);
+    }
+    return () => observer.disconnect();
   }, [items]);
 
   return (
@@ -78,7 +55,7 @@ export default function ActiveSectionNav({ items }: Props) {
             <a
               href={`#${id}`}
               aria-current={active ? "location" : undefined}
-              className={`block text-caption transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-antique-gold ${
+              className={`block text-caption transition-colors ${
                 active ? "text-gold-ink" : "text-stone hover:text-charcoal"
               }`}
             >

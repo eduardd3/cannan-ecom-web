@@ -10,13 +10,13 @@ import type { PolicyCrossLink, PolicySection } from "@/app/components/policy/typ
 //  "On this page" list.
 const MIN_SECTIONS_FOR_TOC = 4;
 
-const LINK = "text-gold-ink underline underline-offset-4 decoration-antique-gold/50 hover:decoration-gold-ink focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-antique-gold";
+const LINK = "text-gold-ink underline underline-offset-4 decoration-antique-gold/50 hover:decoration-gold-ink";
 
 //  There is no typography plugin, so these descendant variants style the plain
 //  p/ul/li/strong/a a page passes in, and pages stay free of per-element
 //  classes. Class names must stay literal for Tailwind to find them.
 const PROSE_LINKS =
-  "[&_a]:text-gold-ink [&_a]:underline [&_a]:underline-offset-4 [&_a]:decoration-antique-gold/50 [&_a]:hover:decoration-gold-ink [&_a]:focus-visible:outline-2 [&_a]:focus-visible:outline-offset-2 [&_a]:focus-visible:outline-antique-gold";
+  "[&_a]:text-gold-ink [&_a]:underline [&_a]:underline-offset-4 [&_a]:decoration-antique-gold/50 [&_a]:hover:decoration-gold-ink";
 
 //  Bullets are a 4px antique-gold dot; top-3 centers it on the first line
 //  (28px line height).
@@ -83,12 +83,13 @@ export default function PolicyTemplate({
           {sections.map(({ id, title, content }) => (
             //  Every section, the first included, gets the same top rule.
             //  scroll-mt-28 keeps the heading clear of the sticky header after
-            //  an "On this page" jump.
+            //  an "On this page" jump. Spacing is padding, not margin, so
+            //  sections touch; ActiveSectionNav relies on that.
             <section
               key={id}
               id={id}
               aria-labelledby={`${id}-heading`}
-              className="mt-8 scroll-mt-28 border-t border-hairline/60 pt-8 first-of-type:mt-0"
+              className="scroll-mt-28 border-t border-hairline/60 pt-8 pb-8"
             >
               <h2 id={`${id}-heading`} className="mb-4 font-serif text-headline-md font-normal text-charcoal">
                 {title}
@@ -97,7 +98,7 @@ export default function PolicyTemplate({
             </section>
           ))}
 
-          <footer className="mt-12 flex flex-col gap-2 border-t border-hairline pt-6 text-body-md sm:flex-row sm:items-center sm:justify-between">
+          <footer className="mt-4 flex flex-col gap-2 border-t border-hairline pt-6 text-body-md sm:flex-row sm:items-center sm:justify-between">
             <span className="text-stone">{crossLink.label}</span>
             <Link href={crossLink.href} className={`font-medium ${LINK}`}>
               {crossLink.linkText}

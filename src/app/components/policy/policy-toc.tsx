@@ -13,7 +13,7 @@ const LABEL = "text-label-eyebrow text-stone uppercase";
 export function PolicyTocDisclosure({ items }: Props) {
   return (
     <details className="group mb-10 border border-hairline bg-linen/50 lg:hidden">
-      <summary className="flex cursor-pointer list-none items-center justify-between px-4 py-3 select-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-antique-gold [&::-webkit-details-marker]:hidden">
+      <summary className="flex cursor-pointer list-none items-center justify-between px-4 py-3 select-none [&::-webkit-details-marker]:hidden">
         <span className={LABEL}>On this page</span>
         <ChevronDownIcon
           aria-hidden="true"
@@ -26,7 +26,7 @@ export function PolicyTocDisclosure({ items }: Props) {
             <li key={id}>
               <a
                 href={`#${id}`}
-                className="block py-1 text-body-md text-stone transition-colors hover:text-charcoal focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-antique-gold"
+                className="block py-1 text-body-md text-stone transition-colors hover:text-charcoal"
               >
                 {title}
               </a>

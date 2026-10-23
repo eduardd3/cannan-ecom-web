@@ -6,7 +6,7 @@ import type { PolicySection } from "@/app/components/policy/types";
 import { SUPPORT_EMAIL, SUPPORT_MAILTO } from "@/lib/contact";
 
 export const metadata: Metadata = {
-  title: "Shipping | CANNAN",
+  title: "Shipping | Cannan",
   description: "Free US shipping on every Cannan order.",
   alternates: { canonical: "/shipping" },
 };
