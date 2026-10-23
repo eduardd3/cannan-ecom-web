@@ -4,19 +4,19 @@ import Container from "@/app/components/container";
 const promises = [
   {
     title: "Chosen with intention",
-    body: "[Promise 1: each piece looks right, represents its subject well, and is worth its price]",
+    body: "Every piece earns its place. We look for careful detail, a faithful likeness, and real value for what you pay.",
   },
   {
     title: "Respect for every tradition",
-    body: "[Promise 2: each tradition is presented with the care its community deserves]",
+    body: "Each collection keeps its own space, presented with the care and dignity its community deserves.",
   },
   {
     title: "Honest descriptions",
-    body: "[Promise 3: honest descriptions; pieces may vary slightly and won't always be perfect]",
+    body: "We show and describe each piece as it is. Small variations in paint and finish are natural, part of what makes it yours.",
   },
   {
     title: "Care in every order",
-    body: "[Promise 4: every order is packed with care]",
+    body: "Every order is packed carefully, whether it's for your own altar or for someone you love.",
   },
 ];
 

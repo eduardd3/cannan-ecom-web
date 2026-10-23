@@ -20,7 +20,7 @@ export default function Narrative() {
           <GoldRule className="mb-8" />
           {/* TODO(copy): narrative paragraph. */}
           <p className="max-w-170 text-body-lg text-charcoal">
-            [Narrative: why Cannan exists and how it serves each tradition]
+            We believe devotional objects are not mere decor – they are vessels of memory, prayer, and quiet gratitude. Cannan welcomes every seeker, honoring the distinct lineage and sacred rites of each tradition with dignity and room to breathe. 
           </p>
         </div>
       </Container>

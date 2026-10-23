@@ -17,11 +17,11 @@ export default function Hero() {
           </h1>
           {/* TODO(copy): hero subtitle. */}
           <p className="mb-8 max-w-155 text-body-lg text-stone">
-            [Hero subtitle: one sentence on what Cannan offers]
+            Devotional pieces for the altar and the home.
           </p>
           <Link
             href="/products"
-            className="mb-12 inline-flex items-center justify-center rounded-[2px] bg-charcoal px-7 py-3.5 text-label-ui text-gallery-white transition-colors hover:bg-stone"
+            className="mb-12 inline-flex items-center justify-center rounded-control bg-charcoal px-7 py-3.5 text-label-ui text-gallery-white transition-colors hover:bg-charcoal/90"
           >
             Shop the collections
           </Link>

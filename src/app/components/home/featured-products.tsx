@@ -20,7 +20,7 @@ export default function FeaturedProducts({ products }: { products: ProductCardVi
           </div>
           {/* TODO(copy): short line beside the featured heading. */}
           <p className="max-w-105 text-body-md text-stone">
-            [Featured: one line on how these pieces were chosen]
+            Each piece is chosen for its beauty and for how faithfully it represents its subject.
           </p>
         </div>
 
