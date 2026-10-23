@@ -1,89 +1,92 @@
 import Link from "next/link";
 import Container from "@/app/components/container";
 import GoldRule from "@/app/components/gold-rule";
-import Storefronts from "@/app/components/storefronts";
-import { SUPPORT_EMAIL, SUPPORT_MAILTO } from "@/lib/contact";
 
-//  One array instead of hand-copied column blocks: adding a column or a link
-//  is an edit here, not a new <div> to clone and re-style. href is unique per
-//  link, so it doubles as the key and the rows need no id field.
+//  The one place collection slugs are hardcoded: a renamed slug is an edit
+//  here. Everything else reaches collections through /products or the
+//  database.
+const SHOP_COLLECTIONS = [
+    { slug: "signature", label: "Signature" },
+    { slug: "orishas", label: "Orishas" },
+    { slug: "santa-muerte", label: "Santa Muerte" },
+];
+
+//  One array instead of hand-copied column blocks: adding a link is an edit
+//  here, not a new <div> to clone and re-style. href is unique per link, so it
+//  doubles as the key and the rows need no id field.
 //
-//  Only routes that exist are linked.
-//  TODO: link the Signature / Orishas / Santa Muerte collections under Shop
-//  once there's a collection page or filter to point them at.
-//  TODO(4.7): pages not built yet: Artisans, Sourcing, How we choose.
+//  Array order is grid order: one row of three from md up; below it two
+//  columns, so Cannan wraps under Shop.
 const footerColumns = [
     {
         heading: "Shop",
-        links: [
-            { href: "/products", label: "All products" },
-        ],
-    },
-    {
-        heading: "Cannan",
-        links: [
-            { href: "/about", label: "About" },
-            { href: "/contact", label: "Contact" },
-        ],
+        links: SHOP_COLLECTIONS.map(({ slug, label }) => ({ href: `/collections/${slug}`, label })),
     },
     {
         heading: "Help",
         links: [
             { href: "/shipping", label: "Shipping" },
             { href: "/returns", label: "Returns & Refunds" },
+            { href: "/contact", label: "Contact" },
             { href: "/orders", label: "Your orders" },
+        ],
+    },
+    {
+        heading: "About",
+        links: [
+            { href: "/about", label: "Cannan" },
         ],
     },
 ];
 
-const eyebrow = "text-label-eyebrow uppercase";
+const legalLinks = [
+    { href: "/terms", label: "Terms of Service" },
+    { href: "/privacy", label: "Privacy Policy" },
+];
+
 const footerLink = "text-body-md text-stone transition-colors hover:text-charcoal";
 
 export default function SiteFooter() {
     return (
-        <footer className="shrink-0 border-t border-hairline bg-linen">
-            {/* Same Container as the header, so the columns start on the
-                header's gutter and stop at the same max width.  items-center text-center*/}
-            <Container className="pt-16 pb-12">
-                <div className="mb-16 flex flex-col items-start text-center">
-                    <span className="mb-2 font-serif text-wordmark text-charcoal uppercase">CANNAN</span>
-                    <p className={`mb-4 text-gold-ink ${eyebrow}`}>Since 2022</p>
-                    <GoldRule className="mb-4" />
-                    <p className="text-body-md text-stone italic">
-                        For you and yours · <span lang="es">Para ti y los tuyos</span>
-                    </p>
-                </div>
+        <footer className="shrink-0 bg-linen">
+            {/* Same Container as the header, so both stop at the same max width. */}
+            <Container className="flex flex-col items-center pt-12 pb-10 md:pt-16 md:pb-12">
+                <span className="mb-1.5 font-serif text-wordmark text-charcoal uppercase md:mb-2">CANNAN</span>
+                <p className="mb-3 text-center font-serif text-body-md text-stone italic md:mb-4">
+                    For you and yours · <span lang="es">Para ti y los tuyos</span>
+                </p>
+                <GoldRule className="mb-8 md:mb-12" />
 
-                <div className="mb-12 grid grid-cols-1 gap-8 border-t border-hairline pt-12 sm:grid-cols-2 md:grid-cols-4">
-                    {footerColumns.map(({ heading, links }) => (
-                        <div key={heading} className="flex flex-col gap-3">
-                            <h3 className={`text-charcoal ${eyebrow}`}>{heading}</h3>
-                            <ul className="flex flex-col gap-2.5">
-                                {links.map(({ href, label }) => (
-                                    <li key={href}>
-                                        <Link href={href} className={footerLink}>{label}</Link>
-                                    </li>
-                                ))}
-                            </ul>
-                        </div>
-                    ))}
-
-                    <div className="flex flex-col gap-3">
-                        <h3 className={`text-charcoal ${eyebrow}`}>Also find us on</h3>
-                        <div className="text-stone [&_a]:transition-colors [&_a:hover]:text-charcoal">
-                            <Storefronts />
-                        </div>
-                        <a href={SUPPORT_MAILTO} className={`mt-2 ${footerLink}`}>{SUPPORT_EMAIL}</a>
+                {/* The columns and the bottom bar share this width, so the bar's
+                    ends line up with the grid's outer edges, not the page's. */}
+                <div className="w-full max-w-225">
+                    <div className="mb-10 grid grid-cols-2 gap-x-4 gap-y-8 md:mb-16 md:grid-cols-3 md:gap-x-8">
+                        {footerColumns.map(({ heading, links }) => (
+                            <div key={heading}>
+                                <h3 className="mb-2 text-label-ui text-charcoal md:mb-4">{heading}</h3>
+                                <ul className="flex flex-col gap-2.5">
+                                    {links.map(({ href, label }) => (
+                                        <li key={href}>
+                                            <Link href={href} className={footerLink}>{label}</Link>
+                                        </li>
+                                    ))}
+                                </ul>
+                            </div>
+                        ))}
                     </div>
-                </div>
 
-                <div className="flex flex-col items-center justify-between gap-4 border-t border-hairline pt-6 md:flex-row">
-                    <p className="text-caption text-stone">
-                        © {new Date().getFullYear()} Cannan. All rights reserved.
-                    </p>
-                    <div className="flex items-center gap-6">
-                        <Link href="/terms" className="text-caption text-stone transition-colors hover:text-charcoal">Terms of Service</Link>
-                        <Link href="/privacy" className="text-caption text-stone transition-colors hover:text-charcoal">Privacy Policy</Link>
+                    {/* flex-col-reverse: stacked below md, the legal links come
+                        first; from md up, copyright left and links right. */}
+                    <div className="flex flex-col-reverse items-center gap-2 text-center text-caption text-stone md:flex-row md:justify-between">
+                        <p>© {new Date().getFullYear()} Cannan. All rights reserved.</p>
+                        <ul className="flex items-center gap-1.5">
+                            {legalLinks.map(({ href, label }, index) => (
+                                <li key={href} className="flex items-center gap-1.5">
+                                    {index > 0 && <span aria-hidden="true">·</span>}
+                                    <Link href={href} className="transition-colors hover:text-charcoal">{label}</Link>
+                                </li>
+                            ))}
+                        </ul>
                     </div>
                 </div>
             </Container>
