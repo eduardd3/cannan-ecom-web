@@ -81,7 +81,7 @@ export default function EmbeddedCheckoutForm() {
                 <button
                     type="button"
                     onClick={() => window.location.reload()}
-                    className="h-11 w-full rounded-lg bg-[#F2F3F4] font-semibold text-[#16191E] transition-colors hover:bg-[#9AA1AB] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#F2F3F4]"
+                    className="h-11 w-full rounded-control bg-[#F2F3F4] font-semibold text-[#16191E] transition-colors hover:bg-[#9AA1AB]"
                 >
                     Try again
                 </button>

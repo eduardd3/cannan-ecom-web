@@ -103,7 +103,7 @@ function OrderRow({ order }: { order: OrderSummary }) {
     return (
         <Link
             href={`/orders/${order.id}`}
-            className="group flex items-center gap-4 py-5 focus:outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-antique-gold"
+            className="group flex items-center gap-4 py-5"
         >
             <OrderThumb url={order.firstImageUrl} alt="" />
 

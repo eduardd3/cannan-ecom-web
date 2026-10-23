@@ -15,7 +15,7 @@ export const metadata: Metadata = {
 };
 
 const buttonBase =
-    "block w-full rounded-[2px] px-6 py-3.5 text-center text-label-ui transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-antique-gold";
+    "block w-full rounded-control px-6 py-3.5 text-center text-label-ui transition-colors";
 
 //  Container stays the outermost element with flex-1 so the doorway sits
 //  centered between header and footer (see container.tsx).
@@ -45,7 +45,7 @@ export default function MyCANNPage () {
                 <div className="mx-auto flex max-w-95 flex-col gap-4">
                     <Link
                         href="/id/signin"
-                        className={`${buttonBase} bg-charcoal text-gallery-white hover:bg-stone`}
+                        className={`${buttonBase} bg-charcoal text-gallery-white hover:bg-charcoal/90`}
                     >
                         Sign in
                     </Link>

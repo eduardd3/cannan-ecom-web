@@ -118,7 +118,7 @@ export default async function Cart() {
                 {/* top-28 clears the 80px sticky site header, like the policy TOC. */}
                 <section
                     aria-labelledby="summary-heading"
-                    className="rounded-[2px] bg-linen p-6 md:p-8 lg:sticky lg:top-28 lg:col-span-4"
+                    className="bg-linen p-6 md:p-8 lg:sticky lg:top-28 lg:col-span-4"
                 >
                     <h2 id="summary-heading" className="mb-6 font-serif text-headline-md font-normal text-charcoal">
                         Order summary

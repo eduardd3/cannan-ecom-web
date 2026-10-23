@@ -70,6 +70,11 @@
   --text-wordmark--line-height: 1;
   --text-wordmark--letter-spacing: 0.2em;
   --text-wordmark--font-weight: 600;
+
+  /*  The one corner radius: every button, input and select (rounded-control).
+      Nothing else is rounded. Stripe's Appearance borderRadius should match
+      (TODO: checkout redesign). */
+  --radius-control: 4px;
 }
 
 /*  Mobile sizes for the headlines and titles. The text-* utilities read these
@@ -83,6 +88,19 @@
     --text-headline-lg--line-height: 1.25;
     --text-headline-md: 1.25rem;
     --text-title-md: 1.125rem;
+    /*  Smaller so the wordmark, Shop and the icons fit one 64px header row. */
+    --text-wordmark: 1.25rem;
+  }
+}
+
+/*  Keyboard focus on links, buttons and option controls: a 1px antique-gold
+    outline, 2px out. :focus-visible, so mouse clicks show none. :where() keeps
+    it at zero specificity, so a component's own outline utility still wins.
+    Inputs and selects show focus with their gold border instead (field.tsx). */
+@layer base {
+  :where(a, button, summary, [role="button"], [role="radio"], input[type="checkbox"], input[type="radio"]):focus-visible {
+    outline: 1px solid var(--color-antique-gold);
+    outline-offset: 2px;
   }
 }
 

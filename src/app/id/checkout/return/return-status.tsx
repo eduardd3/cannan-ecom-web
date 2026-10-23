@@ -39,7 +39,7 @@ export default function ReturnStatus({ eyebrow, title, body, details, primary, s
             <p className={stateBodyClass}>{body}</p>
 
             {hasDetails && (
-                <div className="mb-8 rounded-[2px] bg-linen p-6 text-left">
+                <div className="mb-8 bg-linen p-6 text-left">
                     <SummaryList>
                         {details.total !== undefined && <SummaryRow label="Total" value={details.total} />}
                         {details.email !== undefined && <SummaryRow label="Email" value={details.email} />}

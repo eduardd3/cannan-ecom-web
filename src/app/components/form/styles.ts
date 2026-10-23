@@ -2,18 +2,19 @@
 
 export type ButtonVariant = "primary" | "secondary";
 
-//  Size, type and focus ring common to every full-width button.
+//  Size, type and corners common to every full-width button. Keyboard focus
+//  comes from the global :focus-visible rule in globals.css.
 const buttonShapeClass =
-  "flex h-12 w-full items-center justify-center rounded-[2px] text-label-ui transition-colors focus:outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-antique-gold";
+  "flex h-12 w-full items-center justify-center rounded-control text-label-ui transition-colors";
 
 //  Plus the pointer and the pending (disabled) state for the usable buttons.
 //  The disabled: classes are inert on a link.
 const buttonBaseClass = `${buttonShapeClass} cursor-pointer disabled:pointer-events-none disabled:opacity-75`;
 
-//  Primary: charcoal fill. Secondary: 1px charcoal outline, no fill; border-box
+//  Primary: charcoal fill, a touch lighter on hover. Secondary: 1px charcoal outline, no fill; border-box
 //  keeps it the same 48px as primary.
 const buttonVariantClass = {
-  primary: "bg-charcoal text-gallery-white hover:bg-stone",
+  primary: "bg-charcoal text-gallery-white hover:bg-charcoal/90",
   secondary: "border border-charcoal bg-transparent text-charcoal hover:bg-charcoal/5",
 } as const;
 

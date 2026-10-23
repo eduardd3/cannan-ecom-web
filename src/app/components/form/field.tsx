@@ -23,10 +23,11 @@ export type FieldControlProps = {
 
 //  Border, corners and focus shared by every control, with no width or
 //  padding, so a compact control (QuantitySelect) sets its own instead of
-//  overriding these. Focus shows as the gold border; no ring, no inner
-//  shadow. An error keeps its red border on focus so the state isn't lost.
+//  overriding these. Hover turns the border stone; focus shows as the gold
+//  border, no ring, no inner shadow. An error keeps its red border on hover
+//  and focus so the state isn't lost.
 export function controlBaseClass(error: string | undefined) {
-  return `rounded-[2px] border bg-white text-charcoal transition-colors focus:outline-none ${error ? "border-error-ink" : "border-hairline focus:border-antique-gold"}`;
+  return `rounded-control border bg-white text-charcoal transition-colors focus:outline-none ${error ? "border-error-ink" : "border-hairline hover:border-stone focus:border-antique-gold"}`;
 }
 
 //  Full-width size and type for input, select and textarea.
