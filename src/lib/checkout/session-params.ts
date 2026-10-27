@@ -48,6 +48,10 @@ export function buildLineItems(cart: CartView): LineItem[] {
 
 /**
  * Shipping choices shown on the payment page. Today: one free option.
+ *
+ * The delivery estimate must match the Shipping policy: ships within 1
+ * business day, then 3–5 business days in transit, so 4–6 in total. Change
+ * both together.
  * Takes the subtotal anyway, so a future "free over $X, else flat rate"
  * rule changes only this function.
  */
@@ -60,7 +64,8 @@ export function buildShippingOptions(subtotalCents: number): ShippingOption[] {
         display_name: "Free shipping",
         tax_behavior: "exclusive",
         delivery_estimate: {
-          maximum: { unit: "business_day", value: 3 },
+          minimum: { unit: "business_day", value: 4 },
+          maximum: { unit: "business_day", value: 6 },
         },
       },
     },

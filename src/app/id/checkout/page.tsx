@@ -1,12 +1,13 @@
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
-import Link from "next/link";
 
+import PageHeading from "@/app/components/page-heading";
 import { getCartView } from "@/lib/cart/queries";
-import { getCurrentUserId } from "@/lib/cart/session";
+import { getCurrentUser } from "@/lib/cart/session";
 import type { CartView } from "@/lib/cart/types";
 import { isCheckoutEnabled } from "@/lib/flags";
-import EmbeddedCheckoutForm from "./embedded-checkout-form";
+import CheckoutForm from "./checkout-form";
+import type { SummaryLine } from "./order-summary";
 
 export const metadata: Metadata = {
     title: "Checkout | Cannan",
@@ -25,15 +26,15 @@ export default async function CheckoutPage() {
     //  createCheckoutSession enforces the same flag.
     if (!isCheckoutEnabled()) redirect("/cart");
 
-    const userId = await getCurrentUserId();
-    if (!userId) redirect("/id/signin?callbackUrl=/id/checkout");
+    const user = await getCurrentUser();
+    if (!user) redirect("/id/signin?callbackUrl=/id/checkout");
 
     //  Temporary guard, as on the cart page: a failed read goes back to /cart,
     //  which shows the "couldn't load" message. redirect() throws, so it stays
     //  outside the try.
     let cart: CartView | undefined;
     try {
-        cart = await getCartView(userId);
+        cart = await getCartView(user.id);
     } catch (error) {
         console.error("Failed to load cart for checkout", error);
     }
@@ -42,25 +43,23 @@ export default async function CheckoutPage() {
     //  The authoritative stock check happens in the Stripe webhook.
     if (!cart || cart.lines.length === 0 || cart.hasIssues) redirect("/cart");
 
-    //  The page shell (header, footer, centering) lives in app/id/layout.tsx — this is just the card.
+    //  Display-only copy of the lines for the summary: names and images. What
+    //  is charged comes from the Stripe session the client loads.
+    const lines: SummaryLine[] = cart.lines.map((line) => ({
+        itemId: line.itemId,
+        productName: line.productName,
+        variantLabel: line.variantLabel,
+        quantity: line.quantity,
+        lineTotalCents: line.lineTotalCents,
+        imageUrl: line.imageUrl,
+    }));
+
+    //  The shell (back link, wordmark, footer) is app/id/layout.tsx.
     return (
-        <div className="w-full max-w-xl rounded-xl border border-[#F2F3F4] bg-[#F2F3F4] p-8 shadow-sm">
-            <div className="mt-6">
-                <EmbeddedCheckoutForm />
-            </div>
-        </div>
+        <CheckoutForm
+            heading={<PageHeading eyebrow="Finalizar compra" title="Checkout" align="start" />}
+            lines={lines}
+            email={user.email}
+        />
     );
 }
-/*
-<div className="w-full max-w-xl rounded-xl border border-[#2A2F36] bg-[#16191E] p-8 shadow-sm">
-            <h1 className="text-center text-xl font-bold text-[#F2F3F4]">
-                Checkout
-            </h1>
-            <p className="mt-2 text-center text-sm text-white">
-                <Link href="/cart">Back to cart</Link>
-            </p>
-            <div className="mt-6">
-                <EmbeddedCheckoutForm />
-            </div>
-        </div>
-         */

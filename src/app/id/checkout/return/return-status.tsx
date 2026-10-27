@@ -49,7 +49,7 @@ export default function ReturnStatus({ eyebrow, title, body, details, primary, s
 
             <div className="flex flex-col items-center gap-3">
                 <ButtonLink href={primary.href}>{primary.label}</ButtonLink>
-                <Link href="/products" className={`${textLinkClass} py-2 text-body-md`}>
+                <Link href="/collections/signature" className={`${textLinkClass} py-2 text-body-md`}>
                     Continue shopping
                 </Link>
             </div>

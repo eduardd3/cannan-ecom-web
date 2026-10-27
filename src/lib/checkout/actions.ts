@@ -39,7 +39,7 @@ const ORIGIN =
 
 /**
  * Creates a Stripe Checkout Session for the signed-in user's current cart and
- * returns the client secret the embedded form needs to mount.
+ * returns the client secret the checkout page's Stripe Elements initialize from.
  *
  * Takes NO input on purpose. Everything (who, what, how much) comes from the
  * session and the database. There's nothing for a caller to tamper with.
@@ -82,7 +82,9 @@ export async function createCheckoutSession(): Promise<CheckoutResult> {
 
     const session = await getStripe().checkout.sessions.create({
       mode: "payment",
-      ui_mode: "embedded_page",
+      // "elements": Stripe draws only the address, payment and wallet fields;
+      // the page around them (summary, shipping method, Pay button) is ours.
+      ui_mode: "elements",
       line_items: buildLineItems(cart),
       return_url: buildReturnUrl(ORIGIN),
 
