@@ -8,11 +8,11 @@ import OpeningSoon from "@/app/components/catalog/opening-soon";
 import Container from "@/app/components/container";
 import { textLinkClass } from "@/app/components/form/styles";
 import { formatCents } from "@/lib/cart/format";
-import { buildListing, collectionHref, type FilterGroup, type Filters } from "@/lib/catalog/listing";
+import { buildListing, collectionHref, type FilterGroup, type Filters, type ListingCard } from "@/lib/catalog/listing";
+import { productVariantPath } from "@/lib/catalog/product-detail";
 import { getCollectionListing, listSwitcherCollections } from "@/lib/catalog/queries";
-import type { ProductCardView, SwitcherCollectionView } from "@/lib/catalog/types";
+import type { SwitcherCollectionView } from "@/lib/catalog/types";
 import { isCatalogEnabled } from "@/lib/flags";
-import { productPath } from "@/lib/products/slug";
 import FilterSelects from "./filter-selects";
 
 //  Canonical without ?type/?facet, so filtered views aren't indexed as
@@ -164,10 +164,11 @@ function FilterLinks({
 }
 
 //  The whole card is one link; the name underlining is its only hover signal.
-//  The tile is white to match the white-background product photos.
-function ProductCard({ product, eager }: { product: ProductCardView; eager: boolean }) {
+//  The tile is white to match the white-background product photos. Under a
+//  color filter the link opens the product on that color's variant.
+function ProductCard({ product, eager }: { product: ListingCard; eager: boolean }) {
   return (
-    <Link href={productPath(product.slug)} className="group flex flex-col">
+    <Link href={productVariantPath(product.slug, product.variantId)} className="group flex flex-col">
       <div className="relative mb-3 aspect-square w-full bg-white md:mb-4">
         {product.imageUrl && (
           <Image

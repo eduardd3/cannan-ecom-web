@@ -38,12 +38,24 @@ export type ProductVariantView = {
   option2Value: string | null; // e.g. "12 in"; only alongside option1Value
   priceCents: number;
   stock: number; // a hint for the UI; addToCart and the webhook re-check it
+  dimensions: string | null; // formatted, "8 × 3.5 × 3 in"; null = not set
 };
 
 export type ProductDetailView = {
   slug: string;
   name: string;
   description: string;
+  material: string | null;
+  isFinalSale: boolean;
+  collection: {
+    slug: string;
+    name: string;
+    facetLabel: string | null;
+    facetSource: "CATEGORY" | "VARIANT_OPTION";
+    typeFilterVisible: boolean; // its page shows the Type filter group
+  };
+  productType: { slug: string; name: string };
+  category: { slug: string; name: string } | null;
   option1Name: string | null; // e.g. "Color"; null = one default variant
   option2Name: string | null; // e.g. "Size"
   images: ProductImageView[]; // by position

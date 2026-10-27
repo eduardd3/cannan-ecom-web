@@ -10,7 +10,8 @@ import { cache } from "react";
 import type { Prisma } from "@/generated/prisma/client";
 import { getImageUrl } from "@/lib/storage";
 import { prisma } from "@/lib/prisma";
-import type { ListingCollection, ListingProduct } from "./listing";
+import { formatDimensions } from "./format";
+import { isGroupVisible, type ListingCollection, type ListingProduct } from "./listing";
 import type {
   CollectionView,
   ProductCardView,
@@ -76,7 +77,8 @@ export const getCollectionListing = cache(
             images: { select: { key: true, alt: true }, orderBy: [{ position: "asc" }, { id: "asc" }], take: 1 },
             variants: {
               where: { isActive: true },
-              select: { priceCents: true, stock: true, option1Value: true, option2Value: true },
+              select: { id: true, priceCents: true, stock: true, option1Value: true, option2Value: true },
+              orderBy: [{ position: "asc" }, { id: "asc" }],
             },
           },
           orderBy: [{ createdAt: "desc" }, { id: "desc" }],
@@ -158,6 +160,25 @@ export const getProductBySlug = cache(async (slug: string): Promise<ProductDetai
       slug: true,
       name: true,
       description: true,
+      material: true,
+      isFinalSale: true,
+      collection: {
+        select: {
+          slug: true,
+          name: true,
+          facetLabel: true,
+          facetSource: true,
+          // One row per type among the collection's visible products: the
+          // breadcrumb links to a type only when the Type filter shows.
+          products: {
+            where: visibleProduct,
+            select: { productType: { select: { slug: true, name: true } } },
+            distinct: ["productTypeId"],
+          },
+        },
+      },
+      productType: { select: { slug: true, name: true } },
+      category: { select: { slug: true, name: true } },
       option1Name: true,
       option2Name: true,
       images: {
@@ -166,17 +187,38 @@ export const getProductBySlug = cache(async (slug: string): Promise<ProductDetai
       },
       variants: {
         where: { isActive: true },
-        select: { id: true, option1Value: true, option2Value: true, priceCents: true, stock: true },
+        select: {
+          id: true,
+          option1Value: true,
+          option2Value: true,
+          priceCents: true,
+          stock: true,
+          heightIn: true,
+          widthIn: true,
+          depthIn: true,
+        },
         orderBy: [{ position: "asc" }, { id: "asc" }],
       },
     },
   });
   if (!product) return null;
 
+  const { products: typed, ...collection } = product.collection;
   return {
     slug: product.slug,
     name: product.name,
     description: product.description,
+    material: product.material,
+    isFinalSale: product.isFinalSale,
+    collection: {
+      ...collection,
+      typeFilterVisible: isGroupVisible(
+        typed.map(({ productType }) => productType),
+        null,
+      ),
+    },
+    productType: product.productType,
+    category: product.category,
     option1Name: product.option1Name,
     option2Name: product.option2Name,
     images: product.images.map((image) => ({
@@ -184,7 +226,11 @@ export const getProductBySlug = cache(async (slug: string): Promise<ProductDetai
       alt: image.alt,
       variantId: image.variantId,
     })),
-    variants: product.variants,
+    // Formatted here so no Decimal reaches the client component.
+    variants: product.variants.map(({ heightIn, widthIn, depthIn, ...variant }) => ({
+      ...variant,
+      dimensions: formatDimensions({ heightIn, widthIn, depthIn }),
+    })),
   };
 });
 

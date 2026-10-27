@@ -20,13 +20,15 @@ export type ListingCollection = {
 };
 
 export type ListingVariant = {
+  id: number;
   priceCents: number;
   stock: number;
   option1Value: string | null;
   option2Value: string | null;
 };
 
-// One visible product, as the query returns it: newest first, active variants only.
+// One visible product, as the query returns it: newest first, active variants
+// only, in their position order.
 export type ListingProduct = {
   slug: string;
   name: string;
@@ -52,11 +54,15 @@ export type FilterGroup = {
 
 export type Filters = { type: string | null; facet: string | null };
 
+// A card plus the variant its link selects: set only for a VARIANT_OPTION
+// facet selection, so "Roja" opens the product on its red variant.
+export type ListingCard = ProductCardView & { variantId: number | null };
+
 export type Listing = {
   filters: Filters;
   typeGroup: FilterGroup | null; // null = hidden
   facetGroup: FilterGroup | null;
-  cards: ProductCardView[]; // in-stock first; empty = "No results"
+  cards: ListingCard[]; // in-stock first; empty = "No results"
 };
 
 const ALL: FilterOption = { slug: null, name: "All" };
@@ -218,8 +224,23 @@ export function toListingCard(product: ListingProduct, variants: ListingVariant[
   };
 }
 
+/**
+ * The variant a card links to under a VARIANT_OPTION facet selection: the
+ * first matching one with stock, otherwise the first matching one. Null for
+ * any other filter: the product page picks its own.
+ */
+export function listingVariantId(
+  collection: ListingCollection,
+  product: ListingProduct,
+  facet: string | null,
+): number | null {
+  if (facet === null || collection.facetSource !== "VARIANT_OPTION") return null;
+  const variants = matchingVariants(collection, product, facet);
+  return (variants.find((variant) => variant.stock > 0) ?? variants[0])?.id ?? null;
+}
+
 /** In-stock first, then sold out; the order within each is kept (newest first). */
-export function sortInStockFirst(cards: ProductCardView[]): ProductCardView[] {
+export function sortInStockFirst<T extends ProductCardView>(cards: T[]): T[] {
   return [...cards.filter((card) => card.inStock), ...cards.filter((card) => !card.inStock)];
 }
 
@@ -247,7 +268,10 @@ export function buildListing(
   const cards = products
     .filter((product) => matchesType(product, filters.type) && matchesFacet(collection, product, filters.facet))
     // A product that matches the facet has a variant with it, so none is empty.
-    .map((product) => toListingCard(product, matchingVariants(collection, product, filters.facet)));
+    .map((product) => ({
+      ...toListingCard(product, matchingVariants(collection, product, filters.facet)),
+      variantId: listingVariantId(collection, product, filters.facet),
+    }));
 
   return { filters, typeGroup, facetGroup, cards: sortInStockFirst(cards) };
 }

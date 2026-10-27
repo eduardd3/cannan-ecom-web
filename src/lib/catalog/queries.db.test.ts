@@ -5,6 +5,7 @@ import { createVariant, resetDb } from "../../../test/db";
 import {
   getCollectionListing,
   getDefaultCollectionTarget,
+  getProductBySlug,
   listCollections,
   listFeaturedProducts,
   listSwitcherCollections,
@@ -103,7 +104,7 @@ describe("getCollectionListing", () => {
     const listing = await getCollectionListing(slug);
 
     expect(listing?.products[0].variants).toEqual([
-      { priceCents: 2000, stock: 1, option1Value: "Roja", option2Value: null },
+      { id: variant.id, priceCents: 2000, stock: 1, option1Value: "Roja", option2Value: null },
     ]);
   });
 
@@ -139,5 +140,46 @@ describe("getDefaultCollectionTarget", () => {
 
   it("returns null while the default collection has nothing visible", async () => {
     expect(await getDefaultCollectionTarget()).toBeNull();
+  });
+});
+
+describe("getProductBySlug", () => {
+  it("returns active variants by position, with formatted dimensions", async () => {
+    const first = await createVariant({ stock: 1 });
+    const product = await prisma.product.update({
+      where: { id: first.productId },
+      data: { option1Name: "Size", material: "Resin" },
+      select: { slug: true },
+    });
+    await prisma.productVariant.update({
+      where: { id: first.id },
+      data: { option1Value: "12 in", position: 2, heightIn: "8.00", widthIn: "3.50", depthIn: "3" },
+    });
+    const earlier = await prisma.productVariant.create({
+      data: { productId: first.productId, sku: "SKU-8", priceCents: 900, stock: 0, option1Value: "8 in", position: 1 },
+    });
+    await prisma.productVariant.create({
+      data: { productId: first.productId, sku: "SKU-OFF", priceCents: 900, stock: 0, isActive: false, option1Value: "4 in" },
+    });
+
+    const view = await getProductBySlug(product.slug);
+
+    expect(view?.material).toBe("Resin");
+    expect(view?.variants.map((v) => [v.id, v.dimensions])).toEqual([
+      [earlier.id, null],
+      [first.id, "8 × 3.5 × 3 in"],
+    ]);
+  });
+
+  it("shows the Type filter only when the collection has more than one visible type", async () => {
+    const [a, b] = await products(2);
+    expect((await getProductBySlug(a))?.collection.typeFilterVisible).toBe(false);
+
+    const other = await prisma.productType.findFirstOrThrow({ orderBy: { position: "desc" } });
+    await prisma.product.update({ where: { slug: b }, data: { productTypeId: other.id } });
+    expect((await getProductBySlug(a))?.collection.typeFilterVisible).toBe(true);
+
+    await prisma.product.update({ where: { slug: b }, data: { status: "DRAFT" } });
+    expect((await getProductBySlug(a))?.collection.typeFilterVisible).toBe(false);
   });
 });

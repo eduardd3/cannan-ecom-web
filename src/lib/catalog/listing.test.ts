@@ -7,6 +7,7 @@ import {
   facetValueSlug,
   facetValuesOf,
   isGroupVisible,
+  listingVariantId,
   matchingVariants,
   parseFilters,
   sortInStockFirst,
@@ -38,8 +39,10 @@ const statues = { slug: "statues", name: "Statues", position: 1 };
 const candles = { slug: "candles", name: "Candles", position: 2 };
 const bibles = { slug: "bibles", name: "Bibles", position: 6 };
 
+let variantSequence = 0;
 function variant(overrides: Partial<ListingVariant> = {}): ListingVariant {
-  return { priceCents: 3000, stock: 1, option1Value: null, option2Value: null, ...overrides };
+  variantSequence += 1;
+  return { id: variantSequence, priceCents: 3000, stock: 1, option1Value: null, option2Value: null, ...overrides };
 }
 
 let sequence = 0;
@@ -224,6 +227,24 @@ describe("toListingCard", () => {
   });
 });
 
+describe("listingVariantId", () => {
+  it("links to the first matching variant with stock", () => {
+    const p = colored([{ value: "Roja", stock: 0 }, { value: "Blanca" }, { value: "Roja", stock: 2 }]);
+    expect(listingVariantId(santaMuerte, p, "roja")).toBe(p.variants[2].id);
+  });
+
+  it("falls back to the first matching variant when all are sold out", () => {
+    const p = colored([{ value: "Blanca" }, { value: "Roja", stock: 0 }, { value: "Roja", stock: 0 }]);
+    expect(listingVariantId(santaMuerte, p, "roja")).toBe(p.variants[1].id);
+  });
+
+  it("is null without a facet selection, or for a category facet", () => {
+    const p = colored([{ value: "Roja" }]);
+    expect(listingVariantId(santaMuerte, p, null)).toBeNull();
+    expect(listingVariantId(signature, product({ category: { slug: "san-jose", name: "San José" } }), "san-jose")).toBeNull();
+  });
+});
+
 describe("sortInStockFirst", () => {
   it("moves sold-out cards last and keeps the order within each", () => {
     const card = (slug: string, inStock: boolean) => ({ slug, inStock }) as ProductCardView;
@@ -240,7 +261,7 @@ describe("buildListing", () => {
       { value: "Roja", priceCents: 5200, stock: 0 },
     ]);
     const [card] = buildListing(santaMuerte, [p], { facet: "roja" }).cards;
-    expect(card).toMatchObject({ minPriceCents: 4800, hasPriceRange: true, inStock: false });
+    expect(card).toMatchObject({ minPriceCents: 4800, hasPriceRange: true, inStock: false, variantId: p.variants[1].id });
   });
 
   it("lists a product without the facet option only under All", () => {
