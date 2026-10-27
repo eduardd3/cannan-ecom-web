@@ -6,6 +6,7 @@ import { getCartView } from "@/lib/cart/queries";
 import { getCurrentUserId } from "@/lib/cart/session";
 import { isCheckoutEnabled } from "@/lib/flags";
 import { prisma } from "@/lib/prisma";
+import { checkLimit, checkoutLimiter } from "@/lib/rate-limit";
 import { getStripe } from "@/lib/stripe";
 import {
   buildLineItems,
@@ -18,6 +19,7 @@ export type CheckoutErrorCode =
   | "UNAUTHENTICATED"
   | "EMPTY_CART"
   | "CART_HAS_ISSUES" // a line is limited/unavailable: send them back to /cart
+  | "RATE_LIMITED"
   | "PAYMENT_PROVIDER_ERROR" // Stripe rejected or was unreachable
   | "UNKNOWN";
 
@@ -55,6 +57,17 @@ export async function createCheckoutSession(): Promise<CheckoutResult> {
   const userId = await getCurrentUserId();
   if (!userId) {
     return { ok: false, error: "UNAUTHENTICATED", message: "Please sign in to check out." };
+  }
+
+  // Per user, not per IP: only signed-in users get this far. Before the
+  // database and Stripe, so throttled calls cost nothing.
+  const limit = await checkLimit(checkoutLimiter, String(userId));
+  if (!limit.ok) {
+    return {
+      ok: false,
+      error: "RATE_LIMITED",
+      message: "Too many checkout attempts. Please wait a few minutes and try again.",
+    };
   }
 
   try {

@@ -36,6 +36,9 @@ export const tokenLimiter = limiter("token", 10, "15 m");
 // into the support inbox.
 export const contactLimiter = limiter("contact", 3, "10 m");
 export const contactDailyLimiter = limiter("contact-day", 10, "24 h");
+// Checkout, per user: every call creates a Stripe Checkout Session. Each visit
+// to /id/checkout makes one, so this leaves room for reloads and retries.
+export const checkoutLimiter = limiter("checkout", 10, "10 m");
 
 export type LimitResult = { ok: boolean; retryAfterSec: number };
 
