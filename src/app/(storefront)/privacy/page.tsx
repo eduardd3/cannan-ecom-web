@@ -26,8 +26,13 @@ const sections: PolicySection[] = [
         </li>
         <li>
           <strong>Payment information:</strong> payments are processed by
-          Stripe. Your card details go directly to Stripe and never reach or
-          are stored on our servers.
+          Stripe, including Apple Pay, Google Pay, and Link. You enter card
+          details in secure fields provided by Stripe on our checkout page;
+          they go directly to Stripe and never reach or are stored on our
+          servers. If you pay with a digital wallet, it shares the details
+          needed for your order with us, such as your name, email, and
+          shipping address. If you choose to save your details with Link,
+          Stripe&apos;s privacy policy applies to that.
         </li>
         <li>
           <strong>Technical information:</strong> your IP address, which is used
@@ -145,7 +150,7 @@ export default function Privacy() {
     <PolicyTemplate
       eyebrow="Legal"
       title="Privacy Policy"
-      updated="October 17, 2026"
+      updated="October 26, 2026"
       lead={
         <p>
           This policy explains what information CANNAN LLC (&quot;Cannan,&quot;

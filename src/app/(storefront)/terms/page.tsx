@@ -23,7 +23,15 @@ const sections: PolicySection[] = [
           order and fully refund it if an item becomes unavailable, or if a
           pricing or listing error was made.
         </li>
-        <li>We try to describe and photograph products accurately, but colors and details may vary slightly.</li>
+        <li>
+          We try to describe and photograph products accurately, but colors,
+          details, and dimensions may vary slightly. Listed dimensions are
+          approximate.
+        </li>
+        <li>
+          Orders placed through our Amazon or Walmart shops are governed by that
+          marketplace&apos;s terms and policies.
+        </li>
       </ul>
     ),
   },
@@ -112,7 +120,7 @@ export default function Terms() {
     <PolicyTemplate
       eyebrow="Legal"
       title="Terms of Service"
-      updated="October 16, 2026"
+      updated="October 26, 2026"
       lead={
         <p>
           These terms apply when you use www.shopcannan.com or buy from CANNAN LLC
