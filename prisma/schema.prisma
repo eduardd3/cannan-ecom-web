@@ -167,6 +167,9 @@ model Product {
   option1Name   String?
   option2Name   String?
   material      String? // "Resin, painted finish"; shown in Details
+  // Structured data and, later, the Merchant Center feed. Null = left out of
+  // both; never a placeholder like "Generic".
+  brand         String?
   isFinalSale   Boolean       @default(false) // seasonal pieces; see the Returns policy
   // First time the product went ACTIVE; never cleared. From then on its URL
   // may be indexed, so a slug change keeps the old one as a redirect.
@@ -222,6 +225,7 @@ model ProductVariant {
   stock        Int // running total of InventoryAdjustment.delta; CHECK (stock >= 0) in SQL
   sku          String   @unique
   amazonAsin   String?
+  gtin         String? // UPC/EAN from the packaging; null until entered, never invented
   position     Int      @default(0)
   isActive     Boolean  @default(true)
   createdAt    DateTime @default(now())

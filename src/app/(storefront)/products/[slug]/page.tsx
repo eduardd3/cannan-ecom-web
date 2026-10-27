@@ -3,27 +3,39 @@ import Link from "next/link";
 import { notFound, permanentRedirect } from "next/navigation";
 
 import Container from "@/app/components/container";
+import JsonLd from "@/app/components/json-ld";
 import { getCurrentUserId } from "@/lib/cart/session";
 import { breadcrumbParts, initialVariant, type BreadcrumbPart } from "@/lib/catalog/product-detail";
 import { getProductBySlug, getRedirectedSlug } from "@/lib/catalog/queries";
 import { isCatalogEnabled } from "@/lib/flags";
 import { productPath } from "@/lib/products/slug";
+import { buildOpenGraph } from "@/lib/seo/open-graph";
+import { buildBreadcrumbJsonLd, buildProductJsonLd } from "@/lib/seo/product";
 import ProductPurchase from "./product-purchase";
 
-//  Full OG and structured data come with launch readiness; title, description
-//  and the canonical are enough until then. Canonical without ?variant=, so
-//  each variant isn't indexed as a separate page.
+//  Canonical and og:url without ?variant=, so each variant isn't indexed as a
+//  separate page. The share image is the first image in the product's order
+//  (the existing square photo; a 1200×630 card waits on a mockup).
 export async function generateMetadata({ params }: PageProps<"/products/[slug]">): Promise<Metadata> {
   //  Checked here too: metadata renders separately from the page, and would
   //  otherwise leak the product name into <title> while the catalog is off.
-  if (!isCatalogEnabled()) return { title: "Not found | CANNAN" };
+  if (!isCatalogEnabled()) return { title: "Not found | Cannan" };
   const { slug } = await params;
   const product = await getProductBySlug(slug);
-  if (!product) return { title: "Not found | CANNAN" };
+  if (!product) return { title: "Not found | Cannan" };
+  const description = product.description.slice(0, 160);
+  const [image] = product.images;
   return {
-    title: `${product.name} | CANNAN`,
-    description: product.description.slice(0, 160),
+    title: `${product.name} | Cannan`,
+    description,
     alternates: { canonical: productPath(product.slug) },
+    openGraph: buildOpenGraph({
+      title: product.name,
+      description,
+      path: productPath(product.slug),
+      image: image ? { url: image.url, alt: image.alt } : null,
+    }),
+    twitter: { card: "summary_large_image" },
   };
 }
 
@@ -55,9 +67,14 @@ export default async function ProductPage({ params, searchParams }: PageProps<"/
     notFound();
   }
 
+  //  Structured data describes every active variant whatever ?variant= says;
+  //  the breadcrumb markup reuses the visible parts.
+  const parts = breadcrumbParts(product);
   return (
     <Container className="pt-4 pb-16 md:pt-6 md:pb-24">
-      <Breadcrumb parts={breadcrumbParts(product)} current={product.name} />
+      <JsonLd data={buildProductJsonLd(product)} />
+      <JsonLd data={buildBreadcrumbJsonLd(parts, product.name)} />
+      <Breadcrumb parts={parts} current={product.name} />
       <ProductPurchase
         product={product}
         initialVariantId={initialVariant(product.variants, query.variant).id}

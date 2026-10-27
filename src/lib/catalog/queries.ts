@@ -170,10 +170,12 @@ export const getProductBySlug = cache(async (slug: string): Promise<ProductDetai
   const product = await prisma.product.findFirst({
     where: { ...visibleProduct, slug },
     select: {
+      id: true,
       slug: true,
       name: true,
       description: true,
       material: true,
+      brand: true,
       isFinalSale: true,
       collection: {
         select: {
@@ -202,6 +204,8 @@ export const getProductBySlug = cache(async (slug: string): Promise<ProductDetai
         where: { isActive: true },
         select: {
           id: true,
+          sku: true,
+          gtin: true,
           option1Value: true,
           option2Value: true,
           priceCents: true,
@@ -218,10 +222,12 @@ export const getProductBySlug = cache(async (slug: string): Promise<ProductDetai
 
   const { products: typed, ...collection } = product.collection;
   return {
+    id: product.id,
     slug: product.slug,
     name: product.name,
     description: product.description,
     material: product.material,
+    brand: product.brand,
     isFinalSale: product.isFinalSale,
     collection: {
       ...collection,

@@ -4,13 +4,12 @@ import { collectionHref } from '@/lib/catalog/listing';
 import { listSitemapProducts, listSwitcherCollections } from '@/lib/catalog/queries';
 import { isCatalogEnabled } from '@/lib/flags';
 import { productPath } from '@/lib/products/slug';
+import { absoluteUrl } from '@/lib/seo/site';
 
-const ORIGIN = 'https://www.shopcannan.com';
-
-//  Public pages only: robots.ts keeps crawlers out of /adm, /id, /myCANN and
-//  /api, and /cart and /orders are per-customer. /products is left out because
-//  it only redirects to the default collection.
-const STATIC_PATHS = ['/', '/about', '/contact', '/shipping', '/returns', '/terms', '/privacy'];
+//  Indexable pages only: /adm and /api are blocked in robots.ts, /id/* and
+//  /myCANN/dashboard are noindex, and /cart and /orders are per-customer.
+//  /products is left out because it only redirects to the default collection.
+const STATIC_PATHS = ['/', '/about', '/contact', '/shipping', '/returns', '/terms', '/privacy', '/myCANN'];
 
 //  Rendered per request, like the catalog pages: a build-time sitemap would
 //  freeze the product list until the next deploy, and the build would need
@@ -26,13 +25,13 @@ export const dynamic = 'force-dynamic';
  * tells crawlers nothing.
  */
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
-    const pages: MetadataRoute.Sitemap = STATIC_PATHS.map((path) => ({ url: `${ORIGIN}${path}` }));
+    const pages: MetadataRoute.Sitemap = STATIC_PATHS.map((path) => ({ url: absoluteUrl(path) }));
     if (!isCatalogEnabled()) return pages;
 
     const [collections, products] = await Promise.all([listSwitcherCollections(), listSitemapProducts()]);
     return [
         ...pages,
-        ...collections.map(({ slug }) => ({ url: `${ORIGIN}${collectionHref(slug, { type: null, facet: null })}` })),
-        ...products.map(({ slug, updatedAt }) => ({ url: `${ORIGIN}${productPath(slug)}`, lastModified: updatedAt })),
+        ...collections.map(({ slug }) => ({ url: absoluteUrl(collectionHref(slug, { type: null, facet: null })) })),
+        ...products.map(({ slug, updatedAt }) => ({ url: absoluteUrl(productPath(slug)), lastModified: updatedAt })),
     ];
 }

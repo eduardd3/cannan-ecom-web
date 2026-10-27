@@ -20,6 +20,8 @@ function variant(overrides: Partial<ProductVariantView> = {}): ProductVariantVie
   sequence += 1;
   return {
     id: sequence,
+    sku: `SKU-${sequence}`,
+    gtin: null,
     option1Value: null,
     option2Value: null,
     priceCents: 3000,

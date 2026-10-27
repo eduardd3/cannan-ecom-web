@@ -13,22 +13,33 @@ import { productVariantPath } from "@/lib/catalog/product-detail";
 import { getCollectionListing, listSwitcherCollections } from "@/lib/catalog/queries";
 import type { SwitcherCollectionView } from "@/lib/catalog/types";
 import { isCatalogEnabled } from "@/lib/flags";
+import { buildOpenGraph } from "@/lib/seo/open-graph";
 import FilterSelects from "./filter-selects";
 
-//  Canonical without ?type/?facet, so filtered views aren't indexed as
-//  separate pages. The flag is checked here too: metadata renders separately
-//  from the page, and would otherwise leak the collection name while the
-//  catalog is off.
+//  Canonical and og:url without ?type/?facet, so filtered views aren't
+//  indexed as separate pages. The flag is checked here too: metadata renders
+//  separately from the page, and would otherwise leak the collection name
+//  while the catalog is off. The share image is the first one the unfiltered
+//  grid shows (in-stock first, like the page).
 export async function generateMetadata({ params }: PageProps<"/collections/[slug]">): Promise<Metadata> {
   if (!isCatalogEnabled()) return { title: "Shop | Cannan" };
   const { slug } = await params;
   const listing = await getCollectionListing(slug);
   if (!listing) return { title: "Not found | Cannan" };
-  const { collection } = listing;
+  const { collection, products } = listing;
+  const path = collectionHref(collection.slug, { type: null, facet: null });
+  const card = buildListing(collection, products, {}).cards.find((card) => card.imageUrl !== null);
   return {
     title: `${collection.name} | Cannan`,
     description: collection.description,
-    alternates: { canonical: `/collections/${collection.slug}` },
+    alternates: { canonical: path },
+    openGraph: buildOpenGraph({
+      title: collection.name,
+      description: collection.description,
+      path,
+      image: card?.imageUrl ? { url: card.imageUrl, alt: card.imageAlt ?? card.name } : null,
+    }),
+    twitter: { card: "summary_large_image" },
   };
 }
 

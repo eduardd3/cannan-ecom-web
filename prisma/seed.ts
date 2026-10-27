@@ -8,7 +8,7 @@ import { PrismaClient } from "@/generated/prisma/client";
 import { Role } from "@/generated/prisma/enums";
 import { withVerifyFullSsl } from "@/lib/db-url";
 import { validateAdjustment } from "@/lib/inventory/rules";
-import { SEED_CATEGORIES, SEED_PRODUCTS, type SeedImage, type SeedProduct } from "./seed-catalog";
+import { SEED_BRAND, SEED_CATEGORIES, SEED_PRODUCTS, type SeedImage, type SeedProduct } from "./seed-catalog";
 
 config({ path: ".env.local" });
 
@@ -121,6 +121,7 @@ async function seedCatalog() {
             option1Name: p.option1Name ?? null,
             option2Name: p.option2Name ?? null,
             material: p.material ?? null,
+            brand: p.brand ?? SEED_BRAND,
             isFinalSale: p.isFinalSale ?? false,
         };
         const product = await prisma.product.upsert({

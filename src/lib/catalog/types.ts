@@ -34,6 +34,8 @@ export type ProductImageView = {
 
 export type ProductVariantView = {
   id: number;
+  sku: string;
+  gtin: string | null;
   option1Value: string | null; // e.g. "Roja"; null on a default variant
   option2Value: string | null; // e.g. "12 in"; only alongside option1Value
   priceCents: number;
@@ -42,10 +44,12 @@ export type ProductVariantView = {
 };
 
 export type ProductDetailView = {
+  id: number; // the structured data's productGroupID
   slug: string;
   name: string;
   description: string;
   material: string | null;
+  brand: string | null;
   isFinalSale: boolean;
   collection: {
     slug: string;

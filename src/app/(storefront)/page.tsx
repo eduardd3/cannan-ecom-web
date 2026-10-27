@@ -3,10 +3,13 @@ import type { Metadata } from "next";
 import CollectionsGrid from "@/app/components/home/collections-grid";
 import FeaturedProducts from "@/app/components/home/featured-products";
 import Hero from "@/app/components/home/hero";
+import JsonLd from "@/app/components/json-ld";
 import Narrative from "@/app/components/home/narrative";
 import Promises from "@/app/components/home/promises";
 import { listCollections, listFeaturedProducts } from "@/lib/catalog/queries";
 import { isCatalogEnabled } from "@/lib/flags";
+import { buildOpenGraph } from "@/lib/seo/open-graph";
+import { buildHomeJsonLd } from "@/lib/seo/organization";
 
 const TITLE = "Cannan | Saint, Orisha & Santa Muerte Devotional Goods";
 // TODO(copy): homepage meta description.
@@ -18,30 +21,13 @@ const DESCRIPTION =
 //  Brand first only here: brand searches are this page's main job. absolute
 //  keeps the title as written if the root layout ever gains a title template.
 //  Canonical is set on this page only; in the layout it would make every page
-//  canonicalize to home. openGraph merges shallowly (a page's object replaces
-//  the parent's), so siteName lives here, not in the layout.
+//  canonicalize to home.
 export const metadata: Metadata = {
   title: { absolute: TITLE },
   description: DESCRIPTION,
   alternates: { canonical: "/" },
-  openGraph: {
-    type: "website",
-    url: "/",
-    siteName: "Cannan",
-    title: TITLE,
-    description: DESCRIPTION,
-    // TODO: OG image, likely a generated opengraph-image.tsx (ImageResponse).
-  },
-};
-
-//  Tells Google which site name to show above the URL; alternateName gives it
-//  fallbacks if "Cannan" alone isn't treated as unique.
-const websiteJsonLd = {
-  "@context": "https://schema.org",
-  "@type": "WebSite",
-  name: "Cannan",
-  alternateName: ["Shop Cannan", "shopcannan.com"],
-  url: "https://www.shopcannan.com/",
+  // TODO: OG image, likely a generated opengraph-image.tsx (ImageResponse).
+  openGraph: buildOpenGraph({ title: TITLE, description: DESCRIPTION, path: "/" }),
 };
 
 //  no HTML, body, or main -> outlined in Layout.tsx
@@ -60,11 +46,8 @@ export default async function Home() {
 
   return (
     <>
-      <script
-        type="application/ld+json"
-        //  Escaping < keeps any string in the data from closing the script tag.
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(websiteJsonLd).replace(/</g, "\\u003c") }}
-      />
+      {/* The site name Google shows, and the site-wide shipping and returns. */}
+      <JsonLd data={buildHomeJsonLd()} />
       <Hero />
       <CollectionsGrid collections={collections} />
       <FeaturedProducts products={featured} />

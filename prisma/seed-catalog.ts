@@ -49,10 +49,15 @@ export type SeedProduct = {
     option1Name?: string; //  none = one default variant
     option2Name?: string; //  needs option1Name
     material?: string;
+    brand?: string; //  none = SEED_BRAND
     isFinalSale?: boolean;
     images: SeedImage[]; //  shared by every variant
     variants: SeedVariant[];
 };
+
+//  Everything Cannan sells carries its own brand. The column has no default,
+//  so a product made in the admin still starts with none.
+export const SEED_BRAND = "Cannan";
 
 const STOCK = 5;
 const STATUE = "Resin, painted finish";

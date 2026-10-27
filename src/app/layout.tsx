@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { DM_Sans, EB_Garamond, Geist_Mono } from "next/font/google";
+import { SITE_ORIGIN } from "@/lib/seo/site";
 import "./globals.css";
 
 //  DM Sans is the site font: globals.css maps --font-sans to it, so it is
@@ -31,11 +32,9 @@ const ebGaramond = EB_Garamond({
 //  want a specific title set their own.
 //
 //  metadataBase turns relative metadata URLs (canonical, og:url) into absolute
-//  ones. Always the www host: the apex 308s to it, so it must never be the
-//  canonical. Not from an env var, or Preview deployments would canonicalize
-//  to their own URLs.
+//  ones, on the www host (see lib/seo/site).
 export const metadata: Metadata = {
-  metadataBase: new URL("https://www.shopcannan.com"),
+  metadataBase: new URL(SITE_ORIGIN),
   title: "Cannan",
 };
 
