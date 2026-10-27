@@ -20,7 +20,7 @@ export default function Hero() {
             Devotional pieces for the altar and the home.
           </p>
           <Link
-            href="/products"
+            href={`/collections/signature`}
             className="mb-12 inline-flex items-center justify-center rounded-control bg-charcoal px-7 py-3.5 text-label-ui text-gallery-white transition-colors hover:bg-charcoal/90"
           >
             Shop the collections

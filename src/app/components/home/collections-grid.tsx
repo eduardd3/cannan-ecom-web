@@ -1,8 +1,8 @@
 import Link from "next/link";
-import { ArrowRightIcon } from "@heroicons/react/24/outline";
 
 import Container from "@/app/components/container";
 import GoldRule from "@/app/components/gold-rule";
+import CollectionArt from "@/app/components/home/collection-art";
 import type { CollectionView } from "@/lib/catalog/types";
 
 export default function CollectionsGrid({ collections }: { collections: CollectionView[] }) {
@@ -23,19 +23,19 @@ export default function CollectionsGrid({ collections }: { collections: Collecti
           {collections.map((collection) => (
             <li key={collection.slug}>
               <article className="flex flex-col">
-                {/* TODO(image): Collection has no image field yet; placeholder at the card's 4:5. */}
-                <div aria-hidden="true" className="mb-6 aspect-4/5 w-full bg-linen" />
+                {/* TODO(image): Collection has no image field yet; typographic
+                    placeholder at the card's 4:5 until it does. */}
+                <CollectionArt slug={collection.slug} />
                 <p className="mb-1.5 text-label-eyebrow text-gold-ink uppercase">Collection</p>
                 <h3 className="mb-2.5 font-serif text-headline-md text-charcoal">{collection.name}</h3>
                 <p className="mb-4 text-body-md text-stone">{collection.description}</p>
-                {/* TODO: link to /collections/[slug] once it exists; /products
-                    only lists the default collection for now. */}
                 <Link
-                  href="/products"
-                  className="inline-flex items-center gap-1 self-start text-label-ui text-gold-ink underline underline-offset-4 transition-colors hover:text-charcoal"
+                  href={`/collections/${collection.slug}`}
+                  className="group inline-flex items-center gap-1 self-start text-label-ui text-gold-ink transition-colors hover:text-charcoal"
                 >
-                  Shop {collection.name}
-                  <ArrowRightIcon aria-hidden="true" className="size-4" />
+                  <span className="underline underline-offset-4">Shop {collection.name}</span>
+                  <span aria-hidden="true" className="inline-block transition-transform group-hover:translate-x-1"> →
+                  </span>
                 </Link>
               </article>
             </li>

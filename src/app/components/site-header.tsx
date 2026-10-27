@@ -1,14 +1,16 @@
 
 import Link from "next/link";
-import {ArrowRightStartOnRectangleIcon, ShoppingBagIcon, UserIcon} from '@heroicons/react/24/outline';
-import {signOutAction} from '@/app/actions';
+import {ShoppingBagIcon, UserIcon} from '@heroicons/react/24/outline';
 import {getCartItemCount} from '@/lib/cart/queries';
 import {getCurrentUserId} from '@/lib/cart/session';
 import Container from '@/app/components/container';
+import NavLink from '@/app/components/nav-link';
 
-//  /products redirects to the default collection, so the header never names one.
+//  /products redirects to the default collection, so the header never names
+//  one. section: the paths where the link shows as active.
 const navLinks = [
-    { href: "/products", label: "Shop" },
+    { href: "/collections/signature", label: "Shop", section: ["/collections", "/products"] },
+    { href: "/about", label: "About", section: ["/about"] },
 ];
 
 //  size-11 is the 44px tap area; the 22px icon sits centered in it, so the
@@ -37,14 +39,10 @@ export default async function SiteHeader() {
                         CANNAN
                     </Link>
 
-                    <ul className="flex items-center">
-                        {navLinks.map(({ href, label }) => (
+                    <ul className="flex items-center gap-5 md:gap-8">
+                        {navLinks.map(({ href, label, section }) => (
                             <li key={href}>
-                                {/* -mx-2 px-2: the padding widens the tap area
-                                    to 44px without shifting the text. */}
-                                <Link href={href} className="-mx-2 flex h-11 items-center px-2 text-label-ui text-stone transition-colors hover:text-charcoal">
-                                    {label}
-                                </Link>
+                                <NavLink href={href} label={label} section={section} />
                             </li>
                         ))}
                     </ul>
@@ -83,18 +81,10 @@ export default async function SiteHeader() {
                                 )}
                             </Link>
                         </li>
-                        {signedIn && (
-                            <li>
-                                {/* A form, not a Link: sign-out is a POST. As a GET it
-                                    would fire on <Link> prefetch, on crawl, and on any
-                                    other site's <img src>. */}
-                                <form action={signOutAction}>
-                                    <button type="submit" aria-label="Sign out" className={`cursor-pointer ${iconLink}`}>
-                                        <ArrowRightStartOnRectangleIcon aria-hidden="true" className="size-[22px]" />
-                                    </button>
-                                </form>
-                            </li>
-                        )}
+                        {/* No sign-out here: it lives on the myCANN dashboard
+                            (SignOutButton), away from the bag, where a mis-tap
+                            can't log you out. That also frees the room About
+                            needs at 390px. */}
                     </ul>
                 </nav>
             </Container>

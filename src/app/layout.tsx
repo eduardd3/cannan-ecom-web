@@ -17,9 +17,13 @@ const dmSans = DM_Sans({
   subsets: ["latin"],
 });
 
+//  latin-ext and vietnamese too: the Yoruba "Àṣẹ" on the Orishas collection
+//  card needs ṣ (latin-ext) and ẹ (vietnamese range). Without them those two
+//  letters fall back to another font. The browser only downloads a subset's
+//  file when a page uses one of its characters.
 const ebGaramond = EB_Garamond({
   variable: "--font-eb-garamond",
-  subsets: ["latin"],
+  subsets: ["latin", "latin-ext", "vietnamese"],
   style: ["normal", "italic"],
 });
 //  Fallback only — this applies to any page that sets no title of its own,
