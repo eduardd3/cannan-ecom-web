@@ -81,8 +81,12 @@ export async function sendContactMessage(_prev: ContactState, formData: FormData
     if (!burst.ok || !daily.ok) return { status: "rate-limited", values };
 
     // 2. Real visitors never see this field. A bot gets the normal success
-    //    state so it never learns it was caught.
-    if (formData.get("website")) return { status: "sent" };
+    //    state so it never learns it was caught. Logged so we can see how
+    //    often bots try; nothing from the submission goes into the log.
+    if (formData.get("website")) {
+        console.warn("contact: honeypot filled, message dropped");
+        return { status: "sent" };
+    }
 
     // 3.
     const parsed = Body.safeParse(values);
