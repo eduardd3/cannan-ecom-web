@@ -3,7 +3,7 @@ import { afterAll, beforeEach, describe, expect, it } from "vitest";
 import type { Prisma } from "@/generated/prisma/client";
 import { prisma } from "@/lib/prisma";
 import { createUser, createVariant, resetDb } from "../../../test/db";
-import { getCustomerOrder, listCustomerOrders } from "./customer-queries";
+import { getCustomerOrder, listCustomerOrders, listRecentCustomerOrders } from "./customer-queries";
 
 let sequence = 0;
 
@@ -47,6 +47,20 @@ describe("listCustomerOrders", () => {
     const { orders, truncated } = await listCustomerOrders(ana.id);
     expect(orders.map((o) => o.id)).toEqual([newer.id, older.id]);
     expect(orders[0]).toMatchObject({ totalCents: 3750, itemCount: 2, status: "PAID" });    expect(truncated).toBe(false);
+  });
+});
+
+describe("listRecentCustomerOrders", () => {
+  it("returns at most `take` of the customer's own orders, newest first", async () => {
+    const [ana, ben] = await Promise.all([createUser(), createUser()]);
+    const days = ["2026-10-01", "2026-10-05", "2026-10-10", "2026-10-15"];
+    const created = [];
+    for (const day of days) created.push(await createOrder(ana.id, { createdAt: new Date(day) }));
+    await createOrder(ben.id, { createdAt: new Date("2026-10-20") });
+
+    const orders = await listRecentCustomerOrders(ana.id, 3);
+    expect(orders.map((o) => o.id)).toEqual([created[3].id, created[2].id, created[1].id]);
+    expect(orders[0]).toMatchObject({ totalCents: 3750, itemCount: 2 });
   });
 });
 

@@ -10,14 +10,17 @@ type PageHeadingProps = {
   //  screen readers announce the change. Makes the <h1> programmatically
   //  focusable only (tabIndex -1, no ring: it isn't interactive).
   titleRef?: Ref<HTMLHeadingElement>;
+  //  "start" for pages whose content is left-aligned under the heading, e.g.
+  //  the myCANN dashboard. Centered everywhere else.
+  align?: "center" | "start";
 };
 
 //  Eyebrow, serif title, optional italic subtitle and gold rule at the top of
 //  the /id forms and the contact page. The headline tokens shrink below md on
 //  their own (globals.css).
-export default function PageHeading({ eyebrow, title, subtitle, titleRef }: PageHeadingProps) {
+export default function PageHeading({ eyebrow, title, subtitle, titleRef, align = "center" }: PageHeadingProps) {
   return (
-    <div className="flex flex-col items-center text-center">
+    <div className={`flex flex-col ${align === "start" ? "items-start text-left" : "items-center text-center"}`}>
       {eyebrow && <p className="mb-2 text-label-eyebrow text-gold-ink uppercase">{eyebrow}</p>}
       <h1
         ref={titleRef}

@@ -65,45 +65,66 @@ function toItemView(item: ItemRow) {
 
 export type CustomerOrderItem = ReturnType<typeof toItemView>;
 
+// One row of an order list: shared by /orders and the dashboard's recent
+// orders, so the total and thumbnail rules live in one place.
+const orderSummarySelect = {
+  id: true,
+  createdAt: true,
+  status: true,
+  subtotalCents: true,
+  shippingCents: true,
+  taxCents: true,
+  // In the detail page's order, so the thumbnail is its first item. The
+  // image key is all the list reads from the product.
+  items: {
+    orderBy: { id: "asc" },
+    select: {
+      quantity: true,
+      variant: { select: { images: listImage, product: { select: { images: listImage } } } },
+    },
+  },
+} satisfies Prisma.OrderSelect;
+
+type OrderSummaryRow = Prisma.OrderGetPayload<{ select: typeof orderSummarySelect }>;
+
+function toOrderSummary(order: OrderSummaryRow) {
+  const first = order.items[0];
+  const image = first ? (first.variant.images[0] ?? first.variant.product.images[0] ?? null) : null;
+  return {
+    id: order.id,
+    createdAt: order.createdAt,
+    status: order.status,
+    totalCents: order.subtotalCents + order.shippingCents + order.taxCents,
+    itemCount: order.items.reduce((sum, item) => sum + item.quantity, 0),
+    firstImageUrl: image ? getImageUrl(image.key) : null,
+  };
+}
+
+export type CustomerOrderSummary = ReturnType<typeof toOrderSummary>;
+
 export async function listCustomerOrders(userId: number) {
   const orders = await prisma.order.findMany({
     where: { userId },
     orderBy: { createdAt: "desc" },
     take: CUSTOMER_ORDER_LIMIT + 1,
-    select: {
-      id: true,
-      createdAt: true,
-      status: true,
-      subtotalCents: true,
-      shippingCents: true,
-      taxCents: true,
-      // In the detail page's order, so the thumbnail is its first item. The
-      // image key is all the list reads from the product.
-      items: {
-        orderBy: { id: "asc" },
-        select: {
-          quantity: true,
-          variant: { select: { images: listImage, product: { select: { images: listImage } } } },
-        },
-      },
-    },
+    select: orderSummarySelect,
   });
 
   return {
-    orders: orders.slice(0, CUSTOMER_ORDER_LIMIT).map((order) => {
-      const first = order.items[0];
-      const image = first ? (first.variant.images[0] ?? first.variant.product.images[0] ?? null) : null;
-      return {
-        id: order.id,
-        createdAt: order.createdAt,
-        status: order.status,
-        totalCents: order.subtotalCents + order.shippingCents + order.taxCents,
-        itemCount: order.items.reduce((sum, item) => sum + item.quantity, 0),
-        firstImageUrl: image ? getImageUrl(image.key) : null,
-      };
-    }),
+    orders: orders.slice(0, CUSTOMER_ORDER_LIMIT).map(toOrderSummary),
     truncated: orders.length > CUSTOMER_ORDER_LIMIT,
   };
+}
+
+/** The user's newest orders for the dashboard. No truncated flag: it always links to /orders. */
+export async function listRecentCustomerOrders(userId: number, take = 3) {
+  const orders = await prisma.order.findMany({
+    where: { userId },
+    orderBy: { createdAt: "desc" },
+    take,
+    select: orderSummarySelect,
+  });
+  return orders.map(toOrderSummary);
 }
 
 /** The order if it belongs to this user; null for someone else's or a missing one. */
