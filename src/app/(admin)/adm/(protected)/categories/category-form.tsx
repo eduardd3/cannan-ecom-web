@@ -20,10 +20,11 @@ type Saved = {
   id: number;
   values: CategoryFormValues;
   collectionName: string; // fixed once created
+  collectionSlug: string;
   listedProductCount: number; // ACTIVE products using it
 };
 
-type CollectionOption = { id: number; name: string; isDefault: boolean };
+type CollectionOption = { id: number; name: string; slug: string; isDefault: boolean };
 
 function fieldClass(invalid: boolean) {
   return `${FIELD} ${invalid ? "border-red-500" : "border-adm-border"}`;
@@ -50,11 +51,15 @@ export default function CategoryForm({ saved, collections = [] }: { saved?: Save
   const [name, setName] = useState(saved?.values.name ?? "");
   const [slug, setSlug] = useState(saved?.values.slug ?? "");
   const [slugEdited, setSlugEdited] = useState(editing);
+  // The add form's collection pick, for the URL preview; null = the select's default.
+  const [pickedCollection, setPickedCollection] = useState<string | null>(null);
 
-  // Clear the add form after each category is added.
+  // Clear the add form after each category is added. The select resets to its
+  // default after every action, so the pick does too.
   const [handled, setHandled] = useState(state);
   if (state !== handled) {
     setHandled(state);
+    setPickedCollection(null);
     if (!editing && state?.ok) {
       setName("");
       setSlug("");
@@ -70,6 +75,8 @@ export default function CategoryForm({ saved, collections = [] }: { saved?: Save
   const renaming = editing && slug !== saved.values.slug;
   const defaultCollection =
     values?.collectionId || String(collections.find((c) => c.isDefault)?.id ?? collections[0]?.id ?? "");
+  const collectionSlug =
+    saved?.collectionSlug ?? collections.find((c) => String(c.id) === (pickedCollection ?? defaultCollection))?.slug;
 
   return (
     <form action={action} className="flex flex-col gap-6">
@@ -87,6 +94,7 @@ export default function CategoryForm({ saved, collections = [] }: { saved?: Save
             key={defaultCollection}
             name="collectionId"
             defaultValue={defaultCollection}
+            onChange={(event) => setPickedCollection(event.target.value)}
             aria-invalid={invalid("collectionId")}
             aria-describedby="collection-error"
             className={`${fieldClass(invalid("collectionId"))} w-fit`}
@@ -152,11 +160,11 @@ export default function CategoryForm({ saved, collections = [] }: { saved?: Save
           </button>
         </div>
         <p id="slug-preview" className="break-all text-xs">
-          www.shopcannan.com{categoryFilterPath(slug || "…")}
+          www.shopcannan.com{categoryFilterPath(collectionSlug ?? "…", slug || "…")}
         </p>
         {renaming && saved.listedProductCount > 0 && (
           <p className="text-xs text-amber-700">
-            Links to {categoryFilterPath(saved.values.slug)} will stop filtering and show every product instead.
+            Links to {categoryFilterPath(saved.collectionSlug, saved.values.slug)} will stop filtering and show every product instead.
           </p>
         )}
         <FieldError id="slug-error" state={state} field="slug" />

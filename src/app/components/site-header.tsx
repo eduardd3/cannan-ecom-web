@@ -3,15 +3,18 @@ import Link from "next/link";
 import {ShoppingBagIcon, UserIcon} from '@heroicons/react/24/outline';
 import {getCartItemCount} from '@/lib/cart/queries';
 import {getCurrentUserId} from '@/lib/cart/session';
+import {getShopHref} from '@/lib/catalog/queries';
 import Container from '@/app/components/container';
 import NavLink from '@/app/components/nav-link';
 
-//  /products redirects to the default collection, so the header never names
-//  one. section: the paths where the link shows as active.
-const navLinks = [
-    { href: "/collections/signature", label: "Shop", section: ["/collections", "/products"] },
-    { href: "/about", label: "About", section: ["/about"] },
-];
+//  Shop goes straight to the default collection (getShopHref), so the header
+//  never names one. section: the paths where the link shows as active.
+function navLinks(shopHref: string) {
+    return [
+        { href: shopHref, label: "Shop", section: ["/collections", "/products"] },
+        { href: "/about", label: "About", section: ["/about"] },
+    ];
+}
 
 //  size-11 is the 44px tap area; the 22px icon sits centered in it, so the
 //  padding adds reach without moving or resizing what's drawn.
@@ -25,6 +28,7 @@ export default async function SiteHeader() {
     const signedIn = userId !== null;
     //  Signed out there's no cart to count (no guest carts yet).
     const cartCount = userId ? await getCartItemCount(userId) : 0;
+    const shopHref = await getShopHref();
 
     //  sticky, not fixed: it stays in the flow, so VerifyBanner below it (when
     //  shown) and the page need no top offset, and scroll under it instead.
@@ -40,7 +44,7 @@ export default async function SiteHeader() {
                     </Link>
 
                     <ul className="flex items-center gap-5 md:gap-8">
-                        {navLinks.map(({ href, label, section }) => (
+                        {navLinks(shopHref).map(({ href, label, section }) => (
                             <li key={href}>
                                 <NavLink href={href} label={label} section={section} />
                             </li>

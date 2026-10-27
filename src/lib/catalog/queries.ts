@@ -9,9 +9,10 @@ import { cache } from "react";
 
 import type { Prisma } from "@/generated/prisma/client";
 import { getImageUrl } from "@/lib/storage";
+import { isCatalogEnabled } from "@/lib/flags";
 import { prisma } from "@/lib/prisma";
 import { formatDimensions } from "./format";
-import { isGroupVisible, type ListingCollection, type ListingProduct } from "./listing";
+import { collectionHref, isGroupVisible, type ListingCollection, type ListingProduct } from "./listing";
 import type {
   CollectionView,
   ProductCardView,
@@ -38,6 +39,18 @@ export async function getDefaultCollectionTarget(): Promise<{ slug: string; cate
   if (!collection) return null;
   return { slug: collection.slug, categorySlugs: collection.categories.map((category) => category.slug) };
 }
+
+/**
+ * Where "Shop" links go: the default collection itself, so they don't bounce
+ * through the /products redirect. /products when the catalog is off or there's
+ * no default to show, since it renders Opening soon then without redirecting.
+ * Wrapped in cache() because the header and the page can both call it.
+ */
+export const getShopHref = cache(async (): Promise<string> => {
+  if (!isCatalogEnabled()) return "/products";
+  const target = await getDefaultCollectionTarget();
+  return target ? collectionHref(target.slug, { type: null, facet: null }) : "/products";
+});
 
 /** Collections with at least one visible product, in switcher order. */
 export async function listSwitcherCollections(): Promise<SwitcherCollectionView[]> {

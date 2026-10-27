@@ -31,7 +31,7 @@ export async function listCategoryCollections() {
   return prisma.collection.findMany({
     where: { facetSource: "CATEGORY" },
     orderBy: [{ position: "asc" }, { id: "asc" }],
-    select: { id: true, name: true, isDefault: true },
+    select: { id: true, name: true, slug: true, isDefault: true },
   });
 }
 
@@ -45,7 +45,7 @@ export async function getAdminCategory(categoryId: number) {
       description: true,
       createdAt: true,
       collectionId: true,
-      collection: { select: { name: true } },
+      collection: { select: { name: true, slug: true } },
       products: { orderBy: { name: "asc" }, select: { id: true, name: true, status: true } },
     },
   });

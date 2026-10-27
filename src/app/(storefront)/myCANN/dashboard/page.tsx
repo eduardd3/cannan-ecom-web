@@ -9,6 +9,7 @@ import { textLinkClass } from "@/app/components/form/styles";
 import PageHeading from "@/app/components/page-heading";
 import SignOutButton from "@/app/components/sign-out-button";
 import { getCurrentUser } from "@/lib/cart/session";
+import { getShopHref } from "@/lib/catalog/queries";
 import { type CustomerOrderSummary, listRecentCustomerOrders } from "@/lib/orders/customer-queries";
 
 export const metadata: Metadata = {
@@ -36,6 +37,7 @@ export default async function Dashboard() {
         orders = null;
     }
     const hasOrders = orders !== null && orders.length > 0;
+    const shopHref = await getShopHref();
 
     //  Same 760px column as /orders, so the two account pages line up. Left-
     //  aligned here, unlike /orders: the dashboard reads as a page of sections.
@@ -60,7 +62,7 @@ export default async function Dashboard() {
                         )}
                     </div>
 
-                    <RecentOrders orders={orders} />
+                    <RecentOrders orders={orders} shopHref={shopHref} />
 
                     {hasOrders && (
                         <Link href="/orders" className={`md:hidden ${viewAllClass}`}>
@@ -83,7 +85,7 @@ export default async function Dashboard() {
     );
 }
 
-function RecentOrders({ orders }: { orders: CustomerOrderSummary[] | null }) {
+function RecentOrders({ orders, shopHref }: { orders: CustomerOrderSummary[] | null; shopHref: string }) {
     if (orders === null) {
         return (
             <div className="py-8">
@@ -100,7 +102,7 @@ function RecentOrders({ orders }: { orders: CustomerOrderSummary[] | null }) {
             <div className="flex flex-col items-start gap-5 py-8">
                 <p className="text-body-md text-stone">You haven&apos;t placed an order yet.</p>
                 <div className="w-full max-w-80">
-                    <ButtonLink href="/products">Shop the collections</ButtonLink>
+                    <ButtonLink href={shopHref}>Shop the collections</ButtonLink>
                 </div>
             </div>
         );

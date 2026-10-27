@@ -19,7 +19,7 @@ const INITIAL: ContactState = { status: "idle" };
 
 //  Only the email is prefilled. Signup sets `name` to the part of the email
 //  before the @, which isn't the customer's name.
-export default function ContactForm({ defaultEmail }: { defaultEmail?: string }) {
+export default function ContactForm({ defaultEmail, shopHref }: { defaultEmail?: string; shopHref: string }) {
   const [state, formAction, pending] = useActionState(sendContactMessage, INITIAL);
   const sentHeadingRef = useRef<HTMLHeadingElement>(null);
 
@@ -54,7 +54,7 @@ export default function ContactForm({ defaultEmail }: { defaultEmail?: string })
           Message sent
         </h2>
         <p className="mb-6 text-body-lg text-stone">Thank you. We&apos;ll reply by email within 1 business day.</p>
-        <Link href="/products" className={`${textLinkClass} text-body-md`}>
+        <Link href={shopHref} className={`${textLinkClass} text-body-md`}>
           Continue shopping
         </Link>
       </div>

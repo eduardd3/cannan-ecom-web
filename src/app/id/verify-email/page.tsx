@@ -4,6 +4,7 @@ import PageHeading from '@/app/components/page-heading';
 import ButtonLink from '@/app/components/form/button-link';
 import { stateBodyClass, textLinkClass } from '@/app/components/form/styles';
 import { getCurrentUserId } from '@/lib/cart/session';
+import { getShopHref } from '@/lib/catalog/queries';
 import { ConfirmButton } from './confirm-button';
 import { ResendLink } from './resend-link';
 
@@ -22,6 +23,7 @@ export default async function VerifyEmailPage({
     const { token } = await searchParams;
     // Session only, never the token: picks which next step to offer.
     const isSignedIn = (await getCurrentUserId()) !== null;
+    const shopHref = await getShopHref();
 
     // The token is only checked on confirm. Validating it here would make a
     // page load a way to probe tokens.
@@ -34,7 +36,7 @@ export default async function VerifyEmailPage({
                     {isSignedIn ? (
                         <>
                             <ResendLink />
-                            <Link href="/products" className={`${textLinkClass} py-2 text-body-md`}>
+                            <Link href={shopHref} className={`${textLinkClass} py-2 text-body-md`}>
                                 Continue shopping
                             </Link>
                         </>
@@ -51,5 +53,5 @@ export default async function VerifyEmailPage({
         );
     }
 
-    return <ConfirmButton token={token} isSignedIn={isSignedIn} />;
+    return <ConfirmButton token={token} isSignedIn={isSignedIn} shopHref={shopHref} />;
 }

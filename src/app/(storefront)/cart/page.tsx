@@ -11,6 +11,7 @@ import { formatCents } from "@/lib/cart/format";
 import { getCartView } from "@/lib/cart/queries";
 import { getCurrentUserId } from "@/lib/cart/session";
 import type { CartView } from "@/lib/cart/types";
+import { getShopHref } from "@/lib/catalog/queries";
 import { buildShippingOptions } from "@/lib/checkout/session-params";
 import { isCatalogEnabled, isCheckoutEnabled, isSignupEnabled } from "@/lib/flags";
 import CartLines from "./cart-lines";
@@ -98,7 +99,7 @@ export default async function Cart() {
             <Container className="py-10 md:py-16">
                 <PageHeading eyebrow="Tu carrito" title="Your cart" />
                 <StateBlock title="Your cart is empty." body="Browse the collections to start your order.">
-                    <ButtonLink href="/products">Shop the collections</ButtonLink>
+                    <ButtonLink href={await getShopHref()}>Shop the collections</ButtonLink>
                 </StateBlock>
             </Container>
         );

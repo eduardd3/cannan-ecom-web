@@ -9,6 +9,7 @@ import HelpLine from "@/app/components/help-line";
 import PageHeading from "@/app/components/page-heading";
 import StateBlock from "@/app/components/state-block";
 import { getCurrentUserId } from "@/lib/cart/session";
+import { getShopHref } from "@/lib/catalog/queries";
 import { CUSTOMER_ORDER_LIMIT, listCustomerOrders } from "@/lib/orders/customer-queries";
 import OrderRow from "./order-row";
 
@@ -58,7 +59,7 @@ export default async function OrdersPage() {
                     title="You haven't placed an order yet."
                     body="Your orders will appear here after you place them."
                 >
-                    <ButtonLink href="/products">Shop the collections</ButtonLink>
+                    <ButtonLink href={await getShopHref()}>Shop the collections</ButtonLink>
                     {/* mt-9 plus the column's 12px gap = 48px below the button. */}
                     <HelpLine lead="Can't find an order?" className="mt-9" />
                 </StateBlock>

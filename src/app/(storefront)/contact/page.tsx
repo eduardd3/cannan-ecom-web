@@ -6,6 +6,7 @@ import Container from "@/app/components/container";
 import PageHeading from "@/app/components/page-heading";
 import { textLinkClass } from "@/app/components/form/styles";
 import { auth } from "@/lib/auth-actions";
+import { getShopHref } from "@/lib/catalog/queries";
 import { SUPPORT_EMAIL, SUPPORT_MAILTO } from "@/lib/contact";
 import ContactForm from "./contact-form";
 
@@ -27,7 +28,7 @@ function SupportBlock({ label, children }: { label: string; children: ReactNode 
 //  Reads the session only to prefill the email, which makes this page render
 //  per request instead of statically.
 export default async function ContactPage() {
-  const session = await auth();
+  const [session, shopHref] = await Promise.all([auth(), getShopHref()]);
 
   return (
     <Container className="pt-12 pb-16 md:pt-18 md:pb-24">
@@ -45,7 +46,7 @@ export default async function ContactPage() {
       {/* lg, not md: 560px form + 72px gap + 260px support column don't fit
           the ~704px content area at md, so it stays one column until lg. */}
       <div className="mx-auto max-w-140 lg:grid lg:max-w-none lg:grid-cols-[minmax(0,560px)_minmax(260px,320px)] lg:items-start lg:justify-center lg:gap-18">
-        <ContactForm defaultEmail={session?.user?.email ?? undefined} />
+        <ContactForm defaultEmail={session?.user?.email ?? undefined} shopHref={shopHref} />
 
         <aside
           aria-label="More ways to get help"

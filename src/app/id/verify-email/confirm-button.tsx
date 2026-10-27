@@ -18,7 +18,7 @@ type Status = 'idle' | 'submitting' | 'confirmed' | 'invalid' | 'error';
 
 // Confirms on click, not on load: mail scanners prefetch links and would
 // otherwise spend the token before the user ever sees the page.
-export function ConfirmButton({ token, isSignedIn }: { token: string; isSignedIn: boolean }) {
+export function ConfirmButton({ token, isSignedIn, shopHref }: { token: string; isSignedIn: boolean; shopHref: string }) {
     const [status, setStatus] = useState<Status>('idle');
     const [errorMessage, setErrorMessage] = useState<string | undefined>();
     const confirmedHeadingRef = useRef<HTMLHeadingElement>(null);
@@ -86,7 +86,7 @@ export function ConfirmButton({ token, isSignedIn }: { token: string; isSignedIn
                 <p className={stateBodyClass}>Your myCANN account is ready.</p>
                 <div className="flex flex-col items-center gap-3">
                     <ButtonLink href="/myCANN/dashboard">Go to myCANN</ButtonLink>
-                    <Link href="/products" className={`${textLinkClass} py-2 text-body-md`}>
+                    <Link href={shopHref} className={`${textLinkClass} py-2 text-body-md`}>
                         Continue shopping
                     </Link>
                 </div>

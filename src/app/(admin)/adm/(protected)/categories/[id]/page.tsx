@@ -46,6 +46,7 @@ export default async function EditCategoryPage({ params }: PageProps<"/adm/categ
               collectionId: String(category.collectionId),
             },
             collectionName: category.collection.name,
+            collectionSlug: category.collection.slug,
             listedProductCount: category.products.filter((product) => product.status === "ACTIVE").length,
           }}
         />
