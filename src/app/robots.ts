@@ -16,5 +16,6 @@ export default function robots(): MetadataRoute.Robots {
             disallow: ['/adm', '/id', '/myCANN', '/api'],
         },
         host: 'https://www.shopcannan.com',
+        sitemap: 'https://www.shopcannan.com/sitemap.xml',
     };
 }

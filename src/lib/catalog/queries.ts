@@ -256,3 +256,12 @@ export async function getRedirectedSlug(oldSlug: string): Promise<string | null>
   if (!product || product.status !== visibleProduct.status || product.variants.length === 0) return null;
   return product.slug;
 }
+
+/** Every visible product's slug and last edit, for the sitemap. */
+export async function listSitemapProducts(): Promise<{ slug: string; updatedAt: Date }[]> {
+  return prisma.product.findMany({
+    where: visibleProduct,
+    select: { slug: true, updatedAt: true },
+    orderBy: { id: "asc" },
+  });
+}
