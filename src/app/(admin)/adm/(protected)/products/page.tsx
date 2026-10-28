@@ -9,7 +9,7 @@ import StockCount from "../inventory/stock-count";
 import ProductStatusBadge from "./status-badge";
 
 export const metadata: Metadata = {
-  title: "Products | CANNAN Portal",
+  title: "Products | Cannan Portal",
   robots: { index: false },
 };
 

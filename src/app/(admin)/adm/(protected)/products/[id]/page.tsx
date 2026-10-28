@@ -13,7 +13,7 @@ import Variants from "./variants";
 
 export async function generateMetadata({ params }: PageProps<"/adm/products/[id]">): Promise<Metadata> {
   const { id } = await params;
-  return { title: `Product #${id} | CANNAN Portal`, robots: { index: false } };
+  return { title: `Product #${id} | Cannan Portal`, robots: { index: false } };
 }
 
 const CARD = "rounded-xl border border-adm-border bg-adm-surface p-6";

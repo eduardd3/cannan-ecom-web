@@ -6,7 +6,7 @@ import { requireStaff } from "@/lib/session";
 import ProductForm from "../product-form";
 
 export const metadata: Metadata = {
-  title: "New product | CANNAN Portal",
+  title: "New product | Cannan Portal",
   robots: { index: false },
 };
 
