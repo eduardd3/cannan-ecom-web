@@ -86,14 +86,12 @@ export default function AboutUs() {
       <AboutSection id="what" heading={<h2 className={h2}>What We Do</h2>}>
         <p>
           We are curators. We look through the work of many makers to find pieces
-          we believe are worth bringing into your home. We choose pieces that carry
-          meaning, are made well, and are selected with the people who will keep
-          them in mind. If something doesn’t feel right for our customers, it
-          doesn’t make it onto our shelves.
+          worth bringing into your home: pieces that carry meaning, are made well,
+          and suit the people who’ll keep them.
         </p>
         <p>
-          Every piece in our shop is chosen because we believe it has value to you,
-          to your family, or to someone you love.
+          Whatever you find here, we hope it means something to you or to someone
+          you love.
         </p>
       </AboutSection>
 
