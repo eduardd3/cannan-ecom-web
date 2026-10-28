@@ -142,7 +142,7 @@ describe("buildProductJsonLd", () => {
     expect(json(buildProductJsonLd(product())).offers).not.toHaveProperty("hasMerchantReturnPolicy");
     expect(json(buildProductJsonLd(product({ isFinalSale: true }))).offers.hasMerchantReturnPolicy).toEqual({
       "@type": "MerchantReturnPolicy",
-      applicableCountry: ["US"],
+      applicableCountry: ["US", "PR"],
       returnPolicyCategory: "https://schema.org/MerchantReturnNotPermitted",
     });
     const group = json(buildProductJsonLd({ ...sized(), isFinalSale: true }));

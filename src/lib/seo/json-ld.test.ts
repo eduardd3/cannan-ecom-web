@@ -48,7 +48,7 @@ describe("buildOrganizationJsonLd", () => {
     const service = org.hasShippingService;
     expect(service.handlingTime.duration).toMatchObject({ minValue: 0, maxValue: 1, unitCode: "DAY" });
     expect(service.handlingTime.businessDays).toHaveLength(5);
-    expect(service.shippingConditions).toHaveLength(1);
+    expect(service.shippingConditions).toHaveLength(2);
     const [conditions] = service.shippingConditions;
     expect(conditions.shippingDestination).toEqual({ "@type": "DefinedRegion", addressCountry: "US" });
     expect(conditions.shippingRate).toEqual({ "@type": "MonetaryAmount", value: 0, currency: "USD" });
@@ -56,9 +56,18 @@ describe("buildOrganizationJsonLd", () => {
     expect(conditions.transitTime.businessDays).not.toContain("https://schema.org/Saturday");
   });
 
+  it("ships free to Puerto Rico with no transit time claimed", () => {
+    const [, conditions] = org.hasShippingService.shippingConditions;
+    expect(conditions).toEqual({
+      "@type": "ShippingConditions",
+      shippingDestination: { "@type": "DefinedRegion", addressCountry: "PR" },
+      shippingRate: { "@type": "MonetaryAmount", value: 0, currency: "USD" },
+    });
+  });
+
   it("returns within 30 days by mail; remorse fees on the customer, defects free", () => {
     expect(org.hasMerchantReturnPolicy).toMatchObject({
-      applicableCountry: ["US"],
+      applicableCountry: ["US", "PR"],
       returnPolicyCategory: "https://schema.org/MerchantReturnFiniteReturnWindow",
       merchantReturnDays: 30,
       returnMethod: "https://schema.org/ReturnByMail",

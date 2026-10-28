@@ -7,11 +7,7 @@
 
 import type { MerchantReturnPolicy, ShippingService } from "schema-dts";
 
-// Must equal shipping_address_collection.allowed_countries in
-// lib/checkout/actions.ts: the markup describes what checkout accepts. A
-// destination is always given; without one Google reads the conditions as
-// worldwide.
-export const SHIP_TO_COUNTRIES = ["US"] as const;
+import { SHIP_TO_COUNTRIES } from "@/lib/shipping/countries";
 
 const BUSINESS_DAYS = [
   "https://schema.org/Monday",
@@ -29,8 +25,10 @@ function businessDays(minValue: number, maxValue: number) {
   };
 }
 
-// Free, ships within 1 business day of payment, arrives 3–5 business days
-// after shipping.
+// Free, ships within 1 business day of payment. One condition per country; a
+// destination is always given, since without one Google reads the conditions
+// as worldwide. Only the US gets the 3–5 business days in transit: the policy
+// promises no number for Puerto Rico ("can take longer").
 export const SHIPPING_SERVICE: ShippingService = {
   "@type": "ShippingService",
   name: "Free shipping",
@@ -40,7 +38,7 @@ export const SHIPPING_SERVICE: ShippingService = {
     "@type": "ShippingConditions" as const,
     shippingDestination: { "@type": "DefinedRegion" as const, addressCountry: country },
     shippingRate: { "@type": "MonetaryAmount" as const, value: 0, currency: "USD" },
-    transitTime: businessDays(3, 5),
+    ...(country === "US" && { transitTime: businessDays(3, 5) }),
   })),
 };
 

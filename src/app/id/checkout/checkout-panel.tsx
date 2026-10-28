@@ -101,7 +101,7 @@ export default function CheckoutPanel({ checkout, heading, lines, email }: Check
 
                 <Step title="Shipping address">
                     {/* Countries come from shipping_address_collection on the
-                        session (US only). Mounted before the Payment Element so
+                        session (SHIP_TO_COUNTRIES). Mounted before the Payment Element so
                         that one skips the billing fields it would repeat. */}
                     <ShippingAddressElement />
                 </Step>

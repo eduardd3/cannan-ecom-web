@@ -22,9 +22,9 @@ const sections: PolicySection[] = [
     title: "Where we ship",
     content: (
       <p>
-        We ship throughout the United States, including Alaska, Hawaii, PO
-        boxes, and APO/FPO military addresses. We do not ship to US
-        territories or internationally at this time.
+        We ship throughout the United States and Puerto Rico, including Alaska,
+        Hawaii, PO boxes, and APO/FPO military addresses. We do not ship to
+        other US territories or internationally at this time.
       </p>
     ),
   },
@@ -55,7 +55,7 @@ const sections: PolicySection[] = [
     content: (
       <p>
         Most orders arrive within 3–5 business days of shipping. Orders to
-        Alaska, Hawaii, PO boxes, and APO/FPO addresses can take longer. Your tracking shows the estimated delivery date for your order.
+        Alaska, Hawaii, Puerto Rico, PO boxes, and APO/FPO addresses can take longer. Your tracking shows the estimated delivery date for your order.
       </p>
     ),
   },
@@ -124,7 +124,7 @@ export default function Shipping() {
     <PolicyTemplate
       eyebrow="Help"
       title="Shipping"
-      updated="October 26, 2026"
+      updated="October 28, 2026"
       sections={sections}
       crossLink={{
         label: "Returns, cancellations, and order problems",

@@ -17,7 +17,7 @@ import { galleryImages, productVariantPath } from "@/lib/catalog/product-detail"
 import { formatVariantLabel } from "@/lib/catalog/format";
 import type { ProductDetailView, ProductVariantView } from "@/lib/catalog/types";
 import { productPath } from "@/lib/products/slug";
-import { SHIP_TO_COUNTRIES } from "./policies";
+import { SHIP_TO_COUNTRIES } from "@/lib/shipping/countries";
 import { absoluteUrl } from "./site";
 
 /** 2400 → "24.00". Integer math, so no float rounding; never includes tax. */

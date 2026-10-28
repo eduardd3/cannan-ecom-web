@@ -7,6 +7,7 @@ import { getCurrentUserId } from "@/lib/cart/session";
 import { isCheckoutEnabled } from "@/lib/flags";
 import { prisma } from "@/lib/prisma";
 import { checkLimit, checkoutLimiter } from "@/lib/rate-limit";
+import { SHIP_TO_COUNTRIES } from "@/lib/shipping/countries";
 import { getStripe } from "@/lib/stripe";
 import {
   buildLineItems,
@@ -102,7 +103,7 @@ export async function createCheckoutSession(): Promise<CheckoutResult> {
       return_url: buildReturnUrl(ORIGIN),
 
       automatic_tax: { enabled: true },
-      shipping_address_collection: { allowed_countries: ["US"] },
+      shipping_address_collection: { allowed_countries: [...SHIP_TO_COUNTRIES] },
       shipping_options: buildShippingOptions(cart.subtotalCents),
 
       customer_email: user.email, // prefills and locks the email field
