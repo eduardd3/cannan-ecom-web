@@ -9,7 +9,9 @@ export default function CollectionsGrid({ collections }: { collections: Collecti
   if (collections.length === 0) return null;
 
   return (
-    <section aria-labelledby="collections-heading">
+    //  id: the featured rail's end card links here (/#collections).
+    //  scroll-mt keeps the heading clear of the sticky header.
+    <section id="collections" aria-labelledby="collections-heading" className="scroll-mt-20">
       <Container className="py-16 md:py-24">
         <div className="mb-16 flex flex-col items-center text-center">
           <p className="mb-2 text-label-eyebrow text-gold-ink uppercase">Respectful spaces</p>
