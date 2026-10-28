@@ -2,7 +2,7 @@
 import Link from "next/link";
 import {ShoppingBagIcon, UserIcon} from '@heroicons/react/24/outline';
 import {getCartItemCount} from '@/lib/cart/queries';
-import {getCurrentUserId} from '@/lib/cart/session';
+import {getCurrentCartOwner, getCurrentUserId} from '@/lib/cart/session';
 import {getShopHref} from '@/lib/catalog/queries';
 import Container from '@/app/components/container';
 import NavLink from '@/app/components/nav-link';
@@ -26,8 +26,9 @@ const iconLink = "flex size-11 items-center justify-center text-charcoal transit
 export default async function SiteHeader() {
     const userId = await getCurrentUserId();
     const signedIn = userId !== null;
-    //  Signed out there's no cart to count (no guest carts yet).
-    const cartCount = userId ? await getCartItemCount(userId) : 0;
+    //  A guest's cart counts too; no owner (no cookie) is 0 with no query.
+    const owner = await getCurrentCartOwner();
+    const cartCount = await getCartItemCount(owner);
     const shopHref = await getShopHref();
 
     //  sticky, not fixed: it stays in the flow, so VerifyBanner below it (when

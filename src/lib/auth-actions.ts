@@ -8,6 +8,7 @@ import { isStaff } from '@/lib/roles';
 import { prisma } from '@/lib/prisma'
 import { emailSchema } from '@/lib/normalize-email'
 import { checkLimit, clientIp, loginIpLimiter, loginLimiter } from '@/lib/rate-limit'
+import { mergeGuestCart } from '@/lib/cart/merge'
 
 /**
  * Server-side NextAuth instance: shared config plus the credentials
@@ -45,6 +46,17 @@ async function enforceLoginLimit(email: string, request: Request) {
 
 export const {handlers, auth, signIn, signOut} = NextAuth ({
     ...authConfig,
+    events: {
+        // Fires once, after the password check, inside the authCustomer server
+        // action, so the guest cookie can be read and cleared here. Sign-up
+        // doesn't sign in, so a new account's first sign-in merges too.
+        // Customer login only: an admin sign-in never takes a guest cart.
+        async signIn({ user, account }) {
+            if (account?.provider !== 'customer-login') return;
+            const userId = Number(user.id);
+            if (Number.isInteger(userId) && userId > 0) await mergeGuestCart(userId);
+        },
+    },
     callbacks: {
         ...authConfig.callbacks,
         // Runs on every server-side auth() call. Returning null clears the

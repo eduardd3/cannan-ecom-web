@@ -16,7 +16,14 @@ import { textLinkClass } from '@/app/components/form/styles';
 // this is a client component.
 export default function LoginForm({ signupEnabled }: { signupEnabled: boolean }) {
     const searchParams = useSearchParams();
-    const callbackUrl = searchParams.get('callbackUrl') || ('/myCANN/dashboard');
+    const rawCallbackUrl = searchParams.get('callbackUrl');
+    const callbackUrl = rawCallbackUrl || ('/myCANN/dashboard');
+    //  Passed on as received, so a guest heading to checkout who creates an
+    //  account lands back there. Only a query value on our own page: sign-up
+    //  checks it with safeCallbackPath before redirecting anywhere.
+    const signupHref = rawCallbackUrl
+        ? `/id/signup?${new URLSearchParams({ callbackUrl: rawCallbackUrl })}`
+        : '/id/signup';
     const justReset = searchParams.get('reset') === '1';
     const justSignedUp = searchParams.get('verify') === '1';
     const [errorMessage, formAction, isPending] = useActionState(
@@ -95,7 +102,7 @@ export default function LoginForm({ signupEnabled }: { signupEnabled: boolean })
                 {signupEnabled && (
                     <p className="text-body-md text-stone">
                         New to myCANN?{' '}
-                        <Link href="/id/signup" className={textLinkClass}>
+                        <Link href={signupHref} className={textLinkClass}>
                             Create an account
                         </Link>
                     </p>

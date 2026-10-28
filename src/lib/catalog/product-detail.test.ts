@@ -264,4 +264,12 @@ describe("addToCartMessage", () => {
   it("treats a failed call as an error", () => {
     expect(addToCartMessage(null).tone).toBe("error");
   });
+
+  it("words a guest rate limit like the site's other limits", () => {
+    expect(addToCartMessage({ ok: false, error: "RATE_LIMITED", message: "" })).toEqual({
+      text: "Too many attempts. Please wait a few minutes and try again.",
+      tone: "error",
+      viewCart: false,
+    });
+  });
 });

@@ -4,7 +4,6 @@ import { notFound, permanentRedirect } from "next/navigation";
 
 import Container from "@/app/components/container";
 import JsonLd from "@/app/components/json-ld";
-import { getCurrentUserId } from "@/lib/cart/session";
 import { breadcrumbParts, initialVariant, type BreadcrumbPart } from "@/lib/catalog/product-detail";
 import { getProductBySlug, getRedirectedSlug } from "@/lib/catalog/queries";
 import { isCatalogEnabled } from "@/lib/flags";
@@ -60,7 +59,7 @@ function queryString(searchParams: SearchParams): string {
 export default async function ProductPage({ params, searchParams }: PageProps<"/products/[slug]">) {
   if (!isCatalogEnabled()) notFound();
   const { slug } = await params;
-  const [product, userId, query] = await Promise.all([getProductBySlug(slug), getCurrentUserId(), searchParams]);
+  const [product, query] = await Promise.all([getProductBySlug(slug), searchParams]);
   if (!product) {
     const currentSlug = await getRedirectedSlug(slug);
     if (currentSlug) permanentRedirect(`${productPath(currentSlug)}${queryString(query)}`);
@@ -78,7 +77,6 @@ export default async function ProductPage({ params, searchParams }: PageProps<"/
       <ProductPurchase
         product={product}
         initialVariantId={initialVariant(product.variants, query.variant).id}
-        signedIn={userId !== null}
       />
     </Container>
   );
