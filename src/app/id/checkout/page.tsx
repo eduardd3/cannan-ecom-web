@@ -34,7 +34,7 @@ export default async function CheckoutPage() {
     //  outside the try.
     let cart: CartView | undefined;
     try {
-        cart = await getCartView(user.id);
+        cart = await getCartView({ kind: "user", userId: user.id });
     } catch (error) {
         console.error("Failed to load cart for checkout", error);
     }

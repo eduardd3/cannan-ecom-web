@@ -3,6 +3,8 @@ import "server-only";
 import { cache } from "react";
 
 import { auth } from "@/lib/auth-actions";
+import { hashGuestToken, readGuestToken } from "./guest-token";
+import type { CartOwner } from "./types";
 
 //  auth() runs the server-side jwt callback, which re-reads the user to check
 //  sessionVersion: one DB query per call. The header and the page both need
@@ -19,6 +21,18 @@ export async function getCurrentUserId(): Promise<number | null> {
     const session = await getSession();
     return parseUserId(session?.user?.id);
 }
+
+/**
+ * Whose cart this request uses. Signed in always wins: a leftover guest cookie
+ * is ignored. Doesn't check the cart exists; the queries and actions do.
+ * Checkout and orders use getCurrentUserId instead: they need an account.
+ */
+export const getCurrentCartOwner = cache(async (): Promise<CartOwner | null> => {
+    const userId = await getCurrentUserId();
+    if (userId !== null) return { kind: "user", userId };
+    const token = await readGuestToken();
+    return token ? { kind: "guest", tokenHash: hashGuestToken(token) } : null;
+});
 
 /** The signed-in user's id and email, or null. The email is the copy saved on the token at sign-in. */
 export async function getCurrentUser(): Promise<{ id: number; email: string } | null> {

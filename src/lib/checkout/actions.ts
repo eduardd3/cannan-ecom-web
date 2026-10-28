@@ -81,7 +81,7 @@ export async function createCheckoutSession(): Promise<CheckoutResult> {
     }
 
     // Soft checks; the authoritative stock check happens in the webhook
-    const cart = await getCartView(userId);
+    const cart = await getCartView({ kind: "user", userId });
     if (cart.lines.length === 0) {
       return { ok: false, error: "EMPTY_CART", message: "Your cart is empty." };
     }

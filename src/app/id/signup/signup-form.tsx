@@ -1,6 +1,6 @@
 'use client'
 import { useState} from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link'
 import PageHeading from '@/app/components/page-heading';
 import FormBanner from '@/app/components/form/form-banner';
@@ -8,14 +8,26 @@ import TextField from '@/app/components/form/text-field';
 import PasswordField from '@/app/components/form/password-field';
 import SubmitButton from '@/app/components/form/submit-button';
 import { textLinkClass } from '@/app/components/form/styles';
+import { safeCallbackPath, signedInPath } from '@/lib/callback-url';
+import { authCustomer } from '../../actions';
 
 //  One object, so the message and the sign-in action are always cleared together.
-type SignupError = { message: string; emailInUse?: boolean };
+type SignupError = { message: string; emailInUse?: boolean; signInHref?: string };
 
 const FALLBACK_ERROR = 'Something went wrong. Please try again.';
 
+//  Sign-in, keeping a callbackUrl sign-in passed along (e.g. back to checkout).
+//  Checked here, at submit time, because window.location.origin doesn't exist
+//  while this form renders on the server.
+function signInHref(callbackUrl: string | null, query: Record<string, string> = {}) {
+    const safe = safeCallbackPath(callbackUrl, window.location.origin);
+    const params = new URLSearchParams({ ...query, ...(safe ? { callbackUrl: safe } : {}) }).toString();
+    return params ? `/id/signin?${params}` : '/id/signin';
+}
+
 export default function SignupForm() {
     const router = useRouter();
+    const callbackUrl = useSearchParams().get('callbackUrl');
     const [error, setError] = useState<SignupError | undefined>();
     const [isPending, setIsPending] = useState(false);
 
@@ -25,6 +37,9 @@ export default function SignupForm() {
         setIsPending(true);
 
         const formData = new FormData(event.currentTarget);
+        //  Set once the sign-in redirect is under way, so the button stays
+        //  "Creating account…" until the next page replaces this one.
+        let navigating = false;
         try {
             const response = await fetch('/api/signup', {
                 method: 'POST',
@@ -39,7 +54,7 @@ export default function SignupForm() {
                 //  403 is /api/signup's duplicate-email response. Keyed off the
                 //  status, not the message text, so rewording the API can't break it.
                 if (response.status === 403) {
-                    setError({ message: 'Email already in use.', emailInUse: true });
+                    setError({ message: 'Email already in use.', emailInUse: true, signInHref: signInHref(callbackUrl) });
                     return;
                 }
                 const body = await response.json().catch(() => null);
@@ -49,11 +64,23 @@ export default function SignupForm() {
                 return;
             }
 
-            router.push('/id/signin?verify=1'); //  redirect to login page after signing up
+            //  Sign straight in, through the same action as the sign-in form, so
+            //  a guest heading to checkout lands there with their cart merged
+            //  (events.signIn). On success the action redirects and returns
+            //  nothing. If it fails (e.g. the login rate limit), fall back to
+            //  the sign-in page and its "Account created" notice.
+            const credentials = new FormData();
+            credentials.set('email', String(formData.get('email') ?? ''));
+            credentials.set('password', String(formData.get('password') ?? ''));
+            credentials.set('redirectTo', signedInPath(callbackUrl, window.location.origin));
+            navigating = true;
+            const signInError = await authCustomer(undefined, credentials);
+            if (signInError) router.push(signInHref(callbackUrl, { verify: '1' }));
         } catch {
+            navigating = false;
             setError({ message: FALLBACK_ERROR });
         } finally {
-            setIsPending(false);
+            if (!navigating) setIsPending(false);
         }
     }
 
@@ -70,7 +97,7 @@ export default function SignupForm() {
                 {error && (
                     <FormBanner
                         variant="error"
-                        action={error.emailInUse ? { href: '/id/signin', label: 'Sign in instead' } : undefined}
+                        action={error.emailInUse ? { href: error.signInHref ?? '/id/signin', label: 'Sign in instead' } : undefined}
                     >
                         {error.message}
                     </FormBanner>

@@ -204,8 +204,11 @@ export function addToCartMessage(result: ActionResult<{ quantity: number }> | nu
       return { text: "This piece just sold out.", tone: "error", viewCart: false };
     case "VARIANT_NOT_FOUND":
       return { text: "This piece is no longer available.", tone: "error", viewCart: false };
+    // Guests can no longer hit this on add; kept for any caller that can.
     case "UNAUTHENTICATED":
       return { text: "Your session ended. Sign in again to add this to your cart.", tone: "error", viewCart: false };
+    case "RATE_LIMITED":
+      return { text: "Too many attempts. Please wait a few minutes and try again.", tone: "error", viewCart: false };
     default:
       return { text: TRY_AGAIN, tone: "error", viewCart: false };
   }

@@ -31,11 +31,9 @@ import type { ProductDetailView, ProductImageView } from "@/lib/catalog/types";
 export default function ProductPurchase({
   product,
   initialVariantId,
-  signedIn,
 }: {
   product: ProductDetailView;
   initialVariantId: number;
-  signedIn: boolean;
 }) {
   const router = useRouter();
   const { variants } = product;
@@ -50,7 +48,6 @@ export default function ProductPurchase({
   const soldOut = variant.stock <= 0;
   const images = galleryImages(product.images, variant.id);
   const groups = optionGroups(product, variant);
-  const variantPath = productVariantPath(product.slug, variant.id);
 
   function choose(option: 1 | 2, value: string) {
     const next = selectOption(variants, variant, option, value);
@@ -102,17 +99,11 @@ export default function ProductPurchase({
         )}
 
         <div className="mt-8">
+          {/* Guests add too: addToCart starts a guest cart on the first add. */}
           {soldOut ? (
-            //  First: a sign-in prompt for something unavailable makes no sense.
             <button type="button" disabled className={disabledButtonClass}>
               Sold out
             </button>
-          ) : !signedIn ? (
-            //  No guest carts yet, so signed-out visitors sign in first and
-            //  come back to the same variant.
-            <Link href={`/id/signin?callbackUrl=${encodeURIComponent(variantPath)}`} className={buttonClass()}>
-              Sign in to add to cart
-            </Link>
           ) : (
             <div className="flex items-end gap-3">
               <div className="w-24 shrink-0">

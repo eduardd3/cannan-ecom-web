@@ -10,13 +10,21 @@ import TextField from '@/app/components/form/text-field';
 import PasswordField from '@/app/components/form/password-field';
 import SubmitButton from '@/app/components/form/submit-button';
 import { textLinkClass } from '@/app/components/form/styles';
+import { DEFAULT_SIGNED_IN_PATH } from '@/lib/callback-url';
 
 
 // signupEnabled arrives as a prop because SIGNUP_ENABLED is server-only and
 // this is a client component.
 export default function LoginForm({ signupEnabled }: { signupEnabled: boolean }) {
     const searchParams = useSearchParams();
-    const callbackUrl = searchParams.get('callbackUrl') || ('/myCANN/dashboard');
+    const rawCallbackUrl = searchParams.get('callbackUrl');
+    const callbackUrl = rawCallbackUrl || DEFAULT_SIGNED_IN_PATH;
+    //  Passed on as received, so a guest heading to checkout who creates an
+    //  account lands back there. Only a query value on our own page: sign-up
+    //  checks it with safeCallbackPath before redirecting anywhere.
+    const signupHref = rawCallbackUrl
+        ? `/id/signup?${new URLSearchParams({ callbackUrl: rawCallbackUrl })}`
+        : '/id/signup';
     const justReset = searchParams.get('reset') === '1';
     const justSignedUp = searchParams.get('verify') === '1';
     const [errorMessage, formAction, isPending] = useActionState(
@@ -95,7 +103,7 @@ export default function LoginForm({ signupEnabled }: { signupEnabled: boolean })
                 {signupEnabled && (
                     <p className="text-body-md text-stone">
                         New to myCANN?{' '}
-                        <Link href="/id/signup" className={textLinkClass}>
+                        <Link href={signupHref} className={textLinkClass}>
                             Create an account
                         </Link>
                     </p>

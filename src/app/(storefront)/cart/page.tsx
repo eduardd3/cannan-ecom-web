@@ -1,19 +1,18 @@
 import type { Metadata } from "next";
-import Link from "next/link";
 
 import Container from "@/app/components/container";
 import ButtonLink from "@/app/components/form/button-link";
-import { disabledButtonClass, textLinkClass } from "@/app/components/form/styles";
+import { disabledButtonClass } from "@/app/components/form/styles";
 import PageHeading from "@/app/components/page-heading";
 import StateBlock from "@/app/components/state-block";
 import { SummaryList, SummaryRow } from "@/app/components/summary-rows";
 import { formatCents } from "@/lib/cart/format";
 import { getCartView } from "@/lib/cart/queries";
-import { getCurrentUserId } from "@/lib/cart/session";
+import { getCurrentCartOwner } from "@/lib/cart/session";
 import type { CartView } from "@/lib/cart/types";
 import { getShopHref } from "@/lib/catalog/queries";
 import { buildShippingOptions } from "@/lib/checkout/session-params";
-import { isCatalogEnabled, isCheckoutEnabled, isSignupEnabled } from "@/lib/flags";
+import { isCatalogEnabled, isCheckoutEnabled } from "@/lib/flags";
 import CartLines from "./cart-lines";
 
 export const metadata: Metadata = {
@@ -34,7 +33,9 @@ function shippingLabel(subtotalCents: number): string {
 }
 
 //  Checkout closed wins over cart issues: fixing the lines wouldn't help.
-function CheckoutAction({ hasIssues }: { hasIssues: boolean }) {
+//  Checkout needs an account, so a guest's button goes through sign-in (which
+//  merges the guest cart) and comes back to checkout.
+function CheckoutAction({ hasIssues, signedIn }: { hasIssues: boolean; signedIn: boolean }) {
     if (!isCheckoutEnabled()) {
         return (
             <button type="button" disabled className={disabledButtonClass}>
@@ -54,36 +55,22 @@ function CheckoutAction({ hasIssues }: { hasIssues: boolean }) {
             </>
         );
     }
-    return <ButtonLink href="/id/checkout">Checkout</ButtonLink>;
+    return (
+        <ButtonLink href={signedIn ? "/id/checkout" : "/id/signin?callbackUrl=%2Fid%2Fcheckout"}>Checkout</ButtonLink>
+    );
 }
 
-//  Carts are per-user for now: guest carts (Cart.guestTokenHash) aren't wired
-//  up yet, so a signed-out visitor gets a sign-in prompt instead.
+//  Signed-in users and guests (Cart.guestTokenHash) see the same page. A
+//  visitor with no cart, or no cookie yet, gets the empty state.
 export default async function Cart() {
-    const userId = await getCurrentUserId();
-
-    if (!userId) {
-        return (
-            <Container className="py-10 md:py-16">
-                <PageHeading eyebrow="Tu carrito" title="Your cart" />
-                <StateBlock title="Sign in to see your cart." body="Your cart is saved to your account.">
-                    <ButtonLink href="/id/signin?callbackUrl=/cart">Sign in</ButtonLink>
-                    {isSignupEnabled() && (
-                        <Link href="/id/signup" className={`${textLinkClass} py-2 text-body-md`}>
-                            Create an account
-                        </Link>
-                    )}
-                </StateBlock>
-            </Container>
-        );
-    }
+    const owner = await getCurrentCartOwner();
 
     //  Temporary guard: a failed cart read (stale dev Prisma client, missing
     //  migration, DB outage) shows a message instead of the error page. Only
     //  the fetch is wrapped; a try around JSX can't catch render errors.
     let cart: CartView;
     try {
-        cart = await getCartView(userId);
+        cart = await getCartView(owner);
     } catch (error) {
         console.error("Failed to load cart", error);
         return (
@@ -130,7 +117,7 @@ export default async function Cart() {
                         <SummaryRow label="Tax" value="Calculated at checkout" />
                     </SummaryList>
                     <div className="flex flex-col gap-2">
-                        <CheckoutAction hasIssues={cart.hasIssues} />
+                        <CheckoutAction hasIssues={cart.hasIssues} signedIn={owner?.kind === "user"} />
                     </div>
                 </section>
             </div>

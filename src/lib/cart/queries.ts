@@ -8,7 +8,17 @@ import type { Prisma } from "@/generated/prisma/client";
 import { formatVariantLabel } from "@/lib/catalog/format";
 import { getImageUrl } from "@/lib/storage";
 import { prisma } from "@/lib/prisma";
-import type { CartLineView, CartView, LineAvailability } from "./types";
+import type { CartLineView, CartOwner, CartView, LineAvailability } from "./types";
+
+/**
+ * The owner's cart as a Prisma filter: by userId or by guestTokenHash, both
+ * unique. Shared with the actions so reads and writes find the same cart.
+ */
+export function cartOwnerWhere(owner: CartOwner) {
+  return owner.kind === "user" ? { userId: owner.userId } : { guestTokenHash: owner.tokenHash };
+}
+
+const EMPTY_CART: CartView = { cartId: null, lines: [], subtotalCents: 0, itemCount: 0, hasIssues: false };
 
 // One image per line: the variant's own first image, else the product's first
 // image. Shared with CartItemWithDetails so the query and mapper can't drift.
@@ -41,21 +51,21 @@ type CartItemWithDetails = Prisma.CartItemGetPayload<{
 }>;
 
 /**
- * Loads the user's cart with everything the UI needs, prices read fresh.
- * Does NOT create a cart. A user with no cart gets an empty CartView.
+ * Loads the owner's cart with everything the UI needs, prices read fresh.
+ * Does NOT create a cart. No owner, or no cart yet, gets an empty CartView;
+ * no owner skips the database entirely.
  */
-export async function getCartView(userId: number): Promise<CartView> {
+export async function getCartView(owner: CartOwner | null): Promise<CartView> {
+  if (!owner) return EMPTY_CART;
   const cart = await prisma.cart.findUnique({
-    where: { userId },
+    where: cartOwnerWhere(owner),
     include: {
       // createdAt asc so lines don't jump around on refresh
       items: { include: cartItemInclude, orderBy: [{ createdAt: "asc" }, { id: "asc" }] },
     },
   });
 
-  if (!cart) {
-    return { cartId: null, lines: [], subtotalCents: 0, itemCount: 0, hasIssues: false };
-  }
+  if (!cart) return EMPTY_CART;
 
   const lines = cart.items.map(toCartLineView);
 
@@ -74,9 +84,10 @@ export async function getCartView(userId: number): Promise<CartView> {
  * Lightweight count for the header badge, so every page load doesn't pull
  * the full cart with images. One aggregate query.
  */
-export async function getCartItemCount(userId: number): Promise<number> {
+export async function getCartItemCount(owner: CartOwner | null): Promise<number> {
+  if (!owner) return 0;
   const result = await prisma.cartItem.aggregate({
-    where: { cart: { userId } },
+    where: { cart: cartOwnerWhere(owner) },
     _sum: { quantity: true },
   });
   // _sum.quantity is null when there are no rows

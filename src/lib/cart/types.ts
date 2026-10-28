@@ -17,7 +17,14 @@ export type CartErrorCode =
   | "VARIANT_NOT_FOUND" // missing, or its product isn't purchasable
   | "ITEM_NOT_FOUND" // missing, OR belongs to someone else's cart (same answer on purpose)
   | "OUT_OF_STOCK"
+  | "RATE_LIMITED" // guest adds only; signed-in users have no cart limit
   | "UNKNOWN";
+
+// Whose cart a request reads and writes. Resolved once per request by
+// getCurrentCartOwner (lib/cart/session.ts); signed in always wins.
+export type CartOwner =
+  | { kind: "user"; userId: number }
+  | { kind: "guest"; tokenHash: string }; // SHA-256 of the cookie, never the token
 
 export type ActionResult<T = void> =
   | { ok: true; data: T; notice?: string } // notice: e.g. "Only 3 left — quantity adjusted"
@@ -49,7 +56,7 @@ export type CartLineView = {
 };
 
 export type CartView = {
-  cartId: number | null; // null = user has never added anything (no row yet)
+  cartId: number | null; // null = no cart row yet (nothing added, or no owner)
   lines: CartLineView[];
   subtotalCents: number; // sum of lineTotalCents for purchasable lines only
   itemCount: number; // sum of quantities, for the header badge
