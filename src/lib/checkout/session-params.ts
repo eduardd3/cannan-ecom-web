@@ -16,6 +16,10 @@ type ShippingOption = Stripe.Checkout.SessionCreateParams.ShippingOption;
 // would silently break order creation.
 export const VARIANT_ID_METADATA_KEY = "variantId";
 
+// Stripe's "General – Tangible Goods". Set on every line so tax doesn't
+// depend on the Dashboard's preset tax code.
+export const PRODUCT_TAX_CODE = "txcd_99999999";
+
 /**
  * One Stripe line item per cart line, priced from the CartView (which was
  * read fresh from ProductVariant, never from anything the client sent).
@@ -30,6 +34,7 @@ export function buildLineItem(line: CartLineView): LineItem {
       product_data: {
         // What the customer sees on the payment page, e.g. "Tote — Size: Large"
         name: line.variantLabel ? `${line.productName} — ${line.variantLabel}` : line.productName,
+        tax_code: PRODUCT_TAX_CODE,
         metadata: {
           [VARIANT_ID_METADATA_KEY]: String(line.variantId),
         },
