@@ -8,7 +8,7 @@ let sequence = 0;
 export function fakeCheckout(
   userId: number,
   lines: CheckoutLine[],
-  options: { paymentStatus?: "paid" | "unpaid"; subtotalAdjustCents?: number } = {},
+  options: { paymentStatus?: "paid" | "unpaid"; subtotalAdjustCents?: number; address?: Partial<Stripe.Address> } = {},
 ) {
   sequence += 1;
   const subtotal = lines.reduce((sum, line) => sum + line.unitPriceCents * line.quantity, 0);
@@ -23,7 +23,14 @@ export function fakeCheckout(
     collected_information: {
       shipping_details: {
         name: "Ana Buyer",
-        address: { line1: "1 Main St", city: "Los Angeles", state: "CA", postal_code: "90001", country: "US" },
+        address: {
+          line1: "1 Main St",
+          city: "Los Angeles",
+          state: "CA",
+          postal_code: "90001",
+          country: "US",
+          ...options.address,
+        },
       },
     },
     payment_intent: `pi_test_${sequence}`,

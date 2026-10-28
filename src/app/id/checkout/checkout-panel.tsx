@@ -12,6 +12,7 @@ import Link from "next/link";
 
 import FormBanner from "@/app/components/form/form-banner";
 import { buttonClass, textLinkClass } from "@/app/components/form/styles";
+import { blockedDestination } from "@/lib/shipping/countries";
 import CheckoutLayout from "./checkout-layout";
 import { SummaryTotals, type CheckoutTotals, type SummaryLine } from "./order-summary";
 
@@ -19,6 +20,9 @@ type Checkout = StripeCheckoutElementsValue;
 
 //  TODO(copy): shown in Shipping and Tax until Stripe can calculate them.
 const PENDING_ADDRESS = "Calculated after address";
+
+//  TODO(copy): for a territory Stripe's form offers but the policy excludes.
+const notShipped = (place: string) => `We don't ship to ${place} yet.`;
 
 //  Every amount is Stripe's own formatted string: the page must show the
 //  session's live total, and it changes as the address (tax) comes in.
@@ -45,6 +49,9 @@ export default function CheckoutPanel({ checkout, heading, lines, email }: Check
     const [error, setError] = useState<string | null>(null);
     const [pending, setPending] = useState(false);
     const [hasWallets, setHasWallets] = useState(false);
+    //  The excluded place the address form is set to, if any. Shown under the
+    //  form as soon as it's picked, and checked again before paying.
+    const [blockedPlace, setBlockedPlace] = useState<string | null>(null);
     const totals = totalsFrom(checkout);
 
     //  Move focus to the banner when an error appears, so keyboard and screen
@@ -61,6 +68,14 @@ export default function CheckoutPanel({ checkout, heading, lines, email }: Check
     async function handlePay(event: FormEvent<HTMLFormElement>) {
         event.preventDefault();
         if (pending) return;
+        //  A browser-side check only; the webhook sends anything that gets
+        //  past it to review.
+        const place =
+            blockedPlace ?? (checkout.shippingAddress && blockedDestination(checkout.shippingAddress.address)?.name);
+        if (place) {
+            setError(notShipped(place));
+            return;
+        }
         setError(null);
         setPending(true);
         const result = await checkout.confirm();
@@ -73,6 +88,13 @@ export default function CheckoutPanel({ checkout, heading, lines, email }: Check
     //  A wallet (Apple Pay, Google Pay) brings its own card and address, so
     //  it confirms on its own, without the form.
     async function handleExpressConfirm(event: StripeExpressCheckoutElementConfirmEvent) {
+        //  The wallet's own address skips the form, so it's checked here.
+        const blocked = event.shippingAddress && blockedDestination(event.shippingAddress.address);
+        if (blocked) {
+            event.paymentFailed({ reason: "invalid_shipping_address" });
+            setError(notShipped(blocked.name));
+            return;
+        }
         setError(null);
         const result = await checkout.confirm({ expressCheckoutConfirmEvent: event });
         if (result.type === "error") setError(result.error.message);
@@ -102,8 +124,19 @@ export default function CheckoutPanel({ checkout, heading, lines, email }: Check
                 <Step title="Shipping address">
                     {/* Countries come from shipping_address_collection on the
                         session (SHIP_TO_COUNTRIES). Mounted before the Payment Element so
-                        that one skips the billing fields it would repeat. */}
-                    <ShippingAddressElement />
+                        that one skips the billing fields it would repeat.
+                        Stripe's state list also offers territories we don't
+                        ship to, so those are flagged here. */}
+                    <ShippingAddressElement
+                        onChange={(event) => setBlockedPlace(blockedDestination(event.value.address)?.name ?? null)}
+                    />
+                    {blockedPlace && (
+                        <div className="mt-4">
+                            <FormBanner variant="error" action={{ href: "/shipping", label: "Shipping policy" }}>
+                                {notShipped(blockedPlace)}
+                            </FormBanner>
+                        </div>
+                    )}
                 </Step>
 
                 <Step title="Shipping method">

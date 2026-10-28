@@ -96,6 +96,29 @@ describe("fulfillCheckout", () => {
     expect(await stockOf(variant.id)).toBe(4);
   });
 
+  it("sends an order to an excluded territory to review, and lets APO and Puerto Rico through", async () => {
+    const user = await createUser();
+    const variant = await createVariant({ stock: 5 });
+    const line = [{ variantId: variant.id, quantity: 1, unitPriceCents: 1500 }];
+
+    const guam = stripeReturns(fakeCheckout(user.id, line, { address: { city: "Tamuning", state: "GU", postal_code: "96913" } }));
+    await fulfillCheckout(guam);
+    const guamOrder = await prisma.order.findUniqueOrThrow({ where: { stripeCheckoutSessionId: guam } });
+    expect(guamOrder.status).toBe("NEEDS_REVIEW");
+    expect(guamOrder.reviewReason).toBe("Ships to GU, outside the Shipping policy");
+    expect(await stockOf(variant.id)).toBe(4);
+
+    for (const address of [
+      { city: "APO", state: "AE", postal_code: "09096" },
+      { city: "San Juan", state: "PR", postal_code: "00907", country: "PR" },
+    ]) {
+      const sessionId = stripeReturns(fakeCheckout(user.id, line, { address }));
+      await fulfillCheckout(sessionId);
+      const order = await prisma.order.findUniqueOrThrow({ where: { stripeCheckoutSessionId: sessionId } });
+      expect(order.status).toBe("PAID");
+    }
+  });
+
   it("is idempotent: a repeat or concurrent delivery creates one order and deducts once", async () => {
     const user = await createUser();
     const variant = await createVariant({ stock: 5 });

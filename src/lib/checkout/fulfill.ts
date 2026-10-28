@@ -11,6 +11,7 @@ import { Prisma } from "@/generated/prisma/client";
 import { formatVariantLabel } from "@/lib/catalog/format";
 import { adjustStock } from "@/lib/inventory/adjust";
 import { prisma } from "@/lib/prisma";
+import { blockedDestination } from "@/lib/shipping/countries";
 import { getStripe } from "@/lib/stripe";
 import { checkSubtotal, parseSession, type ParsedSession } from "./parse-session";
 
@@ -151,8 +152,15 @@ async function createOrder(
     shortfalls.push(`${sku}: ordered ${line.quantity}, available ${result.available}`);
   }
 
-  // 4. Anything a person needs to look at sends the order to review.
-  const reasons = subtotalProblem ? [...shortfalls, subtotalProblem] : shortfalls;
+  // 4. Anything a person needs to look at sends the order to review. The
+  //    checkout page already refuses an excluded destination; this catches
+  //    anything that got past it.
+  const destination = parsed.shippingAddress && blockedDestination(parsed.shippingAddress);
+  const reasons = [
+    ...shortfalls,
+    ...(subtotalProblem ? [subtotalProblem] : []),
+    ...(destination ? [`Ships to ${destination.code}, outside the Shipping policy`] : []),
+  ];
   if (reasons.length > 0) {
     await tx.order.update({
       where: { id: order.id },
