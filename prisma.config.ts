@@ -4,7 +4,9 @@ import { config } from "dotenv";
 import { defineConfig, env } from "prisma/config";
 
 // Same file `next dev` reads; `vercel env pull .env.local --environment=development`
-// fills it with the dev database, never production.
+// fills it with the dev database, never production. On Vercel there's no
+// .env.local and POSTGRES_URL comes from the environment: production builds run
+// `migrate deploy` from scripts/vercel-build.mjs.
 config({ path: ".env.local" });
 
 export default defineConfig({
