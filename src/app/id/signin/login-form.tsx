@@ -10,6 +10,7 @@ import TextField from '@/app/components/form/text-field';
 import PasswordField from '@/app/components/form/password-field';
 import SubmitButton from '@/app/components/form/submit-button';
 import { textLinkClass } from '@/app/components/form/styles';
+import { DEFAULT_SIGNED_IN_PATH } from '@/lib/callback-url';
 
 
 // signupEnabled arrives as a prop because SIGNUP_ENABLED is server-only and
@@ -17,7 +18,7 @@ import { textLinkClass } from '@/app/components/form/styles';
 export default function LoginForm({ signupEnabled }: { signupEnabled: boolean }) {
     const searchParams = useSearchParams();
     const rawCallbackUrl = searchParams.get('callbackUrl');
-    const callbackUrl = rawCallbackUrl || ('/myCANN/dashboard');
+    const callbackUrl = rawCallbackUrl || DEFAULT_SIGNED_IN_PATH;
     //  Passed on as received, so a guest heading to checkout who creates an
     //  account lands back there. Only a query value on our own page: sign-up
     //  checks it with safeCallbackPath before redirecting anywhere.

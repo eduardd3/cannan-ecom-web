@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { safeCallbackPath } from "./callback-url";
+import { DEFAULT_SIGNED_IN_PATH, safeCallbackPath, signedInPath } from "./callback-url";
 
 const ORIGIN = "https://www.shopcannan.com";
 
@@ -40,5 +40,19 @@ describe("safeCallbackPath", () => {
     expect(safeCallbackPath(null, ORIGIN)).toBeNull();
     expect(safeCallbackPath(undefined, ORIGIN)).toBeNull();
     expect(safeCallbackPath("id/checkout", ORIGIN)).toBeNull();
+  });
+});
+
+describe("signedInPath", () => {
+  it("goes to a safe callbackUrl, as a relative path", () => {
+    expect(signedInPath("/id/checkout", ORIGIN)).toBe("/id/checkout");
+    expect(signedInPath(`${ORIGIN}/id/checkout`, ORIGIN)).toBe("/id/checkout");
+  });
+
+  it("falls back to the dashboard when there's none or it isn't safe", () => {
+    expect(signedInPath(null, ORIGIN)).toBe(DEFAULT_SIGNED_IN_PATH);
+    expect(signedInPath("", ORIGIN)).toBe(DEFAULT_SIGNED_IN_PATH);
+    expect(signedInPath("//evil.com", ORIGIN)).toBe(DEFAULT_SIGNED_IN_PATH);
+    expect(signedInPath("https://evil.com/id/checkout", ORIGIN)).toBe(DEFAULT_SIGNED_IN_PATH);
   });
 });

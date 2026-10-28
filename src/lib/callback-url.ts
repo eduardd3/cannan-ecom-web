@@ -1,5 +1,8 @@
 // No server imports: used by the sign-in and sign-up client components.
 
+// Where sign-in goes when nothing asked for somewhere else.
+export const DEFAULT_SIGNED_IN_PATH = "/myCANN/dashboard";
+
 /**
  * A callbackUrl made safe to redirect to, always as a same-origin relative
  * path, or null.
@@ -27,4 +30,9 @@ export function safeCallbackPath(value: string | null | undefined, origin: strin
   // javascript:, data:, and the like have the opaque origin "null".
   if (url.origin !== origin) return null;
   return `${url.pathname}${url.search}${url.hash}`;
+}
+
+/** Where to land once signed in: a safe callbackUrl, else the dashboard. */
+export function signedInPath(value: string | null | undefined, origin: string): string {
+  return safeCallbackPath(value, origin) ?? DEFAULT_SIGNED_IN_PATH;
 }

@@ -49,7 +49,7 @@ export const {handlers, auth, signIn, signOut} = NextAuth ({
     events: {
         // Fires once, after the password check, inside the authCustomer server
         // action, so the guest cookie can be read and cleared here. Sign-up
-        // doesn't sign in, so a new account's first sign-in merges too.
+        // signs in through the same action, so a new account merges too.
         // Customer login only: an admin sign-in never takes a guest cart.
         async signIn({ user, account }) {
             if (account?.provider !== 'customer-login') return;
