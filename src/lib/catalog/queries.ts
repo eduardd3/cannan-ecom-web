@@ -153,13 +153,30 @@ export async function listFeaturedProducts(): Promise<ProductCardView[]> {
   return products.map(toProductCard);
 }
 
-/** Every collection, in its admin-set order, for the homepage grid. */
-export async function listCollections(): Promise<CollectionView[]> {
-  return prisma.collection.findMany({
-    select: { slug: true, name: true, description: true },
+/**
+ * Every collection, in its admin-set order, for the homepage grid and the
+ * footer. Shown even while the catalog is off or a collection is empty, but
+ * an empty collection's page 404s, so its href is /products (Opening soon)
+ * until it has a visible product. Wrapped in cache() because the homepage
+ * and the footer both call it.
+ */
+export const listCollections = cache(async (): Promise<CollectionView[]> => {
+  const catalogOn = isCatalogEnabled();
+  const collections = await prisma.collection.findMany({
+    select: {
+      slug: true,
+      name: true,
+      description: true,
+      _count: { select: { products: { where: visibleProduct } } },
+    },
     orderBy: [{ position: "asc" }, { id: "asc" }],
   });
-}
+  return collections.map(({ _count, ...collection }) => ({
+    ...collection,
+    href:
+      catalogOn && _count.products > 0 ? collectionHref(collection.slug, { type: null, facet: null }) : "/products",
+  }));
+});
 
 /**
  * One product for its detail page, or null when it's missing or not visible

@@ -6,7 +6,7 @@ import Hero from "@/app/components/home/hero";
 import JsonLd from "@/app/components/json-ld";
 import Narrative from "@/app/components/home/narrative";
 import Promises from "@/app/components/home/promises";
-import { listCollections, listFeaturedProducts } from "@/lib/catalog/queries";
+import { getShopHref, listCollections, listFeaturedProducts } from "@/lib/catalog/queries";
 import { isCatalogEnabled } from "@/lib/flags";
 import { buildOpenGraph } from "@/lib/seo/open-graph";
 import { buildHomeJsonLd } from "@/lib/seo/organization";
@@ -35,20 +35,24 @@ export const metadata: Metadata = {
 //  Each section wraps its own content in Container rather than the page
 //  wrapping them all: the narrative band's linen background runs full width.
 //
-//  The two catalog queries run here, in parallel, and the sections only
-//  render what they're given. With CATALOG_ENABLED off, both are skipped
-//  (no database hit), since their links would lead to an empty /products
-//  and 404ing product pages.
+//  The catalog queries run here, in parallel, and the sections only render
+//  what they're given. The collections grid always shows; its links go to
+//  /products until a collection has something in it (listCollections). With
+//  CATALOG_ENABLED off, featured products are skipped, since their links would
+//  404. getShopHref and listCollections are cached, so the header's and
+//  footer's calls share these queries.
 export default async function Home() {
-  const [collections, featured] = isCatalogEnabled()
-    ? await Promise.all([listCollections(), listFeaturedProducts()])
-    : [[], []];
+  const [collections, featured, shopHref] = await Promise.all([
+    listCollections(),
+    isCatalogEnabled() ? listFeaturedProducts() : [],
+    getShopHref(),
+  ]);
 
   return (
     <>
       {/* The site name Google shows, and the site-wide shipping and returns. */}
       <JsonLd data={buildHomeJsonLd()} />
-      <Hero />
+      <Hero shopHref={shopHref} />
       <CollectionsGrid collections={collections} />
       <FeaturedProducts products={featured} />
       <Narrative />

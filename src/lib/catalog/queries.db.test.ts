@@ -1,4 +1,4 @@
-import { afterAll, beforeEach, describe, expect, it } from "vitest";
+import { afterAll, afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { prisma } from "@/lib/prisma";
 import { createVariant, resetDb } from "../../../test/db";
@@ -66,6 +66,10 @@ describe("listFeaturedProducts", () => {
 });
 
 describe("listCollections", () => {
+  afterEach(() => {
+    vi.unstubAllEnvs();
+  });
+
   it("lists every collection in position order", async () => {
     const expected = await prisma.collection.findMany({ orderBy: { position: "asc" }, select: { slug: true } });
 
@@ -73,6 +77,25 @@ describe("listCollections", () => {
 
     expect(slugs).toEqual(expected.map((c) => c.slug));
     expect(slugs.length).toBeGreaterThan(0);
+  });
+
+  it("links a collection to its page only once it has a visible product", async () => {
+    vi.stubEnv("CATALOG_ENABLED", "true");
+    const [slug] = await products(1);
+    await prisma.product.update({ where: { slug }, data: { status: "DRAFT" } });
+    expect((await listCollections()).every((c) => c.href === "/products")).toBe(true);
+
+    await prisma.product.update({ where: { slug }, data: { status: "ACTIVE" } });
+    const { slug: withProduct } = await defaultCollection();
+    for (const collection of await listCollections()) {
+      expect(collection.href).toBe(collection.slug === withProduct ? `/collections/${withProduct}` : "/products");
+    }
+  });
+
+  it("links every collection to /products while the catalog is off", async () => {
+    vi.stubEnv("CATALOG_ENABLED", "");
+    await products(1);
+    expect((await listCollections()).every((c) => c.href === "/products")).toBe(true);
   });
 });
 

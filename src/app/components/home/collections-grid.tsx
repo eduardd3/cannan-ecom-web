@@ -32,7 +32,7 @@ export default function CollectionsGrid({ collections }: { collections: Collecti
                 <h3 className="mb-2.5 font-serif text-headline-md text-charcoal">{collection.name}</h3>
                 <p className="mb-4 text-body-md text-stone">{collection.description}</p>
                 <Link
-                  href={`/collections/${collection.slug}`}
+                  href={collection.href}
                   className="group inline-flex items-center gap-1 self-start text-label-ui text-gold-ink transition-colors hover:text-charcoal"
                 >
                   <span className="underline underline-offset-4">Shop {collection.name}</span>

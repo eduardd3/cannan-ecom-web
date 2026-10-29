@@ -13,6 +13,7 @@ export type CollectionView = {
   slug: string;
   name: string;
   description: string;
+  href: string; // its collection page, or /products while it has nothing visible
 };
 
 // A product card on the collection page and the homepage.

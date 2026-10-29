@@ -3,7 +3,9 @@ import Link from "next/link";
 import Container from "@/app/components/container";
 import GoldRule from "@/app/components/gold-rule";
 
-export default function Hero() {
+//  shopHref: the same target as the header's Shop link (getShopHref), so the
+//  button never opens a collection with nothing in it.
+export default function Hero({ shopHref }: { shopHref: string }) {
   return (
     <section>
       <Container className="flex flex-col items-center py-16 text-center md:py-24">
@@ -20,7 +22,7 @@ export default function Hero() {
             Devotional pieces for the altar and the home.
           </p>
           <Link
-            href={`/collections/signature`}
+            href={shopHref}
             className="mb-12 inline-flex items-center justify-center rounded-control bg-charcoal px-7 py-3.5 text-label-ui text-gallery-white transition-colors hover:bg-charcoal/90"
           >
             Shop the collections

@@ -1,30 +1,31 @@
 import Link from "next/link";
 import Container from "@/app/components/container";
 import GoldRule from "@/app/components/gold-rule";
+import { listCollections } from "@/lib/catalog/queries";
 
-//  The one place collection slugs are hardcoded: a renamed slug is an edit
-//  here. Everything else reaches collections through /products or the
-//  database.
-const SHOP_COLLECTIONS = [
-    { slug: "signature", label: "Signature" },
-    { slug: "orishas", label: "Orishas" },
-    { slug: "santa-muerte", label: "Santa Muerte" },
-];
+type FooterLink = { href: string; label: string };
+
+//  Every collection, from the database, with the same hrefs as the homepage
+//  grid: /products (Opening soon) until a collection has something in it.
+async function shopLinks(): Promise<FooterLink[]> {
+    return (await listCollections()).map(({ href, name }) => ({ href, label: name }));
+}
 
 //  One array instead of hand-copied column blocks: adding a link is an edit
-//  here, not a new <div> to clone and re-style. href is unique per link, so it
-//  doubles as the key and the rows need no id field.
+//  here, not a new <div> to clone and re-style. label is unique within a
+//  column, so it doubles as the key (href isn't: empty collections all link
+//  to /products).
 //
 //  Two columns at every width. About moved to the header nav, which is why
 //  there's no "Cannan" column.
 //
 //  serif: the collections are set like product names (EB Garamond, charcoal),
 //  as the rooms of the gallery; help links stay plain DM Sans.
-const footerColumns = [
+const footerColumns = (shop: FooterLink[]) => [
     {
         heading: "Shop",
         serif: true,
-        links: SHOP_COLLECTIONS.map(({ slug, label }) => ({ href: `/collections/${slug}`, label })),
+        links: shop,
     },
     {
         heading: "Help",
@@ -53,7 +54,8 @@ const plainLink = `${linkBase} text-body-md text-stone hover:text-charcoal`;
 //  as the header's wordmark, and the columns end on the same line as the
 //  header's icons. Both come from Container, so header and footer frame every
 //  page from the same two edges.
-export default function SiteFooter() {
+export default async function SiteFooter() {
+    const columns = footerColumns(await shopLinks());
     return (
         <footer className="shrink-0 bg-linen">
             <Container className="pt-12 pb-10 md:pt-22 md:pb-9">
@@ -72,12 +74,12 @@ export default function SiteFooter() {
                     </div>
 
                     <div className="grid grid-cols-2 gap-x-6 md:grid-cols-[repeat(2,max-content)] md:gap-x-30">
-                        {footerColumns.map(({ heading, serif, links }) => (
+                        {columns.map(({ heading, serif, links }) => (
                             <div key={heading}>
                                 <h3 className="mb-1 text-label-ui text-charcoal md:mb-4">{heading}</h3>
                                 <ul className={`flex flex-col ${serif ? "md:gap-2" : "md:gap-3"}`}>
                                     {links.map(({ href, label }) => (
-                                        <li key={href}>
+                                        <li key={label}>
                                             <Link href={href} className={serif ? serifLink : plainLink}>{label}</Link>
                                         </li>
                                     ))}
