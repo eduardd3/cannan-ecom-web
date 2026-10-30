@@ -14,17 +14,32 @@ import { Prisma } from "@/generated/prisma/client";
 import { formatVariantLabel } from "@/lib/catalog/format";
 import { adjustStock } from "@/lib/inventory/adjust";
 import { prisma } from "@/lib/prisma";
-import type { OptionNames, OptionValues } from "./variant-fields";
+import type { Dimensions, OptionNames, OptionValues } from "./variant-fields";
 
 export type VariantFields = {
   option: OptionValues; // both null = the product's default variant
   priceCents: number;
   sku: string; // normalized
   amazonAsin: string | null;
+  gtin: string | null; // check digit already verified
+  dimensions: Dimensions | null; // null = none (all three or none, CHECK in SQL)
   position: number | null; // null on create = after the last variant
 };
 
-export type VariantField = "option" | "priceCents" | "sku" | "amazonAsin" | "position" | "openingStock" | "isActive";
+export type VariantField =
+  | "option"
+  | "priceCents"
+  | "sku"
+  | "amazonAsin"
+  | "gtin"
+  | "dimensions"
+  | "position"
+  | "openingStock"
+  | "isActive";
+
+function dimensionData(dimensions: Dimensions | null) {
+  return dimensions ?? { heightIn: null, widthIn: null, depthIn: null };
+}
 
 export type VariantResult = { ok: true; id: number } | { ok: false; field?: VariantField; message: string };
 
@@ -159,6 +174,8 @@ export async function createProductVariant(
         priceCents: fields.priceCents,
         sku: fields.sku,
         amazonAsin: fields.amazonAsin,
+        gtin: fields.gtin,
+        ...dimensionData(fields.dimensions),
         position: fields.position ?? (last._max.position ?? -1) + 1,
         stock: 0,
         isActive: true,
@@ -186,7 +203,7 @@ export async function createProductVariant(
 // ---------------------------------------------------------------------------
 
 /**
- * Edits a variant's option, price, SKU, ASIN, and position. Stock isn't
+ * Edits a variant's option, price, SKU, ASIN, GTIN, dimensions, and position. Stock isn't
  * editable here: it changes only through the ledger (inventory page).
  * Past orders keep the SKU and price they were placed with.
  */
@@ -207,6 +224,8 @@ export async function updateProductVariant(variantId: number, fields: VariantFie
         priceCents: fields.priceCents,
         sku: fields.sku,
         amazonAsin: fields.amazonAsin,
+        gtin: fields.gtin,
+        ...dimensionData(fields.dimensions),
         ...(fields.position !== null && { position: fields.position }),
       },
     });

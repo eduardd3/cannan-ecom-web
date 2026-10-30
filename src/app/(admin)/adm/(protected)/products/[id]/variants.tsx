@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useActionState, useState, type InputHTMLAttributes } from "react";
 
 import { formatCents } from "@/lib/cart/format";
+import { formatDimensions } from "@/lib/catalog/format";
 import {
   createVariantAction,
   setVariantActiveAction,
@@ -13,6 +14,7 @@ import {
 } from "@/lib/products/variant-actions";
 import {
   formatPriceInput,
+  MAX_INCHES,
   MAX_OPENING_STOCK,
   MAX_OPTION_LENGTH,
   MAX_POSITION,
@@ -32,6 +34,10 @@ export type VariantRow = {
   stock: number;
   isActive: boolean;
   amazonAsin: string | null;
+  gtin: string | null;
+  heightIn: string | null; // inches; all three or none
+  widthIn: string | null;
+  depthIn: string | null;
   position: number;
 };
 
@@ -49,6 +55,10 @@ function valuesOf(variant: VariantRow): VariantFormValues {
     price: formatPriceInput(variant.priceCents),
     sku: variant.sku,
     amazonAsin: variant.amazonAsin ?? "",
+    gtin: variant.gtin ?? "",
+    heightIn: variant.heightIn ?? "",
+    widthIn: variant.widthIn ?? "",
+    depthIn: variant.depthIn ?? "",
     position: String(variant.position),
     openingStock: "",
   };
@@ -148,6 +158,9 @@ function VariantForm({
           required maxLength={MAX_SKU_LENGTH} spellCheck={false} autoComplete="off" className="font-mono" />
         <Field label="Amazon ASIN (optional)" name="amazonAsin" field="amazonAsin" state={state}
           defaultValue={values?.amazonAsin} maxLength={10} spellCheck={false} autoComplete="off" />
+        <Field label="GTIN / UPC (optional)" name="gtin" field="gtin" state={state}
+          defaultValue={values?.gtin} inputMode="numeric" maxLength={20} spellCheck={false} autoComplete="off"
+          className="font-mono" hint="The digits under the barcode. For search engines." />
         <Field label="Position (optional)" name="position" field="position" state={state}
           defaultValue={values?.position} type="number" min={0} max={MAX_POSITION} step={1}
           hint={editing ? "Lower shows first." : "Blank adds it after the others."} />
@@ -157,6 +170,22 @@ function VariantForm({
             hint="Recorded in the stock ledger. Later changes go through Inventory." />
         )}
       </div>
+
+      {/* One field in the action's errors: the three are valid only together. */}
+      <fieldset className="flex flex-col gap-2">
+        <legend className="mb-2 text-sm text-adm-muted">Dimensions in inches (optional)</legend>
+        <div className="grid gap-4 sm:grid-cols-3">
+          <Field label="Height" name="heightIn" field="dimensions" state={state} defaultValue={values?.heightIn}
+            type="number" min={0.01} max={MAX_INCHES} step={0.01} />
+          <Field label="Width" name="widthIn" field="dimensions" state={state} defaultValue={values?.widthIn}
+            type="number" min={0.01} max={MAX_INCHES} step={0.01} />
+          <Field label="Depth" name="depthIn" field="dimensions" state={state} defaultValue={values?.depthIn}
+            type="number" min={0.01} max={MAX_INCHES} step={0.01} />
+        </div>
+        <p className="text-xs text-adm-muted">
+          Shown in the product page&apos;s Details for this variant. Fill in all three, or leave them blank.
+        </p>
+      </fieldset>
 
       <div className="flex flex-wrap items-center gap-3">
         <button type="submit" disabled={pending} className={PRIMARY_BUTTON}>
@@ -208,6 +237,7 @@ const COLUMNS = 5;
 
 function Row({ productId, optionNames, variant }: { productId: number; optionNames: OptionNames; variant: VariantRow }) {
   const [editing, setEditing] = useState(false);
+  const dimensions = formatDimensions(variant);
 
   if (editing) {
     return (
@@ -223,7 +253,9 @@ function Row({ productId, optionNames, variant }: { productId: number; optionNam
       <td className="px-6 py-3">
         {variant.label ?? "Default"}
         {!variant.isActive && <span className="ml-2 text-xs">· off</span>}
+        {dimensions && <div className="text-xs text-adm-muted">{dimensions}</div>}
         {variant.amazonAsin && <div className="font-mono text-xs text-adm-muted">ASIN {variant.amazonAsin}</div>}
+        {variant.gtin && <div className="font-mono text-xs text-adm-muted">GTIN {variant.gtin}</div>}
       </td>
       <td className="px-4 py-3 font-mono text-xs">{variant.sku}</td>
       <td className="px-4 py-3 text-right tabular-nums">{formatCents(variant.priceCents)}</td>

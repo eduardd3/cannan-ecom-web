@@ -11,7 +11,10 @@ import {
   type ProductFormValues,
 } from "@/lib/products/actions";
 import {
+  DEFAULT_BRAND,
+  MAX_BRAND_LENGTH,
   MAX_DESCRIPTION_LENGTH,
+  MAX_MATERIAL_LENGTH,
   MAX_NAME_LENGTH,
   PRODUCT_STATUS_LABEL,
   PRODUCT_STATUSES,
@@ -206,6 +209,57 @@ export default function ProductForm({
               className={fieldClass(invalid("description"))}
             />
             <FieldError id="description-error" state={state} field="description" />
+          </label>
+
+          <div className="grid gap-4 sm:grid-cols-2">
+            <label className="flex flex-col gap-1 text-sm text-adm-muted">
+              Material (optional)
+              <input
+                name="material"
+                type="text"
+                maxLength={MAX_MATERIAL_LENGTH}
+                placeholder="e.g. Resin, painted finish"
+                defaultValue={values?.material}
+                aria-invalid={invalid("material")}
+                aria-describedby="material-hint material-error"
+                className={fieldClass(invalid("material"))}
+              />
+              <span id="material-hint" className="text-xs">
+                Shown in the product page&apos;s Details. Dimensions are set per variant.
+              </span>
+              <FieldError id="material-error" state={state} field="material" />
+            </label>
+            <label className="flex flex-col gap-1 text-sm text-adm-muted">
+              Brand (optional)
+              <input
+                name="brand"
+                type="text"
+                maxLength={MAX_BRAND_LENGTH}
+                defaultValue={values?.brand ?? DEFAULT_BRAND}
+                aria-invalid={invalid("brand")}
+                aria-describedby="brand-hint brand-error"
+                className={fieldClass(invalid("brand"))}
+              />
+              <span id="brand-hint" className="text-xs">
+                For search engines; not shown on the page. Blank leaves it out.
+              </span>
+              <FieldError id="brand-error" state={state} field="brand" />
+            </label>
+          </div>
+
+          <label className="flex items-start gap-2 text-sm text-adm-muted">
+            <input
+              type="checkbox"
+              name="isFinalSale"
+              defaultChecked={values?.isFinalSale ?? false}
+              className="mt-1 accent-adm-fg"
+            />
+            <span>
+              <span className="text-adm-fg">Final sale</span>
+              <span className="block text-xs">
+                Not eligible for change-of-mind returns. The product page says so under the price.
+              </span>
+            </span>
           </label>
 
           <label className="flex flex-col gap-1 text-sm text-adm-muted">

@@ -13,6 +13,8 @@ import {
   MAX_POSITION,
   normalizeSku,
   parseAsin,
+  parseDimensions,
+  parseGtin,
   parseOptionPair,
   parsePriceCents,
   parseWholeNumber,
@@ -33,6 +35,10 @@ export type VariantFormValues = {
   price: string;
   sku: string;
   amazonAsin: string;
+  gtin: string;
+  heightIn: string;
+  widthIn: string;
+  depthIn: string;
   position: string;
   openingStock: string;
 };
@@ -54,6 +60,10 @@ function readValues(formData: FormData): VariantFormValues {
     price: text("price"),
     sku: text("sku"),
     amazonAsin: text("amazonAsin"),
+    gtin: text("gtin"),
+    heightIn: text("heightIn"),
+    widthIn: text("widthIn"),
+    depthIn: text("depthIn"),
     position: text("position"),
     openingStock: text("openingStock"),
   };
@@ -82,6 +92,20 @@ function parseFields(values: VariantFormValues): { ok: true; fields: VariantFiel
     return { ok: false, field: "amazonAsin", message: "An ASIN is 10 letters or digits. Leave it blank if there isn't one." };
   }
 
+  const gtin = parseGtin(values.gtin);
+  if (!gtin.ok) {
+    return {
+      ok: false,
+      field: "gtin",
+      message: "That GTIN isn't valid. Copy the 8, 12, 13, or 14 digits under the barcode, or leave it blank.",
+    };
+  }
+
+  const dimensions = parseDimensions(values.heightIn, values.widthIn, values.depthIn);
+  if (!dimensions.ok) {
+    return { ok: false, field: "dimensions", message: "message" in dimensions ? dimensions.message : "Check the dimensions." };
+  }
+
   const position = parseWholeNumber(values.position, MAX_POSITION, null);
   if (!position.ok) {
     return { ok: false, field: "position", message: `Position is a whole number from 0 to ${MAX_POSITION}.` };
@@ -89,11 +113,19 @@ function parseFields(values: VariantFormValues): { ok: true; fields: VariantFiel
 
   return {
     ok: true,
-    fields: { option: { option1Value, option2Value }, priceCents, sku, amazonAsin: asin.value, position: position.value },
+    fields: {
+      option: { option1Value, option2Value },
+      priceCents,
+      sku,
+      amazonAsin: asin.value,
+      gtin: gtin.value,
+      dimensions: dimensions.value,
+      position: position.value,
+    },
   };
 }
 
-// Price, options, and availability show on the storefront, carts, and stock pages.
+// Price, options, dimensions, and availability show on the storefront, carts, and stock pages.
 function revalidateVariants() {
   revalidatePath("/adm/products", "layout");
   revalidatePath("/adm/inventory", "layout");

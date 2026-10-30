@@ -27,6 +27,9 @@ function fields(overrides: Partial<ProductFields> = {}): ProductFields {
     categoryId: null,
     option1Name: null,
     option2Name: null,
+    material: null,
+    brand: null,
+    isFinalSale: false,
     ...overrides,
   };
 }
@@ -58,6 +61,9 @@ async function save(
     categoryId: product.categoryId,
     option1Name: product.option1Name,
     option2Name: product.option2Name,
+    material: product.material,
+    brand: product.brand,
+    isFinalSale: product.isFinalSale,
     status: product.status,
     ...overrides,
   });
@@ -82,6 +88,23 @@ describe("createProduct", () => {
       categoryId: category.id,
       option1Name: "Color",
       option2Name: "Size",
+    });
+  });
+
+  it("saves material, brand, and final sale", async () => {
+    const id = await created({ material: "Resin, painted finish", brand: "Cannan", isFinalSale: true });
+
+    expect(await prisma.product.findUniqueOrThrow({ where: { id } })).toMatchObject({
+      material: "Resin, painted finish",
+      brand: "Cannan",
+      isFinalSale: true,
+    });
+
+    await save(id, { material: null, brand: null, isFinalSale: false });
+    expect(await prisma.product.findUniqueOrThrow({ where: { id } })).toMatchObject({
+      material: null,
+      brand: null,
+      isFinalSale: false,
     });
   });
 

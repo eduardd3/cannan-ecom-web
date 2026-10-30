@@ -3,7 +3,7 @@
 // Admin READ side for products. Callers check requireStaff() first.
 import "server-only";
 
-import type { ProductStatus } from "@/generated/prisma/client";
+import type { Prisma, ProductStatus } from "@/generated/prisma/client";
 
 import { formatVariantLabel } from "@/lib/catalog/format";
 import { prisma } from "@/lib/prisma";
@@ -62,6 +62,9 @@ export async function getAdminProduct(productId: number) {
       categoryId: true,
       option1Name: true,
       option2Name: true,
+      material: true,
+      brand: true,
+      isFinalSale: true,
       createdAt: true,
       updatedAt: true,
       slugRedirects: { select: { slug: true, createdAt: true }, orderBy: { createdAt: "desc" } },
@@ -81,6 +84,10 @@ export async function getAdminProduct(productId: number) {
           stock: true,
           isActive: true,
           amazonAsin: true,
+          gtin: true,
+          heightIn: true,
+          widthIn: true,
+          depthIn: true,
           position: true,
         },
       },
@@ -88,9 +95,18 @@ export async function getAdminProduct(productId: number) {
   });
   if (!product) return null;
 
+  // Strings, so no Decimal reaches the client component: "3.50" → "3.5".
+  const inches = (value: Prisma.Decimal | null) => (value === null ? null : String(Number(value.toString())));
+
   return {
     ...product,
-    variants: product.variants.map((variant) => ({ ...variant, label: formatVariantLabel(variant) })),
+    variants: product.variants.map(({ heightIn, widthIn, depthIn, ...variant }) => ({
+      ...variant,
+      label: formatVariantLabel(variant),
+      heightIn: inches(heightIn),
+      widthIn: inches(widthIn),
+      depthIn: inches(depthIn),
+    })),
     images: product.images.map(({ key, ...image }) => ({ ...image, url: getImageUrl(key) })),
   };
 }

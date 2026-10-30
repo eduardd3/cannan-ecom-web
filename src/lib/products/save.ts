@@ -20,6 +20,9 @@ export type ProductFields = {
   categoryId: number | null; // must be in collectionId's collection
   option1Name: string | null; // option2Name needs option1Name (parsed that way)
   option2Name: string | null;
+  material: string | null; // shown in the product page's Details
+  brand: string | null; // structured data only; null = left out
+  isFinalSale: boolean;
 };
 
 export type ProductField = keyof ProductFields | "status";
@@ -115,6 +118,9 @@ function productData(fields: ProductFields) {
     categoryId: fields.categoryId,
     option1Name: fields.option1Name,
     option2Name: fields.option2Name,
+    material: fields.material,
+    brand: fields.brand,
+    isFinalSale: fields.isFinalSale,
   };
 }
 

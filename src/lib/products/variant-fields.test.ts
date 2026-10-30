@@ -6,6 +6,8 @@ import {
   MAX_SKU_LENGTH,
   normalizeSku,
   parseAsin,
+  parseDimensions,
+  parseGtin,
   parseOptionPair,
   parsePriceCents,
   parseWholeNumber,
@@ -74,6 +76,52 @@ describe("parseOptionPair", () => {
 
   it("refuses overlong options", () => {
     expect(parseOptionPair("x".repeat(MAX_OPTION_LENGTH + 1), "")).toMatchObject({ ok: false });
+  });
+});
+
+describe("parseGtin", () => {
+  it("treats blank as none", () => {
+    expect(parseGtin(" ")).toEqual({ ok: true, value: null });
+  });
+
+  it("accepts GTIN-8, UPC, EAN, and GTIN-14 with a valid check digit", () => {
+    expect(parseGtin("96385074")).toEqual({ ok: true, value: "96385074" });
+    expect(parseGtin("012345678905")).toEqual({ ok: true, value: "012345678905" });
+    expect(parseGtin("4006381333931")).toEqual({ ok: true, value: "4006381333931" });
+    expect(parseGtin("10012345678902")).toEqual({ ok: true, value: "10012345678902" });
+  });
+
+  it("ignores spaces and hyphens", () => {
+    expect(parseGtin(" 0 12345-67890 5 ")).toEqual({ ok: true, value: "012345678905" });
+  });
+
+  it("refuses a wrong check digit, wrong length, or letters", () => {
+    for (const bad of ["012345678906", "1234567", "123456789", "01234567890X", "123456789012345"]) {
+      expect(parseGtin(bad).ok, bad).toBe(false);
+    }
+  });
+});
+
+describe("parseDimensions", () => {
+  it("treats all blank as none", () => {
+    expect(parseDimensions("", " ", "")).toEqual({ ok: true, value: null });
+  });
+
+  it("normalizes inches", () => {
+    expect(parseDimensions("8.00", " 3.5 ", "0.25")).toEqual({
+      ok: true,
+      value: { heightIn: "8", widthIn: "3.5", depthIn: "0.25" },
+    });
+  });
+
+  it("refuses some but not all", () => {
+    expect(parseDimensions("8", "", "3")).toMatchObject({ ok: false, message: /all three/ });
+  });
+
+  it("refuses zero, negatives, extra decimals, junk, and absurd sizes", () => {
+    for (const bad of ["0", "-1", "3.555", "abc", "10000", "3."]) {
+      expect(parseDimensions(bad, "1", "1").ok, bad).toBe(false);
+    }
   });
 });
 

@@ -9,7 +9,13 @@ import { redirect } from "next/navigation";
 import { z } from "zod";
 
 import { requireStaff } from "@/lib/session";
-import { MAX_DESCRIPTION_LENGTH, MAX_NAME_LENGTH, parseProductStatus } from "./format";
+import {
+  MAX_BRAND_LENGTH,
+  MAX_DESCRIPTION_LENGTH,
+  MAX_MATERIAL_LENGTH,
+  MAX_NAME_LENGTH,
+  parseProductStatus,
+} from "./format";
 import { createProduct, updateProduct, type ProductField, type ProductFields } from "./save";
 import { slugProblem } from "./slug";
 import { parseOptionPair } from "./variant-fields";
@@ -25,6 +31,9 @@ export type ProductFormValues = {
   categoryId: string; // "" = none
   option1Name: string;
   option2Name: string;
+  material: string; // "" = none
+  brand: string; // "" = none
+  isFinalSale: boolean;
   status: string;
   featured: boolean;
 };
@@ -47,10 +56,18 @@ function readValues(formData: FormData): ProductFormValues {
     categoryId: text("categoryId"),
     option1Name: text("option1Name"),
     option2Name: text("option2Name"),
-    status: text("status"),
+    material: text("material"),
+    brand: text("brand"),
     //  An unchecked checkbox isn't submitted at all.
+    isFinalSale: formData.get("isFinalSale") === "on",
+    status: text("status"),
     featured: formData.get("featured") === "on",
   };
+}
+
+/** Trimmed with inner spaces collapsed; blank is null. */
+function optionalLine(value: string): string | null {
+  return value.trim().replace(/\s+/g, " ") || null;
 }
 
 type Parsed = { ok: true; fields: ProductFields } | { ok: false; field?: ProductField; message: string };
@@ -92,6 +109,16 @@ function parseFields(values: ProductFormValues): Parsed {
   }
   const [option1Name, option2Name] = optionNames.value;
 
+  const material = optionalLine(values.material);
+  if ((material?.length ?? 0) > MAX_MATERIAL_LENGTH) {
+    return { ok: false, field: "material", message: `Keep the material to ${MAX_MATERIAL_LENGTH} characters or fewer.` };
+  }
+
+  const brand = optionalLine(values.brand);
+  if ((brand?.length ?? 0) > MAX_BRAND_LENGTH) {
+    return { ok: false, field: "brand", message: `Keep the brand to ${MAX_BRAND_LENGTH} characters or fewer.` };
+  }
+
   return {
     ok: true,
     fields: {
@@ -103,6 +130,9 @@ function parseFields(values: ProductFormValues): Parsed {
       categoryId: categoryId ? categoryId.data : null,
       option1Name,
       option2Name,
+      material,
+      brand,
+      isFinalSale: values.isFinalSale,
     },
   };
 }

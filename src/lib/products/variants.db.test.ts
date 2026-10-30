@@ -26,7 +26,16 @@ const colorSize = (color: string, inches: string): OptionValues => ({ option1Val
 
 function fields(overrides: Partial<VariantFields> = {}): VariantFields {
   sequence += 1;
-  return { option: DEFAULT, priceCents: 2499, sku: `NEW-${sequence}`, amazonAsin: null, position: null, ...overrides };
+  return {
+    option: DEFAULT,
+    priceCents: 2499,
+    sku: `NEW-${sequence}`,
+    amazonAsin: null,
+    gtin: null,
+    dimensions: null,
+    position: null,
+    ...overrides,
+  };
 }
 
 /** A draft product with no variants, and the given option names. */
@@ -129,18 +138,42 @@ describe("updateProductVariant", () => {
 
     const result = await updateProductVariant(
       id,
-      fields({ option: size("Medium"), priceCents: 1999, sku: "RENAMED", amazonAsin: "B0XYZ98765", position: 7 }),
+      fields({
+        option: size("Medium"),
+        priceCents: 1999,
+        sku: "RENAMED",
+        amazonAsin: "B0XYZ98765",
+        gtin: "012345678905",
+        dimensions: { heightIn: "8", widthIn: "3.5", depthIn: "3" },
+        position: 7,
+      }),
     );
 
     expect(result).toEqual({ ok: true, id });
-    expect(await prisma.productVariant.findUniqueOrThrow({ where: { id } })).toMatchObject({
+    const saved = await prisma.productVariant.findUniqueOrThrow({ where: { id } });
+    expect(saved).toMatchObject({
       option1Value: "Medium",
       option2Value: null,
       priceCents: 1999,
       sku: "RENAMED",
       amazonAsin: "B0XYZ98765",
+      gtin: "012345678905",
       position: 7,
       stock: 3,
+    });
+    expect([saved.heightIn, saved.widthIn, saved.depthIn].map(Number)).toEqual([8, 3.5, 3]);
+  });
+
+  it("clears dimensions and GTIN when they're left blank", async () => {
+    const product = await emptyProduct();
+    const id = await add(product.id, { gtin: "012345678905", dimensions: { heightIn: "8", widthIn: "3.5", depthIn: "3" } });
+
+    expect(await updateProductVariant(id, fields())).toEqual({ ok: true, id });
+    expect(await prisma.productVariant.findUniqueOrThrow({ where: { id } })).toMatchObject({
+      gtin: null,
+      heightIn: null,
+      widthIn: null,
+      depthIn: null,
     });
   });
 
@@ -223,6 +256,9 @@ describe("setVariantActive", () => {
         categoryId: null,
         option1Name: null,
         option2Name: null,
+        material: null,
+        brand: null,
+        isFinalSale: false,
         status: "ACTIVE",
       }),
       setVariantActive(id, false),

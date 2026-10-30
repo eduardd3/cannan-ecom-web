@@ -43,6 +43,53 @@ export function parseAsin(value: string): Parsed<string | null> {
   return /^[A-Z0-9]{10}$/.test(asin) ? { ok: true, value: asin } : { ok: false };
 }
 
+/**
+ * Optional: blank is null. A GTIN-8, UPC (12), EAN (13), or GTIN-14 from the
+ * packaging, spaces and hyphens ignored, with a valid check digit so a typo
+ * doesn't reach Google.
+ */
+export function parseGtin(value: string): Parsed<string | null> {
+  const gtin = value.replace(/[\s-]/g, "");
+  if (gtin === "") return { ok: true, value: null };
+  if (!/^(\d{8}|\d{12,14})$/.test(gtin)) return { ok: false };
+  // GS1: from the right, excluding the check digit, weights alternate 3, 1.
+  const digits = [...gtin].map(Number);
+  const check = digits.pop()!;
+  const sum = digits.reverse().reduce((total, digit, i) => total + digit * (i % 2 === 0 ? 3 : 1), 0);
+  return (10 - (sum % 10)) % 10 === check ? { ok: true, value: gtin } : { ok: false };
+}
+
+// Decimal(6, 2) in the database.
+export const MAX_INCHES = 9_999.99;
+
+/** Inches as text the database stores exactly, e.g. "3.5". */
+export type Dimensions = { heightIn: string; widthIn: string; depthIn: string };
+
+/** "3.5", "8", "0.25" → "3.5", "8", "0.25". Null for zero, negatives, junk, or more than two decimals. */
+function parseInches(value: string): string | null {
+  const match = /^(\d+)(?:\.(\d{1,2}))?$/.exec(value.trim());
+  if (!match) return null;
+  const n = Number(match[0]);
+  return n > 0 && n <= MAX_INCHES ? String(n) : null;
+}
+
+/**
+ * Height, width, depth. All blank is null (no dimensions); otherwise all
+ * three must be set and above zero, as the database requires.
+ */
+export function parseDimensions(height: string, width: string, depth: string): Parsed<Dimensions | null> | { ok: false; message: string } {
+  const raw = [height, width, depth];
+  if (raw.every((value) => value.trim() === "")) return { ok: true, value: null };
+  if (raw.some((value) => value.trim() === "")) {
+    return { ok: false, message: "Enter height, width, and depth, or leave all three blank." };
+  }
+  const [heightIn, widthIn, depthIn] = raw.map(parseInches);
+  if (heightIn === null || widthIn === null || depthIn === null) {
+    return { ok: false, message: "Dimensions are inches above zero, with up to two decimals, like 3.5." };
+  }
+  return { ok: true, value: { heightIn, widthIn, depthIn } };
+}
+
 /** Both null = the product's default variant. */
 export type OptionValues = { option1Value: string | null; option2Value: string | null };
 
