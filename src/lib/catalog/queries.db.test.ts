@@ -161,7 +161,22 @@ describe("getDefaultCollectionTarget", () => {
     expect(await getDefaultCollectionTarget()).toEqual({ slug, categorySlugs: ["guadalupe"] });
   });
 
-  it("returns null while the default collection has nothing visible", async () => {
+  it("falls back to the first collection by position while the default has nothing visible", async () => {
+    const [a, b] = await products(2);
+    const others = await prisma.collection.findMany({
+      where: { isDefault: false },
+      orderBy: [{ position: "asc" }, { id: "asc" }],
+      select: { id: true, slug: true },
+    });
+    expect(others.length).toBeGreaterThanOrEqual(2);
+    const [first, second] = others;
+    await prisma.product.update({ where: { slug: a }, data: { collectionId: second.id } });
+    await prisma.product.update({ where: { slug: b }, data: { collectionId: first.id } });
+
+    expect(await getDefaultCollectionTarget()).toEqual({ slug: first.slug, categorySlugs: [] });
+  });
+
+  it("returns null while no collection has anything visible", async () => {
     expect(await getDefaultCollectionTarget()).toBeNull();
   });
 });

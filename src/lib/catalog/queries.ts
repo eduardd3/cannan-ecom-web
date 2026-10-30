@@ -28,22 +28,25 @@ const visibleProduct = {
 /**
  * Where /products sends shoppers: the default collection (a partial unique
  * index allows at most one) and its category slugs, so an old ?category= link
- * can carry over. Null when there's no default, or it has nothing visible yet
- * (the collection page would 404).
+ * can carry over. While the default has nothing visible, the first collection
+ * in position order that does (isDefault sorts true first descending). Null
+ * when no collection has anything visible: every collection page would 404.
  */
 export async function getDefaultCollectionTarget(): Promise<{ slug: string; categorySlugs: string[] } | null> {
   const collection = await prisma.collection.findFirst({
-    where: { isDefault: true, products: { some: visibleProduct } },
+    where: { products: { some: visibleProduct } },
     select: { slug: true, categories: { select: { slug: true } } },
+    orderBy: [{ isDefault: "desc" }, { position: "asc" }, { id: "asc" }],
   });
   if (!collection) return null;
   return { slug: collection.slug, categorySlugs: collection.categories.map((category) => category.slug) };
 }
 
 /**
- * Where "Shop" links go: the default collection itself, so they don't bounce
- * through the /products redirect. /products when the catalog is off or there's
- * no default to show, since it renders Opening soon then without redirecting.
+ * Where "Shop" links go: the getDefaultCollectionTarget collection itself, so
+ * they don't bounce through the /products redirect. /products when the catalog
+ * is off or no collection has anything visible, since it renders Opening soon
+ * then without redirecting.
  * Wrapped in cache() because the header and the page can both call it.
  */
 export const getShopHref = cache(async (): Promise<string> => {

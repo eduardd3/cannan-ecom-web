@@ -11,11 +11,12 @@ export const metadata: Metadata = {
 };
 
 //  "Shop" in the header links here, so nothing hardcodes a collection.
-//  Redirects to the default collection with a 307, not a 308: the default can
-//  change in the admin, and browsers cache permanent redirects. An old
+//  Redirects to the default collection, or the first one with something in it
+//  while the default is empty, with a 307, not a 308: the target can change
+//  in the admin, and browsers cache permanent redirects. An old
 //  ?category=<slug> carries over as ?facet= when it's one of that
-//  collection's categories. Catalog off, or no default with anything visible:
-//  Opening soon, with no redirect (and, flag off, no database read).
+//  collection's categories. Catalog off, or no collection with anything
+//  visible: Opening soon, with no redirect (and, flag off, no database read).
 export default async function Products({ searchParams }: PageProps<"/products">) {
   if (!isCatalogEnabled()) return <OpeningSoon />;
 
