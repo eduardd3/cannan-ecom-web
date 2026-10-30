@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 
+import { isCatalogEnabled } from "@/lib/flags";
 import { formatOrderDate } from "@/lib/orders/format";
 import { getAdminProduct, getProductFormOptions } from "@/lib/products/queries";
 import { productPath } from "@/lib/products/slug";
@@ -43,12 +44,16 @@ export default async function EditProductPage({ params }: PageProps<"/adm/produc
           {product.status === "ACTIVE" && (
             <>
               {" · "}
-              <Link href={productPath(product.slug)} 
-              className="underline underline-offset-2 hover:text-adm-fg"
-              target="_blank"
-              rel="noopener noreferrer">
-                View on storefront
-              </Link>
+              {isCatalogEnabled() ? (
+                <Link href={productPath(product.slug)}
+                className="underline underline-offset-2 hover:text-adm-fg"
+                target="_blank"
+                rel="noopener noreferrer">
+                  View on storefront
+                </Link>
+              ) : (
+                "storefront hidden (catalog is off)"
+              )}
             </>
           )}
         </p>
