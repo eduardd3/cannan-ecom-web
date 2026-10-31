@@ -1,3 +1,4 @@
+import Image from "next/image";
 import Link from "next/link";
 import Container from "@/app/components/container";
 import GoldRule from "@/app/components/gold-rule";
@@ -61,15 +62,14 @@ export default async function SiteFooter() {
             <Container className="pt-12 pb-10 md:pt-22 md:pb-9">
                 <div className="flex flex-col gap-10 md:flex-row md:items-start md:justify-between">
                     <div>
-                        <span className="font-serif text-wordmark text-charcoal uppercase">CANNAN</span>
-                        {/* Two lines, English over Spanish, instead of one line
-                            joined by "·": they read as a pair, and nothing
-                            dangles when it wraps on a phone. */}
-                        <p className="mt-2.5 font-serif text-body-lg text-stone italic">
-                            For you and yours
-                            <br />
-                            <span lang="es">Para ti y los tuyos</span>
-                        </p>
+                        {/* The stacked logo carries the wordmark itself; @2x
+                            file shown at 160px wide. */}
+                        <Image
+                            src="/brand/cannan-stacked-160w@2x.png"
+                            width={160}
+                            height={169}
+                            alt="Cannan"
+                        />
                         <GoldRule className="mt-5 md:mt-6" />
                     </div>
 
