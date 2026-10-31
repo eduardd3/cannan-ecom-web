@@ -1,4 +1,5 @@
 import Link from "next/link";
+import CannanMark from "@/app/components/brand/cannan-mark";
 import Container from "@/app/components/container";
 import GoldRule from "@/app/components/gold-rule";
 import { listCollections } from "@/lib/catalog/queries";
@@ -61,7 +62,13 @@ export default async function SiteFooter() {
             <Container className="pt-12 pb-10 md:pt-22 md:pb-9">
                 <div className="flex flex-col gap-10 md:flex-row md:items-start md:justify-between">
                     <div>
-                        <span className="font-serif text-wordmark text-charcoal uppercase">CANNAN</span>
+                        {/* Mark, wordmark, tagline and gold rule share one left
+                            edge. The mark is decorative (CannanMark is
+                            aria-hidden): the live-text wordmark below names the
+                            brand, in the same EB Garamond 600 as the header,
+                            so header and footer can't drift apart. */}
+                        <CannanMark className="h-20 w-auto text-charcoal md:h-24" />
+                        <p className="mt-4 font-serif text-wordmark text-charcoal uppercase md:mt-5">Cannan</p>
                         {/* Two lines, English over Spanish, instead of one line
                             joined by "·": they read as a pair, and nothing
                             dangles when it wraps on a phone. */}
