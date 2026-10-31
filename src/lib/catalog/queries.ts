@@ -268,7 +268,7 @@ export const getProductBySlug = cache(async (slug: string): Promise<ProductDetai
     // Formatted here so no Decimal reaches the client component.
     variants: product.variants.map(({ heightIn, widthIn, depthIn, ...variant }) => ({
       ...variant,
-      dimensions: formatDimensions({ heightIn, widthIn, depthIn }),
+      dimensions: formatDimensions({ heightIn, widthIn, depthIn }, product.productType.slug),
     })),
   };
 });

@@ -59,6 +59,7 @@ export async function getAdminProduct(productId: number) {
       publishedAt: true,
       collectionId: true,
       productTypeId: true,
+      productType: { select: { slug: true } }, // the variants' dimension labels
       categoryId: true,
       option1Name: true,
       option2Name: true,

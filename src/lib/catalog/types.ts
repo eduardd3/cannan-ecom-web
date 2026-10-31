@@ -41,7 +41,7 @@ export type ProductVariantView = {
   option2Value: string | null; // e.g. "12 in"; only alongside option1Value
   priceCents: number;
   stock: number; // a hint for the UI; addToCart and the webhook re-check it
-  dimensions: string | null; // formatted, "8 × 3.5 × 3 in"; null = not set
+  dimensions: string | null; // formatted in the type's order, "8 × 3.5 × 3 in"; null = not set
 };
 
 export type ProductDetailView = {

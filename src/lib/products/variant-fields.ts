@@ -81,7 +81,7 @@ export function parseDimensions(height: string, width: string, depth: string): P
   const raw = [height, width, depth];
   if (raw.every((value) => value.trim() === "")) return { ok: true, value: null };
   if (raw.some((value) => value.trim() === "")) {
-    return { ok: false, message: "Enter height, width, and depth, or leave all three blank." };
+    return { ok: false, message: "Enter all three dimensions, or leave them all blank." };
   }
   const [heightIn, widthIn, depthIn] = raw.map(parseInches);
   if (heightIn === null || widthIn === null || depthIn === null) {

@@ -10,6 +10,7 @@ import SelectField from "@/app/components/form/select-field";
 import { buttonClass, disabledButtonClass, textLinkClass } from "@/app/components/form/styles";
 import { addToCart } from "@/lib/cart/actions";
 import { formatCents } from "@/lib/cart/format";
+import { dimensionLayout } from "@/lib/catalog/format";
 import {
   addToCartMessage,
   clampQuantity,
@@ -70,7 +71,7 @@ export default function ProductPurchase({
 
   const details = [
     { term: "Material", value: product.material },
-    { term: "Dimensions (H × W × D)", value: variant.dimensions },
+    { term: `Dimensions (${dimensionLayout(product.productType.slug).abbreviation})`, value: variant.dimensions },
   ].filter((row): row is { term: string; value: string } => Boolean(row.value));
 
   return (

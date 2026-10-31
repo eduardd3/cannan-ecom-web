@@ -89,6 +89,7 @@ export default async function EditProductPage({ params }: PageProps<"/adm/produc
           <Variants
             productId={product.id}
             optionNames={{ option1Name: product.option1Name, option2Name: product.option2Name }}
+            productTypeSlug={product.productType.slug}
             variants={product.variants}
           />
         </section>

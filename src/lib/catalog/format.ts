@@ -25,11 +25,40 @@ function inches(value: Exclude<Inches, null>): string {
   return String(Number(value.toString()));
 }
 
+type DimensionAxis = { key: keyof Dimensions; label: string };
+
+export type DimensionLayout = { abbreviation: string; axes: DimensionAxis[] };
+
+const HEIGHT_WIDTH_DEPTH: DimensionLayout = {
+  abbreviation: "H × W × D",
+  axes: [
+    { key: "heightIn", label: "Height" },
+    { key: "widthIn", label: "Width" },
+    { key: "depthIn", label: "Depth" },
+  ],
+};
+
+// Prints read across first. Length is the horizontal side, stored as widthIn.
+const LENGTH_HEIGHT_DEPTH: DimensionLayout = {
+  abbreviation: "L × H × D",
+  axes: [
+    { key: "widthIn", label: "Length" },
+    { key: "heightIn", label: "Height" },
+    { key: "depthIn", label: "Depth" },
+  ],
+};
+
+/** The order and names a product type's dimensions read in. */
+export function dimensionLayout(productTypeSlug: string): DimensionLayout {
+  return productTypeSlug === "framed-prints" ? LENGTH_HEIGHT_DEPTH : HEIGHT_WIDTH_DEPTH;
+}
+
 /**
- * Height × width × depth: "8 × 3.5 × 3 in". Null unless all three are set
- * (the database allows all or none).
+ * In the product type's order: "8 × 3.5 × 3 in" (height × width × depth for
+ * most types). Null unless all three are set (the database allows all or none).
  */
-export function formatDimensions({ heightIn, widthIn, depthIn }: Dimensions): string | null {
-  if (heightIn === null || widthIn === null || depthIn === null) return null;
-  return `${inches(heightIn)} × ${inches(widthIn)} × ${inches(depthIn)} in`;
+export function formatDimensions(dimensions: Dimensions, productTypeSlug: string): string | null {
+  const values = dimensionLayout(productTypeSlug).axes.map(({ key }) => dimensions[key]);
+  if (values.some((value) => value === null)) return null;
+  return `${values.map((value) => inches(value!)).join(" × ")} in`;
 }

@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useActionState, useState, type InputHTMLAttributes } from "react";
 
 import { formatCents } from "@/lib/cart/format";
-import { formatDimensions } from "@/lib/catalog/format";
+import { dimensionLayout, formatDimensions } from "@/lib/catalog/format";
 import {
   createVariantAction,
   setVariantActiveAction,
@@ -108,11 +108,13 @@ function Field({
 function VariantForm({
   productId,
   optionNames,
+  productTypeSlug,
   variant,
   onDone,
 }: {
   productId: number;
   optionNames: OptionNames;
+  productTypeSlug: string;
   variant?: VariantRow;
   onDone?: () => void;
 }) {
@@ -175,12 +177,10 @@ function VariantForm({
       <fieldset className="flex flex-col gap-2">
         <legend className="mb-2 text-sm text-adm-muted">Dimensions in inches (optional)</legend>
         <div className="grid gap-4 sm:grid-cols-3">
-          <Field label="Height" name="heightIn" field="dimensions" state={state} defaultValue={values?.heightIn}
-            type="number" min={0.01} max={MAX_INCHES} step={0.01} />
-          <Field label="Width" name="widthIn" field="dimensions" state={state} defaultValue={values?.widthIn}
-            type="number" min={0.01} max={MAX_INCHES} step={0.01} />
-          <Field label="Depth" name="depthIn" field="dimensions" state={state} defaultValue={values?.depthIn}
-            type="number" min={0.01} max={MAX_INCHES} step={0.01} />
+          {dimensionLayout(productTypeSlug).axes.map(({ key, label }) => (
+            <Field key={key} label={label} name={key} field="dimensions" state={state} defaultValue={values?.[key]}
+              type="number" min={0.01} max={MAX_INCHES} step={0.01} />
+          ))}
         </div>
         <p className="text-xs text-adm-muted">
           Shown in the product page&apos;s Details for this variant. Fill in all three, or leave them blank.
@@ -235,15 +235,26 @@ function ActiveToggle({ variant }: { variant: VariantRow }) {
 
 const COLUMNS = 5;
 
-function Row({ productId, optionNames, variant }: { productId: number; optionNames: OptionNames; variant: VariantRow }) {
+function Row({
+  productId,
+  optionNames,
+  productTypeSlug,
+  variant,
+}: {
+  productId: number;
+  optionNames: OptionNames;
+  productTypeSlug: string;
+  variant: VariantRow;
+}) {
   const [editing, setEditing] = useState(false);
-  const dimensions = formatDimensions(variant);
+  const dimensions = formatDimensions(variant, productTypeSlug);
 
   if (editing) {
     return (
       <tr>
         <td colSpan={COLUMNS} className="bg-adm-bg px-6 py-4">
-          <VariantForm productId={productId} optionNames={optionNames} variant={variant} onDone={() => setEditing(false)} />
+          <VariantForm productId={productId} optionNames={optionNames} productTypeSlug={productTypeSlug}
+            variant={variant} onDone={() => setEditing(false)} />
         </td>
       </tr>
     );
@@ -279,10 +290,12 @@ function Row({ productId, optionNames, variant }: { productId: number; optionNam
 export default function Variants({
   productId,
   optionNames,
+  productTypeSlug,
   variants,
 }: {
   productId: number;
   optionNames: OptionNames;
+  productTypeSlug: string; // picks the dimension fields' order and names
   variants: VariantRow[];
 }) {
   return (
@@ -304,7 +317,8 @@ export default function Variants({
           </thead>
           <tbody className="divide-y divide-adm-border text-adm-fg">
             {variants.map((variant) => (
-              <Row key={variant.id} productId={productId} optionNames={optionNames} variant={variant} />
+              <Row key={variant.id} productId={productId} optionNames={optionNames} productTypeSlug={productTypeSlug}
+                variant={variant} />
             ))}
           </tbody>
         </table>
@@ -312,7 +326,7 @@ export default function Variants({
       <details className="border-t border-adm-border px-6 py-4" open={variants.length === 0}>
         <summary className="cursor-pointer text-sm font-medium text-adm-fg">Add a variant</summary>
         <div className="mt-4">
-          <VariantForm productId={productId} optionNames={optionNames} />
+          <VariantForm productId={productId} optionNames={optionNames} productTypeSlug={productTypeSlug} />
         </div>
       </details>
     </>
