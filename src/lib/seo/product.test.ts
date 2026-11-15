@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import { breadcrumbParts } from "@/lib/catalog/product-detail";
 import type { ProductDetailView, ProductVariantView } from "@/lib/catalog/types";
-import { buildBreadcrumbJsonLd, buildProductJsonLd, formatPrice } from "./product";
+import { buildBreadcrumbJsonLd, buildProductJsonLd, formatPrice, variantDisplayName } from "./product";
 
 let sequence = 0;
 function variant(overrides: Partial<ProductVariantView> = {}): ProductVariantView {
@@ -60,6 +60,22 @@ describe("formatPrice", () => {
     expect(formatPrice(2400)).toBe("24.00");
     expect(formatPrice(1999)).toBe("19.99");
     expect(formatPrice(5)).toBe("0.05");
+  });
+});
+
+describe("variantDisplayName", () => {
+  it("adds the variant's label after a comma", () => {
+    expect(variantDisplayName("San José Statue", variant({ option1Value: "12 in" }))).toBe("San José Statue, 12 in");
+  });
+
+  it("joins two option values the way the cart label does", () => {
+    expect(variantDisplayName("Prayer Candle", variant({ option1Value: "Roja", option2Value: "8 in" }))).toBe(
+      "Prayer Candle, Roja · 8 in",
+    );
+  });
+
+  it("is just the name when the variant has no option values, never 'Name, null'", () => {
+    expect(variantDisplayName("San José Statue", variant())).toBe("San José Statue");
   });
 });
 

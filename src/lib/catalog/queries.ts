@@ -20,7 +20,7 @@ import type {
   SwitcherCollectionView,
 } from "./types";
 
-const visibleProduct = {
+export const visibleProduct = {
   status: "ACTIVE",
   variants: { some: { isActive: true } },
 } satisfies Prisma.ProductWhereInput;

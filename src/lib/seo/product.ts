@@ -32,11 +32,24 @@ const VARIES_BY = {
   size: "https://schema.org/size",
 } as const;
 
-type VariesByProperty = keyof typeof VARIES_BY;
+export type VariesByProperty = keyof typeof VARIES_BY;
 
-function variesByProperty(optionName: string | null): VariesByProperty | null {
+export function variesByProperty(optionName: string | null): VariesByProperty | null {
   const key = optionName?.trim().toLowerCase();
   return key === "color" || key === "size" ? key : null;
+}
+
+/**
+ * "San José Statue, 12 in" for a variant with option values, just the name
+ * for one without. Shared by the JSON-LD and the Merchant Center feed, which
+ * Google compares.
+ */
+export function variantDisplayName(
+  productName: string,
+  variant: Pick<ProductVariantView, "option1Value" | "option2Value">,
+): string {
+  const label = formatVariantLabel(variant);
+  return label === null ? productName : `${productName}, ${label}`;
 }
 
 // Overrides the Organization's 30-day window (product-level markup wins).
@@ -114,7 +127,7 @@ export function buildProductJsonLd(product: ProductDetailView): WithContext<Prod
       const variantImage = variantImages(product, variant.id);
       return {
         "@type": "Product",
-        name: `${product.name}, ${formatVariantLabel(variant)}`,
+        name: variantDisplayName(product.name, variant),
         sku: variant.sku,
         ...(variant.gtin !== null && { gtin: variant.gtin }),
         ...(variantImage.length > 0 && { image: variantImage }),
