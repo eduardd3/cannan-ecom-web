@@ -86,6 +86,7 @@ export const getCollectionListing = cache(
           select: {
             slug: true,
             name: true,
+            featured: true,
             option1Name: true,
             option2Name: true,
             productType: { select: { slug: true, name: true, position: true } },
