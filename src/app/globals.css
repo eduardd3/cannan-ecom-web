@@ -25,6 +25,9 @@
   --color-hairline: #E4E0D9;
   --color-antique-gold: #A8874F;
   --color-gold-ink: #7D6232;
+  /*  Disabled controls that stay in place, like Previous/Next on the first
+      and last page of a collection. Too light for anything a shopper reads. */
+  --color-muted: #C9C4BB;
   /*  Muted red for form errors (AuthBanner). error-ink is both the text and
       the left rule; about 9:1 on error-tint. */
   --color-error-tint: #FAF0EE;

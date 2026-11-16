@@ -8,6 +8,14 @@ import type { ListingCard, SearchParam } from "./listing";
 
 export type SortKey = "featured" | "newest" | "price-asc" | "price-desc";
 
+/** The sort links, in the order the page shows them. */
+export const SORT_OPTIONS: readonly { key: SortKey; label: string }[] = [
+  { key: "featured", label: "Featured" },
+  { key: "newest", label: "Newest" },
+  { key: "price-asc", label: "Price: low to high" },
+  { key: "price-desc", label: "Price: high to low" },
+];
+
 /**
  * L1 · ?sort= as a SortKey.
  *
