@@ -8,7 +8,14 @@ import OpeningSoon from "@/app/components/catalog/opening-soon";
 import Container from "@/app/components/container";
 import { textLinkClass } from "@/app/components/form/styles";
 import { formatCents } from "@/lib/cart/format";
-import { buildListing, collectionHref, type FilterGroup, type Filters, type ListingCard } from "@/lib/catalog/listing";
+import {
+  buildListing,
+  collectionHref,
+  type FilterGroup,
+  type Filters,
+  type ListingCard,
+  type ListingState,
+} from "@/lib/catalog/listing";
 import { productVariantPath } from "@/lib/catalog/product-detail";
 import { getCollectionListing, listSwitcherCollections } from "@/lib/catalog/queries";
 import type { SwitcherCollectionView } from "@/lib/catalog/types";
@@ -16,21 +23,30 @@ import { isCatalogEnabled } from "@/lib/flags";
 import { buildOpenGraph } from "@/lib/seo/open-graph";
 import FilterSelects from "./filter-selects";
 
-//  Canonical and og:url without ?type/?facet, so filtered views aren't
-//  indexed as separate pages. The flag is checked here too: metadata renders
+//  Canonical and og:url: each page of the plain list (no filters, default
+//  sort) points to itself from page 2 on, so Google can discover pieces on
+//  later pages. Everything else points to the bare collection, so filter and
+//  sort combinations aren't indexed. Metadata never redirects a page past the
+//  end; only the page does. The flag is checked here too: metadata renders
 //  separately from the page, and would otherwise leak the collection name
-//  while the catalog is off. The share image is the first one the unfiltered
-//  grid shows (in-stock first, like the page).
-export async function generateMetadata({ params }: PageProps<"/collections/[slug]">): Promise<Metadata> {
+//  while the catalog is off. The share image is the first one the default
+//  grid shows.
+export async function generateMetadata({
+  params,
+  searchParams,
+}: PageProps<"/collections/[slug]">): Promise<Metadata> {
   if (!isCatalogEnabled()) return { title: "Shop | Cannan" };
   const { slug } = await params;
   const listing = await getCollectionListing(slug);
   if (!listing) return { title: "Not found | Cannan" };
   const { collection, products } = listing;
-  const path = collectionHref(collection.slug, { type: null, facet: null });
+  const { type, facet, sort, page } = await searchParams;
+  const { filters } = buildListing(collection, products, { type, facet, sort, page });
+  const plainList = filters.type === null && filters.facet === null && filters.sort === "featured";
+  const path = collectionHref(collection.slug, { type: null, facet: null, page: plainList ? filters.page : 1 });
   const card = buildListing(collection, products, {}).cards.find((card) => card.imageUrl !== null);
   return {
-    title: `${collection.name} | Cannan`,
+    title: filters.page > 1 ? `${collection.name} · Page ${filters.page} | Cannan` : `${collection.name} | Cannan`,
     description: collection.description,
     alternates: { canonical: path },
     openGraph: buildOpenGraph({
@@ -55,8 +71,19 @@ export default async function CollectionPage({ params, searchParams }: PageProps
   if (!listing) notFound();
 
   const { collection, products } = listing;
-  const { type, facet } = await searchParams;
-  const { filters, typeGroup, facetGroup, cards } = buildListing(collection, products, { type, facet });
+  const { type, facet, sort, page } = await searchParams;
+  const { filters, typeGroup, facetGroup, cards, total } = buildListing(collection, products, {
+    type,
+    facet,
+    sort,
+    page,
+  });
+
+  // TODO(Lalo): L5
+  // A page past the end (filters.page > totalPages) gets a temporary redirect
+  // to the last page's collectionHref, keeping the filters and sort. Here,
+  // after buildListing and before rendering; generateMetadata never redirects.
+
   const groups = [
     ...(typeGroup ? [{ key: "type" as const, group: typeGroup }] : []),
     ...(facetGroup ? [{ key: "facet" as const, group: facetGroup }] : []),
@@ -67,7 +94,7 @@ export default async function CollectionPage({ params, searchParams }: PageProps
       <CollectionHeading title={collection.name} />
       <CollectionSwitcher collections={collections} current={collection.slug} />
 
-      {cards.length === 0 ? (
+      {total === 0 ? (
         <div>
           <p className="mb-3 text-body-md text-stone">No pieces match these filters.</p>
           <Link href={collectionHref(collection.slug, { type: null, facet: null })} className={`text-body-md ${textLinkClass}`}>
@@ -135,8 +162,9 @@ function filterLinkClass(active: boolean) {
   return `text-body-md transition-colors ${active ? "text-charcoal underline underline-offset-4" : "text-stone hover:text-charcoal"}`;
 }
 
-//  One desktop filter group. Each link keeps the other group's selection;
-//  "All" (slug null) drops this group's parameter.
+//  One desktop filter group. Each link keeps the other group's selection and
+//  the sort, and goes back to page 1; "All" (slug null) drops this group's
+//  parameter.
 function FilterLinks({
   groupKey,
   group,
@@ -146,7 +174,7 @@ function FilterLinks({
   groupKey: keyof Filters;
   group: FilterGroup;
   collectionSlug: string;
-  filters: Filters;
+  filters: ListingState;
 }) {
   const labelId = `filter-${groupKey}-label`;
   return (
@@ -160,7 +188,7 @@ function FilterLinks({
           return (
             <li key={option.slug ?? ""}>
               <Link
-                href={collectionHref(collectionSlug, { ...filters, [groupKey]: option.slug })}
+                href={collectionHref(collectionSlug, { ...filters, [groupKey]: option.slug, page: 1 })}
                 aria-current={active ? "true" : undefined}
                 className={filterLinkClass(active)}
               >

@@ -27,7 +27,7 @@ export default function FilterSelects({ collectionSlug, filters, groups }: Filte
           value={group.selected ?? ""}
           options={group.options.map((option) => ({ value: option.slug ?? "", label: option.name }))}
           onChange={(event) =>
-            router.push(collectionHref(collectionSlug, { ...filters, [key]: event.target.value || null }), {
+            router.push(collectionHref(collectionSlug, { ...filters, [key]: event.target.value || null, page: 1 }), {
               scroll: false,
             })
           }
