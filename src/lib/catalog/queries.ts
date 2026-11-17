@@ -5,12 +5,14 @@
 // shown here fails when it's added to the cart.
 import "server-only";
 
+import { unstable_cache } from "next/cache";
 import { cache } from "react";
 
 import type { Prisma } from "@/generated/prisma/client";
 import { getImageUrl } from "@/lib/storage";
 import { isCatalogEnabled } from "@/lib/flags";
 import { prisma } from "@/lib/prisma";
+import { CATALOG_TAG } from "./cache";
 import { formatDimensions } from "./format";
 import { collectionHref, isGroupVisible, type ListingCollection, type ListingProduct } from "./listing";
 import type {
@@ -55,23 +57,44 @@ export const getShopHref = cache(async (): Promise<string> => {
   return target ? collectionHref(target.slug, { type: null, facet: null }) : "/products";
 });
 
-/** Collections with at least one visible product, in switcher order. */
-export async function listSwitcherCollections(): Promise<SwitcherCollectionView[]> {
-  return prisma.collection.findMany({
-    where: { products: { some: visibleProduct } },
-    select: { slug: true, name: true },
-    orderBy: [{ position: "asc" }, { id: "asc" }],
-  });
-}
+// How long a stored catalog read lives without an invalidation (lib/catalog/
+// cache.ts). Edits and stock changes expire it right away; this is the backstop.
+const CATALOG_REVALIDATE_SECONDS = 900;
+
+/**
+ * Collections with at least one visible product, in switcher order. Stored
+ * across requests under the catalog tag.
+ */
+export const listSwitcherCollections = unstable_cache(
+  async (): Promise<SwitcherCollectionView[]> =>
+    prisma.collection.findMany({
+      where: { products: { some: visibleProduct } },
+      select: { slug: true, name: true },
+      orderBy: [{ position: "asc" }, { id: "asc" }],
+    }),
+  ["switcher-collections"],
+  { tags: [CATALOG_TAG], revalidate: CATALOG_REVALIDATE_SECONDS },
+);
 
 /**
  * A collection and every visible product in it, newest first, for
- * lib/catalog/listing to filter. One fetch keeps the filters, prices, and
- * ordering consistent with each other. Null when the slug is unknown or the
- * collection has nothing visible: it isn't public yet, so the page 404s.
- * Wrapped in cache() because generateMetadata and the page both call it.
+ * lib/catalog/listing to filter, sort and page. One fetch keeps the filters,
+ * prices, and ordering consistent with each other. Null when the slug is
+ * unknown or the collection has nothing visible: it isn't public yet, so the
+ * page 404s.
+ *
+ * Stored across requests under the catalog tag: raw data only, one entry per
+ * collection (the slug argument is part of the key), shared by every filter,
+ * sort and page. Wrapped in cache() too, which still dedupes generateMetadata
+ * and the page within one request.
+ *
+ * The stored value is serialized as JSON, so it must stay plain JSON: a Date
+ * would come back as a string and a Prisma Decimal would break. Don't add
+ * either to this select without converting it first.
  */
-export const getCollectionListing = cache(
+export const getCollectionListing = cache((slug: string) => fetchCollectionListing(slug));
+
+const fetchCollectionListing = unstable_cache(
   async (slug: string): Promise<{ collection: ListingCollection; products: ListingProduct[] } | null> => {
     const collection = await prisma.collection.findUnique({
       where: { slug },
@@ -114,6 +137,8 @@ export const getCollectionListing = cache(
       })),
     };
   },
+  ["collection-listing"],
+  { tags: [CATALOG_TAG], revalidate: CATALOG_REVALIDATE_SECONDS },
 );
 
 // What a product card needs: the first image and the active variants' prices.

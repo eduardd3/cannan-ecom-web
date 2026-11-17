@@ -56,6 +56,7 @@ export async function fulfillCheckout(sessionId: string): Promise<FulfillResult>
   // PHASE 3 — write everything in one transaction
   try {
     return await prisma.$transaction((tx) => createOrder(tx, parsed, subtotalProblem));
+    // TODO(Lalo): L6
   } catch (err) {
     if (err instanceof Prisma.PrismaClientKnownRequestError && err.code === "P2002") {
       // Another delivery of this event won the race and created the order.

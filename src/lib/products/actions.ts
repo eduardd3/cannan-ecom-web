@@ -8,6 +8,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { z } from "zod";
 
+import { invalidateCatalog } from "@/lib/catalog/cache";
 import { requireStaff } from "@/lib/session";
 import {
   MAX_BRAND_LENGTH,
@@ -137,11 +138,11 @@ function parseFields(values: ProductFormValues): Parsed {
   };
 }
 
-// Names, slugs, and status show on the storefront and on stock and order pages.
+// Names, slugs, status and featured show on the storefront and on stock and order pages.
 function revalidateProducts() {
   revalidatePath("/adm/products", "layout");
   revalidatePath("/adm/inventory", "layout");
-  revalidatePath("/products", "layout");
+  invalidateCatalog();
   revalidatePath("/"); // the homepage's featured pieces
 }
 

@@ -7,6 +7,7 @@
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 
+import { invalidateCatalog } from "@/lib/catalog/cache";
 import { requireStaff } from "@/lib/session";
 import { MANUAL_REASONS, NOTE_REQUIRED } from "./manual";
 import { recordManualAdjustment } from "./manual-adjust";
@@ -56,7 +57,7 @@ export async function recordAdjustmentAction(
 
   revalidatePath("/adm/inventory", "layout");
   // Stock shows on the storefront and on order pages too.
-  revalidatePath("/products", "layout");
+  invalidateCatalog();
   revalidatePath("/adm/orders", "layout");
   return result;
 }

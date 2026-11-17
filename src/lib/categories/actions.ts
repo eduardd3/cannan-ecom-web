@@ -8,6 +8,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { z } from "zod";
 
+import { invalidateCatalog } from "@/lib/catalog/cache";
 import { slugProblem } from "@/lib/products/slug";
 import { requireStaff } from "@/lib/session";
 import { MAX_CATEGORY_DESCRIPTION_LENGTH, MAX_CATEGORY_NAME_LENGTH } from "./format";
@@ -77,7 +78,7 @@ function parseFields(values: CategoryFormValues): Parsed {
 function revalidateCategories() {
   revalidatePath("/adm/categories", "layout");
   revalidatePath("/adm/products", "layout");
-  revalidatePath("/products", "layout");
+  invalidateCatalog();
 }
 
 export async function createCategoryAction(
