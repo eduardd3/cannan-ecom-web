@@ -9,6 +9,7 @@
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 
+import { invalidateCatalog } from "@/lib/catalog/cache";
 import { requireStaff } from "@/lib/session";
 import type { UploadTarget } from "@/lib/storage";
 import { normalizeAlt } from "./image-fields";
@@ -47,7 +48,7 @@ const ALT_MESSAGE = "Describe the image in a few words (up to 200 characters).";
 // Images show on the storefront grid and detail pages.
 function revalidateImages() {
   revalidatePath("/adm/products", "layout");
-  revalidatePath("/products", "layout");
+  invalidateCatalog();
 }
 
 /** Step 1 of an upload: a presigned URL for exactly this file's type and size. */

@@ -8,6 +8,7 @@ import { revalidatePath } from "next/cache";
 import { after } from "next/server";
 import { z } from "zod";
 
+import { invalidateCatalog } from "@/lib/catalog/cache";
 import { adjustStockStandalone } from "@/lib/inventory/adjust";
 import { requireStaff } from "@/lib/session";
 import { sendOrderConfirmation } from "./confirmation";
@@ -39,7 +40,7 @@ const INVALID: OrderActionState = { ok: false, message: "That request wasn't val
 // Stock moved, so storefront pages showing it are stale too.
 function revalidateOrders(stockChanged: boolean) {
   revalidatePath("/adm/orders", "layout");
-  if (stockChanged) revalidatePath("/products", "layout");
+  if (stockChanged) invalidateCatalog();
 }
 
 export async function approveOrderAction(_prev: OrderActionState, formData: FormData): Promise<OrderActionState> {

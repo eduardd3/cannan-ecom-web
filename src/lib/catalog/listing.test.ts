@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import {
   buildListing,
@@ -9,15 +9,29 @@ import {
   isGroupVisible,
   listingVariantId,
   matchingVariants,
+  PAGE_SIZE,
   parseFilters,
-  sortInStockFirst,
   toListingCard,
   typeOptions,
+  type ListingCard,
   type ListingCollection,
   type ListingProduct,
   type ListingVariant,
 } from "./listing";
-import type { ProductCardView } from "./types";
+import { compareCards, parsePage, parseSort, type SortKey } from "./sorting";
+
+// Stand-ins for the sort and page parsers and the comparator, so these tests
+// cover buildListing's pipeline on its own. The real ones are tested in
+// sorting.test.ts. The stand-in comparator orders by rank only (query order).
+vi.mock("./sorting", () => ({
+  parseSort: vi.fn((param: unknown) => (typeof param === "string" ? param : "featured")),
+  parsePage: vi.fn((param: unknown) => (typeof param === "string" ? Number(param) : 1)),
+  compareCards: vi.fn(() => (a: ListingCard, b: ListingCard) => a.rank - b.rank),
+}));
+
+beforeEach(() => {
+  vi.clearAllMocks();
+});
 
 const signature: ListingCollection = {
   slug: "signature",
@@ -53,6 +67,7 @@ function product(overrides: Partial<ListingProduct> = {}): ListingProduct {
     name: `Product ${sequence}`,
     imageUrl: null,
     imageAlt: null,
+    featured: false,
     productType: statues,
     category: null,
     option1Name: null,
@@ -245,14 +260,6 @@ describe("listingVariantId", () => {
   });
 });
 
-describe("sortInStockFirst", () => {
-  it("moves sold-out cards last and keeps the order within each", () => {
-    const card = (slug: string, inStock: boolean) => ({ slug, inStock }) as ProductCardView;
-    const sorted = sortInStockFirst([card("a", false), card("b", true), card("c", false), card("d", true)]);
-    expect(sorted.map((c) => c.slug)).toEqual(["b", "d", "a", "c"]);
-  });
-});
-
 describe("buildListing", () => {
   it("prices and stocks cards from the variants matching the color", () => {
     const p = colored([
@@ -274,8 +281,10 @@ describe("buildListing", () => {
   it("returns no cards for a valid but empty combination", () => {
     const products = [product({ productType: candles, category: guadalupe }), product({ category: sanJose })];
     const listing = buildListing(signature, products, { type: "candles", facet: "san-jose" });
-    expect(listing.filters).toEqual({ type: "candles", facet: "san-jose" });
+    expect(listing.filters).toEqual({ type: "candles", facet: "san-jose", sort: "featured", page: 1 });
     expect(listing.cards).toEqual([]);
+    expect(listing.total).toBe(0);
+    expect(listing.totalPages).toBe(1);
   });
 
   it("keeps the Type group while a type is selected, even with one type left", () => {
@@ -294,6 +303,64 @@ describe("buildListing", () => {
     const products = [product({ category: guadalupe }), product({ category: sanJose })];
     expect(buildListing({ ...signature, facetLabel: null }, products, {}).facetGroup).toBeNull();
   });
+
+  it("gives each card its query position as rank, and its featured flag", () => {
+    const products = [product({ featured: true }), product({ productType: candles }), product()];
+    const cards = buildListing(signature, products, { type: "statues" }).cards;
+    expect(cards.map((c) => [c.rank, c.featured])).toEqual([
+      [0, true],
+      [2, false],
+    ]);
+  });
+
+  it("parses sort and page from the URL and sorts with that sort", () => {
+    const products = Array.from({ length: 30 }, () => product());
+    const listing = buildListing(signature, products, { sort: "price-asc", page: "2" });
+    expect(parseSort).toHaveBeenCalledWith("price-asc");
+    expect(parsePage).toHaveBeenCalledWith("2");
+    expect(compareCards).toHaveBeenCalledWith("price-asc");
+    expect(listing.filters).toMatchObject({ sort: "price-asc", page: 2 });
+  });
+
+  it("counts every filtered card, not just the page's", () => {
+    const products = [...Array.from({ length: 50 }, () => product()), product({ productType: candles })];
+    const listing = buildListing(signature, products, { type: "statues" });
+    expect(listing.cards).toHaveLength(PAGE_SIZE);
+    expect(listing.total).toBe(50);
+    expect(listing.totalPages).toBe(3);
+  });
+
+  it("slices the requested page", () => {
+    const products = Array.from({ length: 50 }, () => product());
+    const ranks = (page: string) => buildListing(signature, products, { page }).cards.map((c) => c.rank);
+    expect(ranks("2")).toEqual(Array.from({ length: PAGE_SIZE }, (_, i) => PAGE_SIZE + i));
+    expect(ranks("3")).toEqual([48, 49]);
+  });
+
+  it("sorts the whole list before slicing", () => {
+    vi.mocked(compareCards).mockReturnValue((a, b) => b.rank - a.rank);
+    const products = Array.from({ length: 30 }, () => product());
+    const listing = buildListing(signature, products, {});
+    expect(listing.cards[0].rank).toBe(29);
+    expect(listing.cards.at(-1)?.rank).toBe(6);
+  });
+
+  it("returns no cards past the last page, without clamping the page", () => {
+    const products = Array.from({ length: 30 }, () => product());
+    const listing = buildListing(signature, products, { page: "9" });
+    expect(listing.cards).toEqual([]);
+    expect(listing.filters.page).toBe(9);
+    expect(listing.total).toBe(30);
+    expect(listing.totalPages).toBe(2);
+  });
+
+  it("leaves the products array as it was", () => {
+    vi.mocked(compareCards).mockReturnValue((a, b) => b.rank - a.rank);
+    const products = [product(), product(), product()];
+    const before = products.map((p) => p.slug);
+    buildListing(signature, products, {});
+    expect(products.map((p) => p.slug)).toEqual(before);
+  });
 });
 
 describe("collectionHref", () => {
@@ -302,6 +369,32 @@ describe("collectionHref", () => {
     expect(collectionHref("signature", { type: "statues", facet: null })).toBe("/collections/signature?type=statues");
     expect(collectionHref("santa-muerte", { type: "statues", facet: "roja" })).toBe(
       "/collections/santa-muerte?type=statues&facet=roja",
+    );
+  });
+
+  it("writes type, facet, sort, page in that order", () => {
+    expect(collectionHref("santa-muerte", { type: "statues", facet: "roja", sort: "price-desc", page: 3 })).toBe(
+      "/collections/santa-muerte?type=statues&facet=roja&sort=price-desc&page=3",
+    );
+  });
+
+  it("leaves out the default sort and page 1", () => {
+    const featured: SortKey = "featured";
+    expect(collectionHref("signature", { type: null, facet: null, sort: featured, page: 1 })).toBe(
+      "/collections/signature",
+    );
+    expect(collectionHref("signature", { type: null, facet: null, sort: "newest", page: 1 })).toBe(
+      "/collections/signature?sort=newest",
+    );
+    expect(collectionHref("signature", { type: null, facet: null, page: 2 })).toBe("/collections/signature?page=2");
+  });
+
+  it("appends a hash", () => {
+    expect(collectionHref("signature", { type: null, facet: null, page: 4 }, { hash: "pieces" })).toBe(
+      "/collections/signature?page=4#pieces",
+    );
+    expect(collectionHref("signature", { type: null, facet: null }, { hash: "pieces" })).toBe(
+      "/collections/signature#pieces",
     );
   });
 });

@@ -1,15 +1,21 @@
 // lib/catalog/listing.ts
 //
-// The collection page's filters and cards, computed from one fetch of the
-// collection's visible products (queries.getCollectionListing). Pure, with no
-// server imports, so the dependent filters, the per-filter prices, and the
-// sold-out ordering come from the same data and are unit-tested together.
+// The collection page's filters, sort, page and cards, computed from one fetch
+// of the collection's visible products (queries.getCollectionListing). Pure,
+// with no server imports, so the dependent filters, the per-filter prices, the
+// order and the page slice come from the same data and are unit-tested
+// together.
 //
-// In code rather than SQL because the catalog has tens of products. If it
-// grows to thousands, or the page gets pagination, this moves into SQL.
+// In code rather than SQL: a collection is a few hundred pieces at most, and
+// the fetch is cached across requests. Adding site search is the point to
+// move filtering, sorting and paging into SQL.
 
 import { slugify } from "@/lib/products/slug";
+import { compareCards, parsePage, parseSort, type SortKey } from "./sorting";
 import type { ProductCardView } from "./types";
+
+/** Pieces per page. */
+export const PAGE_SIZE = 24;
 
 export type ListingCollection = {
   slug: string;
@@ -34,6 +40,7 @@ export type ListingProduct = {
   name: string;
   imageUrl: string | null;
   imageAlt: string | null;
+  featured: boolean;
   productType: { slug: string; name: string; position: number };
   category: { slug: string; name: string } | null;
   option1Name: string | null;
@@ -54,15 +61,22 @@ export type FilterGroup = {
 
 export type Filters = { type: string | null; facet: string | null };
 
-// A card plus the variant its link selects: set only for a VARIANT_OPTION
-// facet selection, so "Roja" opens the product on its red variant.
-export type ListingCard = ProductCardView & { variantId: number | null };
+// Everything the URL selects: the filters, the sort, and the page.
+export type ListingState = Filters & { sort: SortKey; page: number };
+
+// A card plus the variant its link selects (set only for a VARIANT_OPTION
+// facet selection, so "Roja" opens the product on its red variant), and what
+// compareCards orders by besides price and stock: featured, and rank, the
+// product's index in the query order (0 = newest).
+export type ListingCard = ProductCardView & { variantId: number | null; featured: boolean; rank: number };
 
 export type Listing = {
-  filters: Filters;
+  filters: ListingState; // page is the requested one, not clamped
   typeGroup: FilterGroup | null; // null = hidden
   facetGroup: FilterGroup | null;
-  cards: ListingCard[]; // in-stock first; empty = "No results"
+  cards: ListingCard[]; // the requested page only; empty past the last page
+  total: number; // every filtered card; 0 = "No results"
+  totalPages: number; // at least 1
 };
 
 const ALL: FilterOption = { slug: null, name: "All" };
@@ -75,9 +89,9 @@ export function facetValueSlug(value: string): string {
   return slugify(value);
 }
 
-type SearchParam = string | string[] | undefined;
+export type SearchParam = string | string[] | undefined;
 
-function first(param: SearchParam): string | undefined {
+export function first(param: SearchParam): string | undefined {
   return Array.isArray(param) ? param[0] : param;
 }
 
@@ -239,18 +253,29 @@ export function listingVariantId(
   return (variants.find((variant) => variant.stock > 0) ?? variants[0])?.id ?? null;
 }
 
-/** In-stock first, then sold out; the order within each is kept (newest first). */
-export function sortInStockFirst<T extends ProductCardView>(cards: T[]): T[] {
-  return [...cards.filter((card) => card.inStock), ...cards.filter((card) => !card.inStock)];
-}
-
-/** Everything the collection page renders, from one fetch and the URL. */
+/**
+ * Everything the collection page renders, from one fetch and the URL:
+ *
+ *   filter (type, facet) → cards (priced from the matching variants)
+ *     → sort with compareCards(sort)   // sold out always last
+ *     → total = cards.length           // counted BEFORE slicing
+ *     → slice the requested page
+ *
+ * Counted before slicing because the count line and the page count describe
+ * the whole filtered list. Sorted before slicing because page 4 must show
+ * pieces 73–96 of the sorted whole, not a reordering of 24 already chosen.
+ * The page isn't clamped: past the end, cards is empty and page.tsx redirects.
+ */
 export function buildListing(
   collection: ListingCollection,
   products: ListingProduct[],
-  params: { type?: SearchParam; facet?: SearchParam },
+  params: { type?: SearchParam; facet?: SearchParam; sort?: SearchParam; page?: SearchParam },
 ): Listing {
-  const filters = parseFilters(collection, products, params);
+  const filters: ListingState = {
+    ...parseFilters(collection, products, params),
+    sort: parseSort(params.sort),
+    page: parsePage(params.page),
+  };
 
   const types = typeOptions(collection, products, filters.facet);
   const typeGroup = isGroupVisible(types, filters.type)
@@ -265,22 +290,48 @@ export function buildListing(
     }
   }
 
-  const cards = products
-    .filter((product) => matchesType(product, filters.type) && matchesFacet(collection, product, filters.facet))
-    // A product that matches the facet has a variant with it, so none is empty.
-    .map((product) => ({
+  const cards: ListingCard[] = [];
+  products.forEach((product, rank) => {
+    if (!matchesType(product, filters.type) || !matchesFacet(collection, product, filters.facet)) return;
+    cards.push({
+      // A product that matches the facet has a variant with it, so none is empty.
       ...toListingCard(product, matchingVariants(collection, product, filters.facet)),
       variantId: listingVariantId(collection, product, filters.facet),
-    }));
+      featured: product.featured,
+      rank,
+    });
+  });
 
-  return { filters, typeGroup, facetGroup, cards: sortInStockFirst(cards) };
+  const sorted = cards.toSorted(compareCards(filters.sort));
+  const total = sorted.length;
+  const start = (filters.page - 1) * PAGE_SIZE;
+
+  return {
+    filters,
+    typeGroup,
+    facetGroup,
+    cards: sorted.slice(start, start + PAGE_SIZE),
+    total,
+    totalPages: Math.max(1, Math.ceil(total / PAGE_SIZE)),
+  };
 }
 
-/** /collections/{slug} with the given filters; null ones are left out. */
-export function collectionHref(slug: string, filters: Filters): string {
+/**
+ * /collections/{slug} with the given state, in the order type, facet, sort,
+ * page. Null filters, the default sort (featured) and page 1 are left out, so
+ * the default view and page 1 each have one URL. `hash` appends #hash (page
+ * links pass "pieces" to land on the grid).
+ */
+export function collectionHref(
+  slug: string,
+  state: Filters & { sort?: SortKey; page?: number },
+  options: { hash?: string } = {},
+): string {
   const params = new URLSearchParams();
-  if (filters.type) params.set("type", filters.type);
-  if (filters.facet) params.set("facet", filters.facet);
+  if (state.type) params.set("type", state.type);
+  if (state.facet) params.set("facet", state.facet);
+  if (state.sort && state.sort !== "featured") params.set("sort", state.sort);
+  if (state.page && state.page > 1) params.set("page", String(state.page));
   const query = params.toString();
-  return `/collections/${slug}${query ? `?${query}` : ""}`;
+  return `/collections/${slug}${query ? `?${query}` : ""}${options.hash ? `#${options.hash}` : ""}`;
 }

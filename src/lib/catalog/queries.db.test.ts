@@ -11,6 +11,13 @@ import {
   listSwitcherCollections,
 } from "./queries";
 
+// unstable_cache needs Next's incremental cache, which only exists inside a
+// request. Pass straight through, so these tests read the database.
+vi.mock("next/cache", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("next/cache")>()),
+  unstable_cache: <T extends (...args: never[]) => unknown>(fn: T) => fn,
+}));
+
 beforeEach(async () => {
   await resetDb();
 });

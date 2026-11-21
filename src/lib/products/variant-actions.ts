@@ -7,6 +7,7 @@
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 
+import { invalidateCatalog } from "@/lib/catalog/cache";
 import { requireStaff } from "@/lib/session";
 import {
   MAX_OPENING_STOCK,
@@ -129,7 +130,7 @@ function parseFields(values: VariantFormValues): { ok: true; fields: VariantFiel
 function revalidateVariants() {
   revalidatePath("/adm/products", "layout");
   revalidatePath("/adm/inventory", "layout");
-  revalidatePath("/products", "layout");
+  invalidateCatalog();
 }
 
 export async function createVariantAction(_prev: VariantActionState, formData: FormData): Promise<VariantActionState> {

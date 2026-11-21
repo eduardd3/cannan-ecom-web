@@ -8,6 +8,7 @@ import "server-only";
 
 import { Prisma } from "@/generated/prisma/client";
 
+import { invalidateCatalogFromRoute } from "@/lib/catalog/cache";
 import { formatVariantLabel } from "@/lib/catalog/format";
 import { adjustStock } from "@/lib/inventory/adjust";
 import { prisma } from "@/lib/prisma";
@@ -55,7 +56,9 @@ export async function fulfillCheckout(sessionId: string): Promise<FulfillResult>
 
   // PHASE 3 — write everything in one transaction
   try {
-    return await prisma.$transaction((tx) => createOrder(tx, parsed, subtotalProblem));
+    const order = await prisma.$transaction((tx) => createOrder(tx, parsed, subtotalProblem));
+    invalidateCatalogFromRoute();
+    return order;
   } catch (err) {
     if (err instanceof Prisma.PrismaClientKnownRequestError && err.code === "P2002") {
       // Another delivery of this event won the race and created the order.
