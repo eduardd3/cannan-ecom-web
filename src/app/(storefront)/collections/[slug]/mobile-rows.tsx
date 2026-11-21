@@ -17,9 +17,8 @@ export default function MobileRows({ rows }: { rows: MobileRow[] }) {
   return (
     <div className="mb-6 divide-y divide-hairline md:hidden">
       {rows.map((row) => {
-        // TODO(Lalo): L7
         return (
-          <details key={row.key} className="group/row">
+          <details key={`${row.key}-${row.value}`} className="group/row">
             <summary className="flex min-h-13 cursor-pointer list-none items-center justify-between gap-4 [&::-webkit-details-marker]:hidden">
               <span className="text-label-ui text-charcoal">{row.label}</span>
               <span className="flex min-w-0 items-center gap-2">

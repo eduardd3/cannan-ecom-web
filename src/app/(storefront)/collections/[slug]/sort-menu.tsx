@@ -42,8 +42,7 @@ export default function SortMenu({
   }, []);
 
   return (
-    // TODO(Lalo): L7
-    <details ref={detailsRef} className="group/sort relative">
+    <details key={currentLabel} ref={detailsRef} className="group/sort relative">
       <summary
         ref={summaryRef}
         className="flex min-h-11 cursor-pointer list-none items-center gap-2 [&::-webkit-details-marker]:hidden"
