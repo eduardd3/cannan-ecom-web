@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 
 import CollectionHeading from "@/app/components/catalog/collection-heading";
 import OpeningSoon from "@/app/components/catalog/opening-soon";
@@ -87,7 +87,9 @@ export default async function CollectionPage({ params, searchParams }: PageProps
   // A page past the end (filters.page > totalPages) gets a temporary redirect
   // to the last page's collectionHref, keeping the filters and sort. Here,
   // after buildListing and before rendering; generateMetadata never redirects.
-
+  if (filters.page > totalPages) { 
+    redirect(collectionHref(collection.slug,{...filters, page: totalPages}));
+  }
   const groups = [
     ...(typeGroup ? [{ key: "type" as const, group: typeGroup }] : []),
     ...(facetGroup ? [{ key: "facet" as const, group: facetGroup }] : []),
