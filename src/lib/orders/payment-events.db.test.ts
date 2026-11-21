@@ -16,6 +16,8 @@ const stripe = vi.hoisted(() => ({
   disputes: { retrieve: vi.fn() },
 }));
 vi.mock("@/lib/stripe", () => ({ getStripe: () => stripe }));
+// fulfillCheckout expires the catalog cache, which needs a Next request.
+vi.mock("@/lib/catalog/cache", () => ({ invalidateCatalogFromRoute: vi.fn() }));
 
 async function placeOrder(userId: number, lines: CheckoutLine[]) {
   const { session, lineItems } = fakeCheckout(userId, lines);

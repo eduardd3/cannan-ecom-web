@@ -1,5 +1,6 @@
 import { afterAll, beforeEach, describe, expect, it, vi } from "vitest";
 
+import { invalidateCatalogFromRoute } from "@/lib/catalog/cache";
 import { checkStockConsistency } from "@/lib/inventory/adjust";
 import { prisma } from "@/lib/prisma";
 import { addToCart, createUser, createVariant, resetDb, stockOf } from "../../../test/db";
@@ -10,6 +11,8 @@ const stripe = vi.hoisted(() => ({
   checkout: { sessions: { retrieve: vi.fn(), listLineItems: vi.fn() } },
 }));
 vi.mock("@/lib/stripe", () => ({ getStripe: () => stripe }));
+// revalidateTag needs a Next request; these tests only check that it's called.
+vi.mock("@/lib/catalog/cache", () => ({ invalidateCatalogFromRoute: vi.fn() }));
 
 function stripeReturns(checkout: ReturnType<typeof fakeCheckout>) {
   stripe.checkout.sessions.retrieve.mockResolvedValue(checkout.session);
@@ -48,6 +51,8 @@ describe("fulfillCheckout", () => {
     const order = await prisma.order.findUniqueOrThrow({ where: { stripeCheckoutSessionId: sessionId } });
     expect(order.status).toBe("PAID");
     expect(order.reviewReason).toBeNull();
+    // The stock change has to reach the cached collection pages.
+    expect(invalidateCatalogFromRoute).toHaveBeenCalledOnce();
     expect(await stockOf(a.id)).toBe(3);
     expect(await stockOf(b.id)).toBe(2);
     expect((await checkStockConsistency(a.id))?.consistent).toBe(true);
@@ -134,6 +139,8 @@ describe("fulfillCheckout", () => {
     expect(third.status).toBe("already_fulfilled");
     expect(await prisma.order.count()).toBe(1);
     expect(await stockOf(variant.id)).toBe(3);
+    // Only the delivery that created the order expires the cache.
+    expect(invalidateCatalogFromRoute).toHaveBeenCalledOnce();
   });
 
   it("does nothing for a session that isn't paid yet", async () => {
@@ -148,5 +155,6 @@ describe("fulfillCheckout", () => {
     expect(await fulfillCheckout(sessionId)).toEqual({ status: "not_paid" });
     expect(await prisma.order.count()).toBe(0);
     expect(await stockOf(variant.id)).toBe(5);
+    expect(invalidateCatalogFromRoute).not.toHaveBeenCalled();
   });
 });

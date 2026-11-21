@@ -13,6 +13,8 @@ const stripe = vi.hoisted(() => ({
   refunds: { create: vi.fn() },
 }));
 vi.mock("@/lib/stripe", () => ({ getStripe: () => stripe }));
+// fulfillCheckout expires the catalog cache, which needs a Next request.
+vi.mock("@/lib/catalog/cache", () => ({ invalidateCatalogFromRoute: vi.fn() }));
 
 const sendEmail = vi.hoisted(() => vi.fn());
 vi.mock("@/lib/email/client", () => ({ sendEmail }));
