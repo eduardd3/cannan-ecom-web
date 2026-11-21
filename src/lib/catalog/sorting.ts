@@ -5,7 +5,7 @@
 // being written: a module can't mock functions it calls on itself.
 
 import type { ListingCard, SearchParam } from "./listing";
-
+import {first} from "@/lib/catalog/listing";
 export type SortKey = "featured" | "newest" | "price-asc" | "price-desc";
 
 /** The sort links, in the order the page shows them. */
@@ -24,7 +24,13 @@ export const SORT_OPTIONS: readonly { key: SortKey; label: string }[] = [
  *   → "featured". An array uses its first value, like ?type= and ?facet=.
  */
 export function parseSort(param: SearchParam): SortKey {
-  throw new Error("TODO(Lalo): L1 parseSort");
+  const arr = first(param);
+  if (arr === undefined) return "featured";
+  if (arr === "newest") return "newest";
+  else if (arr === "price-asc") return "price-asc";
+  else if (arr === "price-desc") return "price-desc";
+
+  return "featured";
 }
 
 /**
@@ -36,7 +42,11 @@ export function parseSort(param: SearchParam): SortKey {
  *   redirects a page past the end instead (L5).
  */
 export function parsePage(param: SearchParam): number {
-  throw new Error("TODO(Lalo): L2 parsePage");
+  const arr = first(param);
+  if (arr === undefined) return 1;
+  const paramInt = Number(arr);
+  if (paramInt <= 0 || Number.isNaN(paramInt)) return 1;
+  return (Number.isInteger(paramInt)) ? paramInt : 1;
 }
 
 /**
@@ -56,5 +66,20 @@ export function parsePage(param: SearchParam): number {
  * prices the card from its red variants), so nothing here reads variants.
  */
 export function compareCards(sort: SortKey): (a: ListingCard, b: ListingCard) => number {
-  throw new Error("TODO(Lalo): L3 compareCards");
+  return (a, b) => {
+    let bySort = 0;
+    switch (sort) { 
+      case "featured":
+        bySort = Number(b.featured) - Number(a.featured);
+        break;
+      case "price-asc":
+        bySort = a.minPriceCents - b.minPriceCents;
+        break;
+      case "price-desc":
+        bySort = b.minPriceCents - a.minPriceCents;
+        break;
+    }
+    return Number(b.inStock) - Number(a.inStock) || bySort ||
+    a.rank - b.rank
+  };
 }

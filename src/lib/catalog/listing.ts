@@ -91,7 +91,7 @@ export function facetValueSlug(value: string): string {
 
 export type SearchParam = string | string[] | undefined;
 
-function first(param: SearchParam): string | undefined {
+export function first(param: SearchParam): string | undefined {
   return Array.isArray(param) ? param[0] : param;
 }
 
