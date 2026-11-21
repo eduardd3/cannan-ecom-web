@@ -11,8 +11,10 @@ import { SITE_NAME } from "./site";
 type OpenGraphImage = { url: string; alt: string };
 
 /**
- * path is the page's canonical path: never ?variant=, ?type= or ?facet=, so
- * shares of a filtered or preselected URL credit the indexed page.
+ * path is the page's canonical path: never ?variant=, ?type=, ?facet= or
+ * ?sort=, so shares of a filtered or preselected URL credit the indexed page.
+ * ?page= is the one allowed parameter: a collection's plain list is canonical
+ * on each of its pages, so Google can reach the pieces on later ones.
  */
 export function buildOpenGraph({
   title,
@@ -25,7 +27,10 @@ export function buildOpenGraph({
   path: string;
   image?: OpenGraphImage | null;
 }): NonNullable<Metadata["openGraph"]> {
-  if (path.includes("?")) throw new Error(`buildOpenGraph: path must be canonical, got "${path}"`);
+  const query = path.split("?")[1];
+  if (query !== undefined && [...new URLSearchParams(query).keys()].some((key) => key !== "page")) {
+    throw new Error(`buildOpenGraph: path must be canonical, got "${path}"`);
+  }
   return {
     type: "website",
     siteName: SITE_NAME,
