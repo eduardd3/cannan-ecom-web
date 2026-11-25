@@ -3,6 +3,14 @@
 export const SUPPORT_EMAIL = "support@shopcannan.com";
 export const SUPPORT_MAILTO = `mailto:${SUPPORT_EMAIL}`;
 
+//  Business details shown on the contact and about pages. The address is
+//  where CANNAN LLC is registered, not a storefront: Cannan sells online only.
+export const BUSINESS_NAME = "CANNAN LLC";
+export const BUSINESS_ADDRESS_LINES = ["16172 Manzanita St, Hesperia, CA 92345"] as const;
+export const BUSINESS_PHONE = "(760) 278-1901";
+//  E.164 form for the tel: link.
+export const BUSINESS_PHONE_HREF = "tel:+17602781901";
+
 //  Contact form topics. The form's <select>, the server-side validation and
 //  the support email's subject all read this one list.
 export const CONTACT_TOPIC_VALUES = ["order-status", "returns", "damaged", "product", "other"] as const;
