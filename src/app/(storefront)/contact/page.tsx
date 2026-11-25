@@ -7,7 +7,14 @@ import PageHeading from "@/app/components/page-heading";
 import { textLinkClass } from "@/app/components/form/styles";
 import { auth } from "@/lib/auth-actions";
 import { getShopHref } from "@/lib/catalog/queries";
-import { SUPPORT_EMAIL, SUPPORT_MAILTO } from "@/lib/contact";
+import {
+  BUSINESS_ADDRESS_LINES,
+  BUSINESS_NAME,
+  BUSINESS_PHONE,
+  BUSINESS_PHONE_HREF,
+  SUPPORT_EMAIL,
+  SUPPORT_MAILTO,
+} from "@/lib/contact";
 import ContactForm from "./contact-form";
 
 export const metadata: Metadata = {
@@ -70,7 +77,18 @@ export default async function ContactPage() {
             </div>
           </SupportBlock>
           <SupportBlock label="Business">
-            <p>CANNAN LLC · California</p>
+            <p>{BUSINESS_NAME}</p>
+            <address className="mt-1 not-italic">
+              {BUSINESS_ADDRESS_LINES.map((line) => (
+                <span key={line} className="block">
+                  {line}
+                </span>
+              ))}
+              <a href={BUSINESS_PHONE_HREF} className={`${textLinkClass} mt-2 inline-block`}>
+                {BUSINESS_PHONE}
+              </a>
+            </address>
+            <p className="mt-2 text-stone">Online-only · No physical storefront or local pickup</p>
           </SupportBlock>
         </aside>
       </div>

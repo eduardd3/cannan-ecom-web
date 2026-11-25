@@ -6,6 +6,7 @@ import Container from "@/app/components/container";
 import { textLinkClass } from "@/app/components/form/styles";
 import GoldRule from "@/app/components/gold-rule";
 import Storefronts from "@/app/components/storefronts";
+import { BUSINESS_ADDRESS_LINES, BUSINESS_NAME, BUSINESS_PHONE, BUSINESS_PHONE_HREF } from "@/lib/contact";
 
 export const metadata: Metadata = {
   title: "About | Cannan",
@@ -122,6 +123,23 @@ export default function AboutUs() {
         <div className="mt-2">
           <Storefronts />
         </div>
+      </AboutSection>
+
+      {/* Registered business details, not a storefront: Cannan sells online only. */}
+      <AboutSection id="business" heading={<h2 className={h2}>Business details</h2>}>
+        <p>
+          Cannan is an exclusively online retailer. As this is not a physical storefront, we are unable to accommodate visits or local pickups.        </p>
+        <address className="mt-5 not-italic">
+          <span className="block text-charcoal">{BUSINESS_NAME}</span>
+          {BUSINESS_ADDRESS_LINES.map((line) => (
+            <span key={line} className="block">
+              {line}
+            </span>
+          ))}
+          <a href={BUSINESS_PHONE_HREF} className={`${textLinkClass} mt-3 inline-block`}>
+            {BUSINESS_PHONE}
+          </a>
+        </address>
       </AboutSection>
 
       {/* The closing, in the brand's serif voice. No <hr>: the gold rule and
