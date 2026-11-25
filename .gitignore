@@ -16,3 +16,4 @@ node_modules
 design/
 # macOS Finder metadata
 .DS_Store
+.env*
