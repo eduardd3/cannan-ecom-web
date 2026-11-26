@@ -171,6 +171,21 @@ export default function CheckoutPanel({ checkout, heading, lines, email }: Check
                     <Link href="/privacy" className={textLinkClass}>Privacy Policy</Link> explains how we
                     handle your information.
                 </p>
+
+                {/* Information, not part of the agreement above. A new tab:
+                    leaving this page remounts checkout, which starts a new
+                    Stripe session and loses the address already entered. */}
+                <p className="mt-2 text-caption text-stone">
+                    Before you order, review our{" "}
+                    <Link href="/shipping" target="_blank" rel="noopener noreferrer" className={textLinkClass}>
+                        Shipping<span className="sr-only"> (opens in a new tab)</span>
+                    </Link>{" "}
+                    and{" "}
+                    <Link href="/returns" target="_blank" rel="noopener noreferrer" className={textLinkClass}>
+                        Returns &amp; Refunds<span className="sr-only"> (opens in a new tab)</span>
+                    </Link>{" "}
+                    policies.
+                </p>
             </form>
         </CheckoutLayout>
     );
