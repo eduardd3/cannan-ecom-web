@@ -11,7 +11,6 @@ import {
   type ProductFormValues,
 } from "@/lib/products/actions";
 import {
-  DEFAULT_BRAND,
   MAX_BRAND_LENGTH,
   MAX_DESCRIPTION_LENGTH,
   MAX_MATERIAL_LENGTH,
@@ -235,14 +234,11 @@ export default function ProductForm({
                 name="brand"
                 type="text"
                 maxLength={MAX_BRAND_LENGTH}
-                defaultValue={values?.brand ?? DEFAULT_BRAND}
+                defaultValue={values?.brand}
                 aria-invalid={invalid("brand")}
-                aria-describedby="brand-hint brand-error"
+                aria-describedby="brand-error"
                 className={fieldClass(invalid("brand"))}
               />
-              <span id="brand-hint" className="text-xs">
-                For search engines; not shown on the page. Blank leaves it out.
-              </span>
               <FieldError id="brand-error" state={state} field="brand" />
             </label>
           </div>

@@ -18,6 +18,3 @@ export const MAX_NAME_LENGTH = 120;
 export const MAX_DESCRIPTION_LENGTH = 5_000;
 export const MAX_MATERIAL_LENGTH = 120;
 export const MAX_BRAND_LENGTH = 70; // Google's limit for a product's brand
-
-// What a new product's brand starts as: everything is sold under Cannan.
-export const DEFAULT_BRAND = "Cannan";
