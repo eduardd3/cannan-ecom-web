@@ -163,13 +163,34 @@ export default function CheckoutPanel({ checkout, heading, lines, email }: Check
                     {pending ? "Processing…" : `Pay ${totals.total}`}
                 </button>
 
+                {/* Every policy link below opens in a new tab: leaving this
+                    page remounts checkout, which starts a new Stripe session
+                    and loses the address already entered. */}
+
                 {/* Agreement is to the Terms only: a privacy policy is a notice,
                     not something the customer agrees to. */}
                 <p className="mt-4 text-caption text-stone">
                     By placing your order, you agree to our{" "}
-                    <Link href="/terms" className={textLinkClass}>Terms of Service</Link>. Our{" "}
-                    <Link href="/privacy" className={textLinkClass}>Privacy Policy</Link> explains how we
+                    <Link href="/terms" target="_blank" rel="noopener noreferrer" className={textLinkClass}>
+                        Terms of Service<span className="sr-only"> (opens in a new tab)</span>
+                    </Link>. Our{" "}
+                    <Link href="/privacy" target="_blank" rel="noopener noreferrer" className={textLinkClass}>
+                        Privacy Policy<span className="sr-only"> (opens in a new tab)</span>
+                    </Link> explains how we
                     handle your information.
+                </p>
+
+                {/* Information, not part of the agreement above. */}
+                <p className="mt-2 text-caption text-stone">
+                    Before you order, review our{" "}
+                    <Link href="/shipping" target="_blank" rel="noopener noreferrer" className={textLinkClass}>
+                        Shipping<span className="sr-only"> (opens in a new tab)</span>
+                    </Link>{" "}
+                    and{" "}
+                    <Link href="/returns" target="_blank" rel="noopener noreferrer" className={textLinkClass}>
+                        Returns &amp; Refunds<span className="sr-only"> (opens in a new tab)</span>
+                    </Link>{" "}
+                    policies.
                 </p>
             </form>
         </CheckoutLayout>

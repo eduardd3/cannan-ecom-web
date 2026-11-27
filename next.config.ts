@@ -11,6 +11,17 @@ const nextConfig: NextConfig = {
     remotePatterns: imageCdn
       ? [{ protocol: "https", hostname: imageCdn.hostname, port: "", pathname: "/**", search: "" }]
       : [],
+    //  Vercel bills image cache writes by size, so cap widths at what the
+    //  layouts need: the product gallery peaks around 1200px (tablet at 50vw,
+    //  3x phones at 100vw). The defaults go up to 3840px.
+    deviceSizes: [640, 828, 1080, 1200],
+    imageSizes: [64, 96, 128, 256, 384],
+    //  One quality and one format, so each width is cached once.
+    qualities: [75],
+    formats: ["image/webp"],
+    //  31 days. S3 objects already send a 1-year Cache-Control; this is the
+    //  floor if one ever doesn't.
+    minimumCacheTTL: 2678400,
   },
   turbopack: {
     root: __dirname,
