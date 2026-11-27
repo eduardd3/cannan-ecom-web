@@ -3,6 +3,8 @@
 // Pure parsing for the variant form. No server imports: the form (a client
 // component) uses the limits, and the server action uses the parsers.
 
+import { isValidGtin } from "./gtin";
+
 export const MAX_OPTION_LENGTH = 40;
 export const MAX_SKU_LENGTH = 64;
 export const MAX_PRICE_CENTS = 99_999_99; // $99,999.99
@@ -51,12 +53,7 @@ export function parseAsin(value: string): Parsed<string | null> {
 export function parseGtin(value: string): Parsed<string | null> {
   const gtin = value.replace(/[\s-]/g, "");
   if (gtin === "") return { ok: true, value: null };
-  if (!/^(\d{8}|\d{12,14})$/.test(gtin)) return { ok: false };
-  // GS1: from the right, excluding the check digit, weights alternate 3, 1.
-  const digits = [...gtin].map(Number);
-  const check = digits.pop()!;
-  const sum = digits.reverse().reduce((total, digit, i) => total + digit * (i % 2 === 0 ? 3 : 1), 0);
-  return (10 - (sum % 10)) % 10 === check ? { ok: true, value: gtin } : { ok: false };
+  return isValidGtin(gtin) ? { ok: true, value: gtin } : { ok: false };
 }
 
 // Decimal(6, 2) in the database.
