@@ -37,6 +37,8 @@ export type ProductVariantView = {
   id: number;
   sku: string;
   gtin: string | null;
+  gtinVerified: boolean; // gtin passed GS1's lookup; only then may Google get it
+  mpn: string | null; // the supplier's model number, never the SKU
   option1Value: string | null; // e.g. "Roja"; null on a default variant
   option2Value: string | null; // e.g. "12 in"; only alongside option1Value
   priceCents: number;

@@ -170,8 +170,7 @@ function VariantForm({
           defaultValue={values?.gtin} inputMode="numeric" maxLength={20} spellCheck={false} autoComplete="off"
           className="font-mono" hint="The digits under the barcode. For search engines." />
         <Field label="Model number (optional)" name="mpn" field="mpn" state={state}
-          defaultValue={values?.mpn} maxLength={MAX_MPN_LENGTH} spellCheck={false} autoComplete="off"
-          hint="From the supplier's box. Not your SKU." />
+          defaultValue={values?.mpn} maxLength={MAX_MPN_LENGTH} spellCheck={false} autoComplete="off" />
         <Field label="Position (optional)" name="position" field="position" state={state}
           defaultValue={values?.position} type="number" min={0} max={MAX_POSITION} step={1}
           hint={editing ? "Lower shows first." : "Blank adds it after the others."} />

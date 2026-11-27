@@ -25,6 +25,8 @@ function variant(overrides: Partial<ProductVariantView> = {}): ProductVariantVie
     id: sequence,
     sku: `SKU-${sequence}`,
     gtin: null,
+    gtinVerified: false,
+    mpn: null,
     option1Value: null,
     option2Value: null,
     priceCents: 2400,

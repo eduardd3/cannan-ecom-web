@@ -252,6 +252,8 @@ export const getProductBySlug = cache(async (slug: string): Promise<ProductDetai
           id: true,
           sku: true,
           gtin: true,
+          gtinVerified: true,
+          mpn: true,
           option1Value: true,
           option2Value: true,
           priceCents: true,

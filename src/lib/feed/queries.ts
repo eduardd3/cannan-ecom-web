@@ -47,6 +47,8 @@ export async function getFeedProducts(): Promise<FeedProductView[]> {
             id: true,
             sku: true,
             gtin: true, 
+            gtinVerified: true,
+            mpn: true,
             option1Value: true,
             option2Value: true,
             priceCents: true,
