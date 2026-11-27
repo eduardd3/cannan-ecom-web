@@ -15,7 +15,9 @@ import {
   normalizeSku,
   parseAsin,
   parseDimensions,
+  MAX_MPN_LENGTH,
   parseGtin,
+  parseMpn,
   parseOptionPair,
   parsePriceCents,
   parseWholeNumber,
@@ -37,6 +39,8 @@ export type VariantFormValues = {
   sku: string;
   amazonAsin: string;
   gtin: string;
+  gtinVerified: boolean;
+  mpn: string;
   heightIn: string;
   widthIn: string;
   depthIn: string;
@@ -62,6 +66,9 @@ function readValues(formData: FormData): VariantFormValues {
     sku: text("sku"),
     amazonAsin: text("amazonAsin"),
     gtin: text("gtin"),
+    // An unchecked checkbox isn't submitted at all.
+    gtinVerified: formData.get("gtinVerified") === "on",
+    mpn: text("mpn"),
     heightIn: text("heightIn"),
     widthIn: text("widthIn"),
     depthIn: text("depthIn"),
@@ -102,6 +109,11 @@ function parseFields(values: VariantFormValues): { ok: true; fields: VariantFiel
     };
   }
 
+  const mpn = parseMpn(values.mpn);
+  if (!mpn.ok) {
+    return { ok: false, field: "mpn", message: `Keep the model number to ${MAX_MPN_LENGTH} characters or fewer.` };
+  }
+
   const dimensions = parseDimensions(values.heightIn, values.widthIn, values.depthIn);
   if (!dimensions.ok) {
     return { ok: false, field: "dimensions", message: "message" in dimensions ? dimensions.message : "Check the dimensions." };
@@ -120,6 +132,9 @@ function parseFields(values: VariantFormValues): { ok: true; fields: VariantFiel
       sku,
       amazonAsin: asin.value,
       gtin: gtin.value,
+      // Checked against the stored variant in ./variants, under its lock.
+      gtinVerified: values.gtinVerified,
+      mpn: mpn.value,
       dimensions: dimensions.value,
       position: position.value,
     },

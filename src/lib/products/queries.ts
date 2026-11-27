@@ -86,6 +86,8 @@ export async function getAdminProduct(productId: number) {
           isActive: true,
           amazonAsin: true,
           gtin: true,
+          gtinVerified: true,
+          mpn: true,
           heightIn: true,
           widthIn: true,
           depthIn: true,

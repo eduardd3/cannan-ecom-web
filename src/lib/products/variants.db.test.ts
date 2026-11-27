@@ -32,6 +32,8 @@ function fields(overrides: Partial<VariantFields> = {}): VariantFields {
     sku: `NEW-${sequence}`,
     amazonAsin: null,
     gtin: null,
+    gtinVerified: false,
+    mpn: null,
     dimensions: null,
     position: null,
     ...overrides,
@@ -206,6 +208,92 @@ describe("updateProductVariant", () => {
   });
 });
 
+describe("GS1 verified GTINs and model numbers", () => {
+  const UPC = "036000291452";
+  const UPC_AS_EAN = "0036000291452"; // the same number
+  const OTHER = "4006381333931";
+
+  it("saves a verified GTIN and a model number", async () => {
+    const product = await emptyProduct();
+    const id = await add(product.id, { gtin: UPC, gtinVerified: true, mpn: "MG-1042" });
+    expect(await prisma.productVariant.findUniqueOrThrow({ where: { id } })).toMatchObject({
+      gtin: UPC,
+      gtinVerified: true,
+      mpn: "MG-1042",
+    });
+  });
+
+  it("refuses verifying a number another variant has verified, in either form, and writes nothing", async () => {
+    const first = await emptyProduct();
+    await add(first.id, { gtin: UPC, gtinVerified: true });
+    const second = await emptyProduct();
+
+    const result = await createProductVariant(
+      second.id,
+      { ...fields({ gtin: UPC_AS_EAN, gtinVerified: true }), openingStock: 0 },
+      adminId,
+    );
+
+    expect(result).toEqual({ ok: false, field: "gtin", message: `GTIN ${UPC_AS_EAN} is already verified on "${first.name}".` });
+    expect(await prisma.productVariant.count({ where: { productId: second.id } })).toBe(0);
+  });
+
+  it("allows the same unverified number on several variants", async () => {
+    const first = await emptyProduct();
+    await add(first.id, { gtin: UPC, gtinVerified: true });
+    const second = await emptyProduct();
+    await add(second.id, { gtin: UPC });
+    const third = await emptyProduct();
+    await add(third.id, { gtin: UPC });
+  });
+
+  it("refuses a restricted GTIN, or none, with the box ticked", async () => {
+    const product = await emptyProduct();
+    for (const gtin of ["412345678903", null]) {
+      const result = await createProductVariant(product.id, { ...fields({ gtin, gtinVerified: true }), openingStock: 0 }, adminId);
+      expect(result).toMatchObject({ ok: false, field: "gtinVerified" });
+    }
+  });
+
+  it("refuses keeping a verified variant ticked after its GTIN changes, and allows unticking", async () => {
+    const product = await emptyProduct();
+    const id = await add(product.id, { gtin: UPC, gtinVerified: true });
+
+    expect(await updateProductVariant(id, fields({ gtin: OTHER, gtinVerified: true }))).toMatchObject({
+      ok: false,
+      field: "gtinVerified",
+    });
+    expect(await updateProductVariant(id, fields({ gtin: OTHER }))).toEqual({ ok: true, id });
+    expect(await prisma.productVariant.findUniqueOrThrow({ where: { id } })).toMatchObject({
+      gtin: OTHER,
+      gtinVerified: false,
+    });
+  });
+
+  it("keeps a variant's own verified GTIN on later edits", async () => {
+    const product = await emptyProduct();
+    const id = await add(product.id, { gtin: UPC, gtinVerified: true });
+    expect(await updateProductVariant(id, fields({ gtin: UPC_AS_EAN, gtinVerified: true, priceCents: 100 }))).toEqual({
+      ok: true,
+      id,
+    });
+  });
+
+  it("lets only one of two simultaneous saves verify the same number", async () => {
+    const [a, b] = [await emptyProduct(), await emptyProduct()];
+    // Different products, so the product locks don't serialize them: the
+    // unique index decides, through the pre-check or the P2002 backstop.
+    const results = await Promise.all(
+      [a, b].map((product) =>
+        createProductVariant(product.id, { ...fields({ gtin: UPC, gtinVerified: true }), openingStock: 0 }, adminId),
+      ),
+    );
+    expect(results.filter((result) => result.ok)).toHaveLength(1);
+    expect(results.find((result) => !result.ok)).toMatchObject({ ok: false, field: "gtin" });
+    expect(await prisma.productVariant.count({ where: { gtinVerified: true } })).toBe(1);
+  });
+});
+
 describe("setVariantActive", () => {
   it("won't turn off a listed product's only active variant", async () => {
     const variant = await createVariant({ stock: 2 }); // its product is ACTIVE
@@ -296,5 +384,26 @@ describe("database constraints", () => {
     await insert(product.id, { option1Value: "8 in", heightIn: 8, widthIn: 3.5, depthIn: 3 });
     await expect(insert(product.id, { option1Value: "10 in", heightIn: 10 })).rejects.toThrow();
     await expect(insert(product.id, { option1Value: "12 in", heightIn: 12, widthIn: 0, depthIn: 4 })).rejects.toThrow();
+  });
+
+  it("takes a GTIN of 8, 12, 13, or 14 digits only", async () => {
+    const product = await emptyProduct("Size");
+    await insert(product.id, { option1Value: "A", gtin: "036000291452" });
+    await expect(insert(product.id, { option1Value: "B", gtin: "12345" })).rejects.toThrow();
+    await expect(insert(product.id, { option1Value: "C", gtin: "03600029145X" })).rejects.toThrow();
+  });
+
+  it("verifies only a GTIN that's set", async () => {
+    const product = await emptyProduct();
+    await expect(insert(product.id, { gtinVerified: true })).rejects.toThrow();
+  });
+
+  it("keeps verified GTINs unique, padded to 14 digits, and names the index in the error", async () => {
+    const [a, b] = [await emptyProduct(), await emptyProduct()];
+    await insert(a.id, { gtin: "036000291452", gtinVerified: true });
+    // run() in ./variants recognizes the backstop by this name.
+    const error = await insert(b.id, { gtin: "0036000291452", gtinVerified: true }).catch((err: unknown) => err);
+    expect(error).toMatchObject({ code: "P2002" });
+    expect(JSON.stringify((error as { meta?: unknown }).meta)).toContain("ProductVariant_verified_gtin_key");
   });
 });

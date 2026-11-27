@@ -15,6 +15,7 @@ import {
 import {
   formatPriceInput,
   MAX_INCHES,
+  MAX_MPN_LENGTH,
   MAX_OPENING_STOCK,
   MAX_OPTION_LENGTH,
   MAX_POSITION,
@@ -35,6 +36,8 @@ export type VariantRow = {
   isActive: boolean;
   amazonAsin: string | null;
   gtin: string | null;
+  gtinVerified: boolean;
+  mpn: string | null;
   heightIn: string | null; // inches; all three or none
   widthIn: string | null;
   depthIn: string | null;
@@ -56,6 +59,8 @@ function valuesOf(variant: VariantRow): VariantFormValues {
     sku: variant.sku,
     amazonAsin: variant.amazonAsin ?? "",
     gtin: variant.gtin ?? "",
+    gtinVerified: variant.gtinVerified,
+    mpn: variant.mpn ?? "",
     heightIn: variant.heightIn ?? "",
     widthIn: variant.widthIn ?? "",
     depthIn: variant.depthIn ?? "",
@@ -126,6 +131,7 @@ function VariantForm({
   }, null);
   const values = state && !state.ok ? state.values : variant ? valuesOf(variant) : undefined;
   const optionInvalid = Boolean(state && !state.ok && state.field === "option");
+  const verifiedInvalid = Boolean(state && !state.ok && state.field === "gtinVerified");
 
   return (
     <form action={action} className="flex flex-col gap-4">
@@ -163,6 +169,9 @@ function VariantForm({
         <Field label="GTIN / UPC (optional)" name="gtin" field="gtin" state={state}
           defaultValue={values?.gtin} inputMode="numeric" maxLength={20} spellCheck={false} autoComplete="off"
           className="font-mono" hint="The digits under the barcode. For search engines." />
+        <Field label="Model number (optional)" name="mpn" field="mpn" state={state}
+          defaultValue={values?.mpn} maxLength={MAX_MPN_LENGTH} spellCheck={false} autoComplete="off"
+          hint="From the supplier's box. Not your SKU." />
         <Field label="Position (optional)" name="position" field="position" state={state}
           defaultValue={values?.position} type="number" min={0} max={MAX_POSITION} step={1}
           hint={editing ? "Lower shows first." : "Blank adds it after the others."} />
@@ -172,6 +181,20 @@ function VariantForm({
             hint="Recorded in the stock ledger. Later changes go through Inventory." />
         )}
       </div>
+
+      <label className="flex items-start gap-2 text-sm text-adm-muted">
+        <input
+          type="checkbox"
+          name="gtinVerified"
+          defaultChecked={values?.gtinVerified ?? false}
+          aria-invalid={verifiedInvalid}
+          className={`mt-1 accent-adm-fg ${verifiedInvalid ? "outline outline-2 outline-red-500" : ""}`}
+        />
+        <span>
+          <span className="text-adm-fg">GS1 verified</span>
+          <span className="block text-xs">Tick only after the barcode passes GS1&apos;s Verified by GS1 lookup.</span>
+        </span>
+      </label>
 
       {/* One field in the action's errors: the three are valid only together. */}
       <fieldset className="flex flex-col gap-2">
@@ -266,7 +289,13 @@ function Row({
         {!variant.isActive && <span className="ml-2 text-xs">· off</span>}
         {dimensions && <div className="text-xs text-adm-muted">{dimensions}</div>}
         {variant.amazonAsin && <div className="font-mono text-xs text-adm-muted">ASIN {variant.amazonAsin}</div>}
-        {variant.gtin && <div className="font-mono text-xs text-adm-muted">GTIN {variant.gtin}</div>}
+        {variant.gtin && (
+          <div className="font-mono text-xs text-adm-muted">
+            GTIN {variant.gtin}
+            {variant.gtinVerified && <span className="font-sans"> · GS1 verified</span>}
+          </div>
+        )}
+        {variant.mpn && <div className="font-mono text-xs text-adm-muted">MPN {variant.mpn}</div>}
       </td>
       <td className="px-4 py-3 font-mono text-xs">{variant.sku}</td>
       <td className="px-4 py-3 text-right tabular-nums">{formatCents(variant.priceCents)}</td>

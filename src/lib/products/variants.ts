@@ -14,7 +14,7 @@ import { Prisma } from "@/generated/prisma/client";
 import { formatVariantLabel } from "@/lib/catalog/format";
 import { adjustStock } from "@/lib/inventory/adjust";
 import { prisma } from "@/lib/prisma";
-import type { Dimensions, OptionNames, OptionValues } from "./variant-fields";
+import { verifiedGtinProblem, type Dimensions, type OptionNames, type OptionValues } from "./variant-fields";
 
 export type VariantFields = {
   option: OptionValues; // both null = the product's default variant
@@ -22,6 +22,8 @@ export type VariantFields = {
   sku: string; // normalized
   amazonAsin: string | null;
   gtin: string | null; // check digit already verified
+  gtinVerified: boolean; // the form's box; checked against the stored variant here
+  mpn: string | null;
   dimensions: Dimensions | null; // null = none (all three or none, CHECK in SQL)
   position: number | null; // null on create = after the last variant
 };
@@ -32,6 +34,8 @@ export type VariantField =
   | "sku"
   | "amazonAsin"
   | "gtin"
+  | "gtinVerified"
+  | "mpn"
   | "dimensions"
   | "position"
   | "openingStock"
@@ -42,6 +46,10 @@ function dimensionData(dimensions: Dimensions | null) {
 }
 
 export type VariantResult = { ok: true; id: number } | { ok: false; field?: VariantField; message: string };
+
+// Partial unique index on lpad(gtin, 14, '0') WHERE gtinVerified (migration
+// 20261127030702_variant_gtin_verified_mpn).
+const VERIFIED_GTIN_INDEX = "ProductVariant_verified_gtin_key";
 
 // Thrown inside a transaction to roll it back while still returning a result.
 class Rollback extends Error {
@@ -59,10 +67,15 @@ async function run(fn: (tx: Prisma.TransactionClient) => Promise<VariantResult>)
     return await prisma.$transaction(fn);
   } catch (err) {
     if (err instanceof Rollback) return err.result;
-    // Backstop for the checks below: SKU and (product, option values) are unique.
+    // Backstop for the checks below: SKU, (product, option values), and
+    // verified GTINs are unique.
     if (err instanceof Prisma.PrismaClientKnownRequestError && err.code === "P2002") {
       const target = String(err.meta?.target ?? "");
       if (target.includes("sku")) return fail("Another variant just took that SKU.", "sku");
+      // An expression index has no field list, so match its name anywhere in meta.
+      if (JSON.stringify(err.meta ?? {}).includes(VERIFIED_GTIN_INDEX)) {
+        return fail("Another variant just verified that GTIN.", "gtin");
+      }
       return fail("This product already has a variant with that option.", "option");
     }
     throw err;
@@ -122,7 +135,7 @@ async function lockVariant(tx: Prisma.TransactionClient, variantId: number) {
   if (!product) return null;
   const variant = await tx.productVariant.findUniqueOrThrow({
     where: { id: variantId },
-    select: { productId: true, option1Value: true, option2Value: true, isActive: true },
+    select: { productId: true, option1Value: true, option2Value: true, isActive: true, gtin: true, gtinVerified: true },
   });
   return { ...variant, product };
 }
@@ -141,6 +154,32 @@ async function assertSkuFree(tx: Prisma.TransactionClient, sku: string, exceptId
   });
   if (holder && holder.id !== exceptId) {
     throw new Rollback(fail(`SKU ${sku} is already used by "${holder.product.name}".`, "sku"));
+  }
+}
+
+/**
+ * The GS1 verified box against the stored variant (null when adding), then,
+ * when ticked, no other variant has the same number verified. Compared padded
+ * to 14 digits, like the unique index, so a UPC-12 and its EAN-13 form clash.
+ * The index is the guarantee; this gives the friendly message.
+ */
+async function assertGtinVerifiable(
+  tx: Prisma.TransactionClient,
+  fields: VariantFields,
+  saved: { gtin: string | null; gtinVerified: boolean } | null,
+  exceptId: number | null,
+) {
+  const problem = verifiedGtinProblem(fields.gtinVerified, fields.gtin, saved);
+  if (problem) throw new Rollback(fail(problem, "gtinVerified"));
+  if (!fields.gtinVerified || fields.gtin === null) return;
+
+  const [holder] = await tx.$queryRaw<{ name: string }[]>`
+    SELECT p."name" FROM "ProductVariant" v JOIN "Product" p ON p."id" = v."productId"
+    WHERE v."gtinVerified" AND lpad(v."gtin", 14, '0') = lpad(${fields.gtin}, 14, '0')
+      AND v."id" <> ${exceptId ?? 0}
+    LIMIT 1`;
+  if (holder) {
+    throw new Rollback(fail(`GTIN ${fields.gtin} is already verified on "${holder.name}".`, "gtin"));
   }
 }
 
@@ -165,6 +204,7 @@ export async function createProductVariant(
     const problem = optionProblem(product, fields.option, siblings);
     if (problem) return fail(problem, "option");
     await assertSkuFree(tx, fields.sku, null);
+    await assertGtinVerifiable(tx, fields, null, null);
 
     const last = await tx.productVariant.aggregate({ where: { productId }, _max: { position: true } });
     const variant = await tx.productVariant.create({
@@ -175,6 +215,8 @@ export async function createProductVariant(
         sku: fields.sku,
         amazonAsin: fields.amazonAsin,
         gtin: fields.gtin,
+        gtinVerified: fields.gtinVerified,
+        mpn: fields.mpn,
         ...dimensionData(fields.dimensions),
         position: fields.position ?? (last._max.position ?? -1) + 1,
         stock: 0,
@@ -203,7 +245,7 @@ export async function createProductVariant(
 // ---------------------------------------------------------------------------
 
 /**
- * Edits a variant's option, price, SKU, ASIN, GTIN, dimensions, and position. Stock isn't
+ * Edits a variant's option, price, SKU, ASIN, GTIN (and its verified box), model number, dimensions, and position. Stock isn't
  * editable here: it changes only through the ledger (inventory page).
  * Past orders keep the SKU and price they were placed with.
  */
@@ -216,6 +258,7 @@ export async function updateProductVariant(variantId: number, fields: VariantFie
     const problem = optionProblem(current.product, fields.option, siblings);
     if (problem) return fail(problem, "option");
     await assertSkuFree(tx, fields.sku, variantId);
+    await assertGtinVerifiable(tx, fields, current, variantId);
 
     await tx.productVariant.update({
       where: { id: variantId },
@@ -225,6 +268,8 @@ export async function updateProductVariant(variantId: number, fields: VariantFie
         sku: fields.sku,
         amazonAsin: fields.amazonAsin,
         gtin: fields.gtin,
+        gtinVerified: fields.gtinVerified,
+        mpn: fields.mpn,
         ...dimensionData(fields.dimensions),
         ...(fields.position !== null && { position: fields.position }),
       },
