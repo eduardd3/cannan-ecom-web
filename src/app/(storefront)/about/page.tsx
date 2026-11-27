@@ -5,7 +5,6 @@ import type { ReactNode } from "react";
 import Container from "@/app/components/container";
 import { textLinkClass } from "@/app/components/form/styles";
 import GoldRule from "@/app/components/gold-rule";
-import Storefronts from "@/app/components/storefronts";
 import { BUSINESS_ADDRESS_LINES, BUSINESS_NAME, BUSINESS_PHONE, BUSINESS_PHONE_HREF } from "@/lib/contact";
 
 export const metadata: Metadata = {
@@ -18,9 +17,9 @@ export const metadata: Metadata = {
 //  copy describes choosing pieces and never says "handmade" or "made by us".
 //
 //  The homepage says what Cannan is in one breath; this page says why and how.
-//  So it carries only what the homepage doesn't: the story, the curation, the
-//  full "many paths" reasoning, and the marketplaces. Collections and promises
-//  live on the homepage.
+//  So it carries only what the homepage doesn't: the story, the curation, and
+//  the full "many paths" reasoning. Collections and promises live on the
+//  homepage. The marketplace shops (Amazon, Walmart) are not advertised here.
 //
 //  Layout: "wall text". Every section is a narrow label column (4 of 12) and a
 //  ~640px text column (8 of 12), so the whole page shares one left edge, unlike
@@ -116,13 +115,6 @@ export default function AboutUs() {
           and not compared. Each has its own space and its own dignity. Explore at
           your own pace and take home what speaks to you.
         </p>
-      </AboutSection>
-
-      <AboutSection id="elsewhere" heading={<h2 className={h2}>Find us elsewhere</h2>}>
-        <p>You can also shop Cannan on Amazon and Walmart.</p>
-        <div className="mt-2">
-          <Storefronts />
-        </div>
       </AboutSection>
 
       {/* Registered business details, not a storefront: Cannan sells online only. */}
