@@ -8,6 +8,7 @@ import { galleryImages, productVariantPath } from "@/lib/catalog/product-detail"
 import type { ProductVariantView } from "@/lib/catalog/types";
 import { productPath } from "@/lib/products/slug";
 import { formatPrice, variantDisplayName, variesByProperty } from "@/lib/seo/product";
+import { productIdentifiers } from "@/lib/seo/identifiers";
 import { absoluteUrl } from "@/lib/seo/site";
 import { GOOGLE_PRODUCT_CATEGORY } from "./categories";
 import type { FeedItem, FeedProductView } from "./types";
@@ -117,21 +118,23 @@ export function feedPrice(priceCents: number): string {
 }
 
 /**
- * brand, gtin, mpn, identifierExists, following the identifier rules:
- * - gtin set (Bibles: the ISBN) → brand + gtin, no mpn. The SKU isn't the
- *   publisher's part number, so it must not pose as one.
- * - no gtin → brand + mpn (the SKU).
- * - no brand (shouldn't happen; a guard) → none of the three, and
- *   identifierExists "no".
+ * brand, gtin, mpn, identifierExists, from productIdentifiers (the same rule
+ * as the JSON-LD): the gtin only when it's verified, the variant's model
+ * number (never the SKU), and identifierExists "no" when there's neither.
+ * Null becomes undefined, so the renderer leaves the tag out rather than
+ * sending an empty one.
  */
 export function feedIdentifiers(
   product: FeedProductView,
   variant: ProductVariantView,
 ): Pick<FeedItem, "brand" | "gtin" | "mpn" | "identifierExists"> {
-  if (product.brand === null) return { identifierExists: "no" };
-  return variant.gtin !== null
-    ? { brand: product.brand, gtin: variant.gtin }
-    : { brand: product.brand, mpn: variant.sku };
+  const { brand, gtin, mpn, identifierExists } = productIdentifiers(product, variant);
+  return {
+    brand: brand ?? undefined,
+    gtin: gtin ?? undefined,
+    mpn: mpn ?? undefined,
+    identifierExists: identifierExists ? undefined : "no",
+  };
 }
 
 /**

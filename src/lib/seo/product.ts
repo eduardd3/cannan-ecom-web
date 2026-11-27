@@ -19,6 +19,7 @@ import type { ProductDetailView, ProductVariantView } from "@/lib/catalog/types"
 import { productPath } from "@/lib/products/slug";
 import { SHIP_TO_COUNTRIES } from "@/lib/shipping/countries";
 import { absoluteUrl } from "./site";
+import { productIdentifiers} from "./identifiers";
 
 /** 2400 → "24.00". Integer math, so no float rounding; never includes tax. */
 export function formatPrice(cents: number): string {
@@ -96,13 +97,15 @@ export function buildProductJsonLd(product: ProductDetailView): WithContext<Prod
   if (product.option1Name === null) {
     const [variant] = product.variants;
     const image = variantImages(product, variant.id);
+    const identifiers = productIdentifiers(product, variant);
     return {
       "@context": "https://schema.org",
       "@type": "Product",
       ...shared(product),
       ...(image.length > 0 && { image }),
       sku: variant.sku,
-      ...(variant.gtin !== null && { gtin: variant.gtin }),
+      ...(identifiers.gtin !== null && { gtin: identifiers.gtin }),
+      ...(identifiers.mpn !== null && { mpn: identifiers.mpn }),
       offers: offer(product, variant, canonical),
     };
   }
@@ -125,11 +128,13 @@ export function buildProductJsonLd(product: ProductDetailView): WithContext<Prod
     variesBy: options.map(({ property }) => VARIES_BY[property]),
     hasVariant: product.variants.map((variant): Product => {
       const variantImage = variantImages(product, variant.id);
+      const identifiers = productIdentifiers(product, variant);
       return {
         "@type": "Product",
         name: variantDisplayName(product.name, variant),
         sku: variant.sku,
-        ...(variant.gtin !== null && { gtin: variant.gtin }),
+        ...(identifiers.gtin !== null && { gtin: identifiers.gtin }),
+        ...(identifiers.mpn !== null && { mpn: identifiers.mpn }),
         ...(variantImage.length > 0 && { image: variantImage }),
         ...Object.fromEntries(options.map(({ property, value }) => [property, value(variant)])),
         offers: offer(product, variant, absoluteUrl(productVariantPath(product.slug, variant.id))),

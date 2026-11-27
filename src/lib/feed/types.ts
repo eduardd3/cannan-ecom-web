@@ -34,9 +34,9 @@ export type FeedItem = {
   price: string; // "34.00 USD"
   condition: "new";
   brand?: string;
-  gtin?: string; // Bibles: the ISBN
-  mpn?: string; // the SKU, only when there's no gtin
-  identifierExists?: "no"; // only when there's no brand at all (a guard)
+  gtin?: string; // only when verified; Bibles: the ISBN
+  mpn?: string; // the supplier's model number; never the SKU
+  identifierExists?: "no"; // only when there's neither a gtin nor an mpn
   size?: string;
   color?: string;
   productType: string; // "Framed prints > Virgen de Guadalupe"

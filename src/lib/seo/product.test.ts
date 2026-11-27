@@ -134,6 +134,26 @@ describe("buildProductJsonLd", () => {
     expect(data.hasVariant[0].offers.url).toBe("https://www.shopcannan.com/products/san-jose-statue?variant=101");
   });
 
+  it("leaves out an unverified gtin, and never sends the SKU as the mpn", () => {
+    const single = json(buildProductJsonLd(product({ variants: [variant({ sku: "SJ-12", gtin: "012345678905" })] })));
+    expect(single).not.toHaveProperty("gtin");
+    expect(single).not.toHaveProperty("mpn");
+
+    const group = json(buildProductJsonLd(sized()));
+    for (const v of group.hasVariant) {
+      expect(v).not.toHaveProperty("gtin");
+      expect(v).not.toHaveProperty("mpn");
+    }
+  });
+
+  it("sends each variant's own verified gtin and mpn in a group", () => {
+    const p = sized();
+    p.variants[0] = { ...p.variants[0], gtin: "012345678905", gtinVerified: true, mpn: "MG-08" };
+    const group = json(buildProductJsonLd(p));
+    expect(group.hasVariant[0]).toMatchObject({ gtin: "012345678905", mpn: "MG-08" });
+    expect(group.hasVariant[1]).not.toHaveProperty("mpn");
+  });
+
   it("includes brand, material and gtin only when set", () => {
     const bare = json(buildProductJsonLd(product()));
     expect(bare).not.toHaveProperty("brand");
@@ -141,11 +161,18 @@ describe("buildProductJsonLd", () => {
     expect(bare).not.toHaveProperty("gtin");
 
     const full = json(
-      buildProductJsonLd(product({ brand: "Cannan", material: "Resin", variants: [variant({ gtin: "012345678905" })] })),
+      buildProductJsonLd(
+        product({
+          brand: "Cannan",
+          material: "Resin",
+          variants: [variant({ gtin: "012345678905", gtinVerified: true, mpn: "MG-1042" })],
+        }),
+      ),
     );
     expect(full.brand).toEqual({ "@type": "Brand", name: "Cannan" });
     expect(full.material).toBe("Resin");
     expect(full.gtin).toBe("012345678905");
+    expect(full.mpn).toBe("MG-1042");
 
     const group = json(buildProductJsonLd({ ...sized(), brand: "Cannan" }));
     expect(group.brand.name).toBe("Cannan");

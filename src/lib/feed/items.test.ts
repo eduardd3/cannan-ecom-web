@@ -117,33 +117,43 @@ describe("toFeedItems", () => {
     expect(toFeedItems([p]).map((item) => item.id)).toEqual(["301"]);
   });
 
-  it("sends brand + mpn (the SKU) when there's no gtin", () => {
-    const item = onlyItem(product({ variants: [variant({ sku: "SJ-12" })] }));
-    expect(item.brand).toBe("Cannan");
-    expect(item.mpn).toBe("SJ-12");
-    expect(item.gtin).toBeUndefined();
-    expect(item.identifierExists).toBeUndefined();
-  });
+  // The four identifier fields of one item, so each test shows them all.
+  const identifiersOf = (p: FeedProductView) => {
+    const { brand, gtin, mpn, identifierExists } = onlyItem(p);
+    return { brand, gtin, mpn, identifierExists };
+  };
 
-  it("sends brand + gtin and no mpn when there's a gtin (Bibles)", () => {
+  it("sends a verified gtin (Bibles: the ISBN)", () => {
     const bible = product({
       brand: "Catholic Book Publishing",
       productType: { slug: "bibles", name: "Bibles" },
-      variants: [variant({ sku: "BIB-NABRE", gtin: "9781941243954" })],
+      variants: [variant({ sku: "BIB-NABRE", gtin: "9781941243954", gtinVerified: true })],
     });
-    const item = onlyItem(bible);
-    expect(item.brand).toBe("Catholic Book Publishing");
-    expect(item.gtin).toBe("9781941243954");
-    expect(item.mpn).toBeUndefined();
-    expect(item.identifierExists).toBeUndefined();
+    expect(identifiersOf(bible)).toEqual({
+      brand: "Catholic Book Publishing",
+      gtin: "9781941243954",
+      mpn: undefined,
+      identifierExists: undefined,
+    });
   });
 
-  it("sends identifierExists 'no' and no identifiers when brand is null", () => {
-    const item = onlyItem(product({ brand: null, variants: [variant({ gtin: "9781941243954" })] }));
-    expect(item.identifierExists).toBe("no");
-    expect(item.brand).toBeUndefined();
-    expect(item.gtin).toBeUndefined();
-    expect(item.mpn).toBeUndefined();
+  it("sends the model number, never the SKU, and no unverified gtin", () => {
+    const p = product({
+      brand: "Mg Collection",
+      variants: [variant({ sku: "SJ-12", gtin: "036000291452", mpn: "MG-1042" })],
+    });
+    expect(identifiersOf(p)).toEqual({ brand: "Mg Collection", gtin: undefined, mpn: "MG-1042", identifierExists: undefined });
+  });
+
+  it("sends identifierExists 'no' when there's no verified gtin and no model number", () => {
+    // The SKU and the unverified gtin are both set; neither may stand in.
+    const p = product({ brand: "Mg Collection", variants: [variant({ sku: "SJ-12", gtin: "036000291452" })] });
+    expect(identifiersOf(p)).toEqual({ brand: "Mg Collection", gtin: undefined, mpn: undefined, identifierExists: "no" });
+  });
+
+  it("sends no brand for an unbranded print, and still sends its identifiers", () => {
+    const print = product({ brand: null, variants: [variant({ gtin: "036000291452", gtinVerified: true })] });
+    expect(identifiersOf(print)).toEqual({ brand: undefined, gtin: "036000291452", mpn: undefined, identifierExists: undefined });
   });
 
   it("fills size and color from options named Size and Color, any case", () => {
