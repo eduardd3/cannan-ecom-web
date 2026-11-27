@@ -226,6 +226,11 @@ model ProductVariant {
   sku          String   @unique
   amazonAsin   String?
   gtin         String? // UPC/EAN from the packaging; null until entered, never invented
+  // True only after gtin passes GS1's "Verified by GS1" lookup; needs a gtin
+  // (CHECK in SQL). Verified GTINs are unique, padded to 14 digits (partial
+  // unique index in SQL). Unverified ones may repeat: suppliers reuse them.
+  gtinVerified Boolean  @default(false)
+  mpn          String? // model number printed on the supplier's box; never the SKU
   position     Int      @default(0)
   isActive     Boolean  @default(true)
   createdAt    DateTime @default(now())
