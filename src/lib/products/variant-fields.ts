@@ -3,10 +3,11 @@
 // Pure parsing for the variant form. No server imports: the form (a client
 // component) uses the limits, and the server action uses the parsers.
 
-import { isValidGtin } from "./gtin";
+import { isRestrictedGtin, isValidGtin, sameGtin } from "./gtin";
 
 export const MAX_OPTION_LENGTH = 40;
 export const MAX_SKU_LENGTH = 64;
+export const MAX_MPN_LENGTH = 70; // Google's limit for mpn
 export const MAX_PRICE_CENTS = 99_999_99; // $99,999.99
 export const MAX_OPENING_STOCK = 10_000;
 export const MAX_POSITION = 999;
@@ -54,6 +55,37 @@ export function parseGtin(value: string): Parsed<string | null> {
   const gtin = value.replace(/[\s-]/g, "");
   if (gtin === "") return { ok: true, value: null };
   return isValidGtin(gtin) ? { ok: true, value: gtin } : { ok: false };
+}
+
+/**
+ * Why the GS1 verified box can't be saved ticked, or null when it can.
+ * `gtin` is parseGtin's value. `saved` is the variant as stored, or null when
+ * adding one. A verified variant whose GTIN changes keeps its box ticked in
+ * the edit form, so that save is refused: the new number needs its own
+ * lookup. Ticking the box on an unverified variant is deliberate, so a new
+ * number there is fine.
+ */
+export function verifiedGtinProblem(
+  ticked: boolean,
+  gtin: string | null,
+  saved: { gtin: string | null; gtinVerified: boolean } | null,
+): string | null {
+  if (!ticked) return null;
+  if (gtin === null) return "Enter the GTIN before marking it GS1 verified.";
+  if (isRestrictedGtin(gtin)) {
+    return "Google doesn't accept this GTIN (restricted, coupon, or bulk range), so it can't be marked verified.";
+  }
+  if (saved?.gtinVerified && saved.gtin !== null && !sameGtin(saved.gtin, gtin)) {
+    return "The GTIN changed. Untick GS1 verified, save, then verify the new number.";
+  }
+  return null;
+}
+
+/** Optional: trimmed, blank is null. The supplier's model number, never the SKU. */
+export function parseMpn(value: string): Parsed<string | null> {
+  const mpn = value.trim();
+  if (mpn === "") return { ok: true, value: null };
+  return mpn.length <= MAX_MPN_LENGTH ? { ok: true, value: mpn } : { ok: false };
 }
 
 // Decimal(6, 2) in the database.

@@ -16,6 +16,15 @@ export function isValidGtin(digits: string): boolean {
   return (10 - (sum % 10)) % 10 === check;
 }
 
+/**
+ * Whether two GTINs are the same number: compared padded to 14 digits, so a
+ * UPC-12 and its EAN-13 form (leading 0) match. The same rule as the database's
+ * unique index on verified GTINs.
+ */
+export function sameGtin(a: string, b: string): boolean {
+  return a.padStart(14, "0") === b.padStart(14, "0");
+}
+
 // Google won't accept these as a product's GTIN. Prefixes are on the 13-digit
 // form (see thirteenDigitForm):
 // - 2, 02, 04: restricted ranges

@@ -1,6 +1,17 @@
 import { describe, expect, it } from "vitest";
 
-import { isRestrictedGtin, isValidGtin } from "./gtin";
+import { isRestrictedGtin, isValidGtin, sameGtin } from "./gtin";
+
+describe("sameGtin", () => {
+  it("matches a UPC-12 and its EAN-13 and GTIN-14 forms", () => {
+    expect(sameGtin("036000291452", "0036000291452")).toBe(true);
+    expect(sameGtin("036000291452", "00036000291452")).toBe(true);
+  });
+
+  it("tells different numbers apart", () => {
+    expect(sameGtin("036000291452", "4006381333931")).toBe(false);
+  });
+});
 
 // Check digits computed with the GS1 mod-10 rule, not invented. The first
 // four, and the ISBN, are published examples.

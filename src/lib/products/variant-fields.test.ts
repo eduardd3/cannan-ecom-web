@@ -2,15 +2,18 @@ import { describe, expect, it } from "vitest";
 
 import {
   formatPriceInput,
+  MAX_MPN_LENGTH,
   MAX_OPTION_LENGTH,
   MAX_SKU_LENGTH,
   normalizeSku,
   parseAsin,
   parseDimensions,
   parseGtin,
+  parseMpn,
   parseOptionPair,
   parsePriceCents,
   parseWholeNumber,
+  verifiedGtinProblem,
 } from "./variant-fields";
 
 describe("parsePriceCents", () => {
@@ -99,6 +102,50 @@ describe("parseGtin", () => {
     for (const bad of ["012345678906", "1234567", "123456789", "01234567890X", "123456789012345"]) {
       expect(parseGtin(bad).ok, bad).toBe(false);
     }
+  });
+});
+
+describe("verifiedGtinProblem", () => {
+  const UPC = "036000291452";
+  const OTHER = "4006381333931";
+
+  it("allows anything when the box is unticked", () => {
+    expect(verifiedGtinProblem(false, null, null)).toBeNull();
+    expect(verifiedGtinProblem(false, "412345678903", { gtin: UPC, gtinVerified: true })).toBeNull();
+  });
+
+  it("refuses a ticked box with no GTIN", () => {
+    expect(verifiedGtinProblem(true, null, null)).toMatch(/Enter the GTIN/);
+  });
+
+  it("refuses a ticked box on a GTIN Google won't accept", () => {
+    expect(verifiedGtinProblem(true, "412345678903", null)).toMatch(/doesn't accept/);
+  });
+
+  it("allows verifying a new variant, or an unverified one with a new number", () => {
+    expect(verifiedGtinProblem(true, UPC, null)).toBeNull();
+    expect(verifiedGtinProblem(true, OTHER, { gtin: UPC, gtinVerified: false })).toBeNull();
+    expect(verifiedGtinProblem(true, UPC, { gtin: null, gtinVerified: false })).toBeNull();
+  });
+
+  it("refuses keeping a verified variant ticked after its GTIN changes", () => {
+    expect(verifiedGtinProblem(true, OTHER, { gtin: UPC, gtinVerified: true })).toMatch(/GTIN changed/);
+  });
+
+  it("doesn't count the same number written as UPC-12 or EAN-13 as a change", () => {
+    expect(verifiedGtinProblem(true, `0${UPC}`, { gtin: UPC, gtinVerified: true })).toBeNull();
+  });
+});
+
+describe("parseMpn", () => {
+  it("treats blank as none and trims", () => {
+    expect(parseMpn("  ")).toEqual({ ok: true, value: null });
+    expect(parseMpn(" MG-1042 ")).toEqual({ ok: true, value: "MG-1042" });
+  });
+
+  it("refuses anything longer than Google's limit", () => {
+    expect(parseMpn("x".repeat(MAX_MPN_LENGTH)).ok).toBe(true);
+    expect(parseMpn("x".repeat(MAX_MPN_LENGTH + 1)).ok).toBe(false);
   });
 });
 
