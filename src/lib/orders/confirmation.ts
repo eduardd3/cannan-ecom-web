@@ -5,13 +5,11 @@
 // an admin to approve them, and a refunded review order never gets one.
 import "server-only";
 
+import { APP_ORIGIN } from "@/lib/app-origin";
 import { formatCents } from "@/lib/cart/format";
 import { sendOrderConfirmationEmail } from "@/lib/email/messages";
 import { prisma } from "@/lib/prisma";
 import { addressLines, formatOrderDate } from "./format";
-
-// Fixed origin, never derived from the Host header (see email/verification.ts).
-const ORIGIN = process.env.NODE_ENV === "development" ? "http://localhost:3000" : "https://www.shopcannan.com";
 
 export type ConfirmationResult = "sent" | "already_sent" | "not_paid" | "not_found" | "failed";
 
@@ -62,7 +60,8 @@ export async function sendOrderConfirmation(orderId: number): Promise<Confirmati
       tax: formatCents(order.taxCents),
       total: formatCents(order.subtotalCents + order.shippingCents + order.taxCents),
       address: addressLines(order.shippingAddress),
-      ordersUrl: `${ORIGIN}/orders`,
+      // This deployment's origin: a Preview's orders live in the dev database.
+      ordersUrl: `${APP_ORIGIN}/orders`,
     });
     if (!result.ok) {
       console.error(`Order ${orderId}: confirmation email failed to send`);

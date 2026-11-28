@@ -4,6 +4,7 @@ import Stripe from "stripe"; // value import: `instanceof Stripe.errors.StripeEr
 
 import { headers } from "next/headers";
 
+import { APP_ORIGIN } from "@/lib/app-origin";
 import { getCartView } from "@/lib/cart/queries";
 import { getCurrentCartOwner } from "@/lib/cart/session";
 import { isCheckoutEnabled } from "@/lib/flags";
@@ -30,18 +31,6 @@ export type CheckoutErrorCode =
 export type CheckoutResult =
   | { ok: true; clientSecret: string }
   | { ok: false; error: CheckoutErrorCode; message: string };
-
-// Fixed per environment, never derived from the Host header. Unlike the
-// password-reset links, previews return to their OWN deployment: they use the
-// test-mode Stripe key, so production's return page couldn't find the session.
-// VERCEL_BRANCH_URL is a Vercel system env var (hostname, no protocol).
-const ORIGIN =
-  process.env.NODE_ENV === "development"
-    ? "http://localhost:3000"
-    : process.env.VERCEL_ENV === "preview" && process.env.VERCEL_BRANCH_URL
-      ? `https://${process.env.VERCEL_BRANCH_URL}`
-      : "https://www.shopcannan.com";
-
 
 const EMPTY_CART: CheckoutResult = { ok: false, error: "EMPTY_CART", message: "Your cart is empty." };
 
@@ -118,7 +107,8 @@ export async function createCheckoutSession(): Promise<CheckoutResult> {
       // the page around them (summary, shipping method, Pay button) is ours.
       ui_mode: "elements",
       line_items: buildLineItems(cart),
-      return_url: buildReturnUrl(ORIGIN),
+      // Previews return to their own deployment (lib/app-origin.ts).
+      return_url: buildReturnUrl(APP_ORIGIN),
 
       automatic_tax: { enabled: true },
       shipping_address_collection: { allowed_countries: [...SHIP_TO_COUNTRIES] },

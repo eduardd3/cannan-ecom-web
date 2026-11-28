@@ -5,13 +5,11 @@
 // send another; the order page always shows the current number.
 import "server-only";
 
+import { APP_ORIGIN } from "@/lib/app-origin";
 import { sendOrderShippedEmail } from "@/lib/email/messages";
 import { prisma } from "@/lib/prisma";
 import { addressLines, formatOrderDate } from "./format";
 import { CARRIER_LABEL, trackingUrl } from "./shipping";
-
-// Fixed origin, never derived from the Host header (see email/verification.ts).
-const ORIGIN = process.env.NODE_ENV === "development" ? "http://localhost:3000" : "https://www.shopcannan.com";
 
 export type ShippedEmailResult = "sent" | "already_sent" | "not_fulfilled" | "not_found" | "failed";
 
@@ -57,7 +55,8 @@ export async function sendShippedEmail(orderId: number): Promise<ShippedEmailRes
       trackingUrl: trackingUrl(order.carrier, order.trackingNumber),
       items: order.items,
       address: addressLines(order.shippingAddress),
-      orderUrl: `${ORIGIN}/orders/${order.id}`,
+      // This deployment's origin: a Preview's orders live in the dev database.
+      orderUrl: `${APP_ORIGIN}/orders/${order.id}`,
     });
     if (!result.ok) {
       console.error(`Order ${orderId}: shipped email failed to send`);
