@@ -51,7 +51,7 @@ export async function sendShippedEmail(orderId: number): Promise<ShippedEmailRes
     const result = await sendOrderShippedEmail(order.email, {
       orderId: order.id,
       shippedOn: formatOrderDate(order.fulfilledAt),
-      name: order.user.name,
+      name: order.user?.name ?? null, // null for a guest order
       carrier: CARRIER_LABEL[order.carrier],
       trackingNumber: order.trackingNumber,
       trackingUrl: trackingUrl(order.carrier, order.trackingNumber),

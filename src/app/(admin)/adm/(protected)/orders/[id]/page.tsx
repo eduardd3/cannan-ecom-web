@@ -292,8 +292,13 @@ export default async function OrderDetailPage({ params }: PageProps<"/adm/orders
             Customer
           </h2>
           <p className="mt-2 text-sm text-adm-fg">{order.email}</p>
-          {order.user.email !== order.email && (
-            <p className="text-sm text-adm-muted">Account: {order.user.email}</p>
+          {/* No account: a guest order not yet attached to a verified one. */}
+          {!order.user ? (
+            <p className="text-sm text-adm-muted">Guest checkout</p>
+          ) : (
+            order.user.email !== order.email && (
+              <p className="text-sm text-adm-muted">Account: {order.user.email}</p>
+            )
           )}
           <h3 className="mt-4 text-sm font-medium text-adm-muted">Ship to</h3>
           {address.length > 0 ? (

@@ -50,7 +50,7 @@ export async function sendOrderConfirmation(orderId: number): Promise<Confirmati
     const result = await sendOrderConfirmationEmail(order.email, {
       orderId: order.id,
       placedOn: formatOrderDate(order.createdAt),
-      name: order.user.name,
+      name: order.user?.name ?? null, // null for a guest order
       items: order.items.map((item) => ({
         productName: item.productName,
         variantLabel: item.variantLabel,
