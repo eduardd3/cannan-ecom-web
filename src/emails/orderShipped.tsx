@@ -67,7 +67,7 @@ export function OrderShipped(props: OrderShippedProps) {
             </p>
             <p>
                 Thank you,<br />
-                The Cannan Store • For you &amp; yours
+                Cannan • For you &amp; yours
             </p>
         </div>
     )
