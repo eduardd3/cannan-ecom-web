@@ -1,8 +1,9 @@
 // lib/orders/customer-queries.ts
 //
-// Customer READ side for /orders. Every query is scoped to the signed-in
-// user's id, and selects only what the customer may see: no review reason,
-// staff, Stripe ids, or inventory history.
+// Customer READ side for /orders and the guest order page. Every query
+// selects only what the customer may see: no review reason, staff, Stripe
+// ids, or inventory history. The account queries are scoped to the user's
+// id; getOrderForView takes its scope from the caller.
 import "server-only";
 
 import type { Prisma } from "@/generated/prisma/client";
@@ -129,8 +130,18 @@ export async function listRecentCustomerOrders(userId: number, take = 3) {
 
 /** The order if it belongs to this user; null for someone else's or a missing one. */
 export async function getCustomerOrder(userId: number, orderId: number) {
+  return getOrderForView({ id: orderId, userId });
+}
+
+/**
+ * One order as the customer's order page shows it, matched by `where`. No
+ * access check of its own: the caller decides who may see it (the account
+ * page scopes by userId, the guest page by its access token). Shared so the
+ * two pages can't drift.
+ */
+export async function getOrderForView(where: Prisma.OrderWhereInput) {
   const order = await prisma.order.findFirst({
-    where: { id: orderId, userId },
+    where,
     select: {
       id: true,
       createdAt: true,
@@ -170,4 +181,4 @@ export async function getCustomerOrder(userId: number, orderId: number) {
   };
 }
 
-export type CustomerOrder = NonNullable<Awaited<ReturnType<typeof getCustomerOrder>>>;
+export type CustomerOrder = NonNullable<Awaited<ReturnType<typeof getOrderForView>>>;
