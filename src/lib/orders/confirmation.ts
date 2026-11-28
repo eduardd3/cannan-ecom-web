@@ -8,10 +8,8 @@ import "server-only";
 import { formatCents } from "@/lib/cart/format";
 import { sendOrderConfirmationEmail } from "@/lib/email/messages";
 import { prisma } from "@/lib/prisma";
-import { addressLines, formatOrderDate } from "./format";
-
-// Fixed origin, never derived from the Host header (see email/verification.ts).
-const ORIGIN = process.env.NODE_ENV === "development" ? "http://localhost:3000" : "https://www.shopcannan.com";
+import { discardOrderAccessToken, orderEmailLink, REPEAT_SEND_CODE } from "./access-token";
+import { addressLines, formatOrderDate, shippingName } from "./format";
 
 export type ConfirmationResult = "sent" | "already_sent" | "not_paid" | "not_found" | "failed";
 
@@ -26,6 +24,7 @@ export async function sendOrderConfirmation(orderId: number): Promise<Confirmati
       where: { id: orderId },
       select: {
         id: true,
+        userId: true,
         status: true,
         confirmationEmailSentAt: true,
         createdAt: true,
@@ -47,10 +46,14 @@ export async function sendOrderConfirmation(orderId: number): Promise<Confirmati
     // is the one that matters, so only PAID sends.
     if (order.status !== "PAID") return "not_paid";
 
+    // A guest order mints its link here, inside the try: if minting fails,
+    // the send fails the same way (logged, confirmationEmailSentAt stays null).
+    const link = await orderEmailLink(order, "/orders");
     const result = await sendOrderConfirmationEmail(order.email, {
       orderId: order.id,
       placedOn: formatOrderDate(order.createdAt),
-      name: order.user.name,
+      // A guest has no account name: greet them by the shipping name.
+      name: order.user?.name ?? shippingName(order.shippingAddress),
       items: order.items.map((item) => ({
         productName: item.productName,
         variantLabel: item.variantLabel,
@@ -62,11 +65,21 @@ export async function sendOrderConfirmation(orderId: number): Promise<Confirmati
       tax: formatCents(order.taxCents),
       total: formatCents(order.subtotalCents + order.shippingCents + order.taxCents),
       address: addressLines(order.shippingAddress),
-      ordersUrl: `${ORIGIN}/orders`,
+      orderLink: { url: link.url, guest: link.guest },
     });
     if (!result.ok) {
-      console.error(`Order ${orderId}: confirmation email failed to send`);
-      return "failed";
+      // This token never reached anyone.
+      if (link.token) await discardOrderAccessToken(link.token);
+      if (result.code !== REPEAT_SEND_CODE) {
+        console.error(`Order ${orderId}: confirmation email failed to send`);
+        return "failed";
+      }
+      // An earlier attempt was delivered but never recorded: record it now.
+      await prisma.order.updateMany({
+        where: { id: orderId, confirmationEmailSentAt: null },
+        data: { confirmationEmailSentAt: new Date() },
+      });
+      return "already_sent";
     }
 
     // Guarded so a concurrent send doesn't overwrite the first timestamp.

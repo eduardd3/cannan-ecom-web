@@ -7,11 +7,9 @@ import "server-only";
 
 import { sendOrderShippedEmail } from "@/lib/email/messages";
 import { prisma } from "@/lib/prisma";
-import { addressLines, formatOrderDate } from "./format";
+import { discardOrderAccessToken, orderEmailLink, REPEAT_SEND_CODE } from "./access-token";
+import { addressLines, formatOrderDate, shippingName } from "./format";
 import { CARRIER_LABEL, trackingUrl } from "./shipping";
-
-// Fixed origin, never derived from the Host header (see email/verification.ts).
-const ORIGIN = process.env.NODE_ENV === "development" ? "http://localhost:3000" : "https://www.shopcannan.com";
 
 export type ShippedEmailResult = "sent" | "already_sent" | "not_fulfilled" | "not_found" | "failed";
 
@@ -26,6 +24,7 @@ export async function sendShippedEmail(orderId: number): Promise<ShippedEmailRes
       where: { id: orderId },
       select: {
         id: true,
+        userId: true,
         status: true,
         shippedEmailSentAt: true,
         carrier: true,
@@ -48,20 +47,34 @@ export async function sendShippedEmail(orderId: number): Promise<ShippedEmailRes
       return "not_fulfilled";
     }
 
+    // A guest order mints its own link (a new one, so the confirmation
+    // email's link keeps working). Inside the try: a failed mint fails the send.
+    const link = await orderEmailLink(order, `/orders/${order.id}`);
     const result = await sendOrderShippedEmail(order.email, {
       orderId: order.id,
       shippedOn: formatOrderDate(order.fulfilledAt),
-      name: order.user.name,
+      // A guest has no account name: greet them by the shipping name.
+      name: order.user?.name ?? shippingName(order.shippingAddress),
       carrier: CARRIER_LABEL[order.carrier],
       trackingNumber: order.trackingNumber,
       trackingUrl: trackingUrl(order.carrier, order.trackingNumber),
       items: order.items,
       address: addressLines(order.shippingAddress),
-      orderUrl: `${ORIGIN}/orders/${order.id}`,
+      orderUrl: link.url,
     });
     if (!result.ok) {
-      console.error(`Order ${orderId}: shipped email failed to send`);
-      return "failed";
+      // This token never reached anyone.
+      if (link.token) await discardOrderAccessToken(link.token);
+      if (result.code !== REPEAT_SEND_CODE) {
+        console.error(`Order ${orderId}: shipped email failed to send`);
+        return "failed";
+      }
+      // An earlier attempt was delivered but never recorded: record it now.
+      await prisma.order.updateMany({
+        where: { id: orderId, shippedEmailSentAt: null },
+        data: { shippedEmailSentAt: new Date() },
+      });
+      return "already_sent";
     }
 
     // Guarded so a concurrent send doesn't overwrite the first timestamp.

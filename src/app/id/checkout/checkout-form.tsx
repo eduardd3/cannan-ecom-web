@@ -26,7 +26,7 @@ const stripePromise = publishableKey ? loadStripe(publishableKey) : null;
 type CheckoutFormProps = {
     heading: ReactNode;
     lines: SummaryLine[];
-    email: string;
+    email: string | null; // null: a guest, who enters it in the Contact step
 };
 
 export default function CheckoutForm({ heading, lines, email }: CheckoutFormProps) {
@@ -49,6 +49,7 @@ export default function CheckoutForm({ heading, lines, email }: CheckoutFormProp
                     return;
                 }
                 switch (result.error) {
+                    //  Signed-in path only: the session outlived the account.
                     case "UNAUTHENTICATED":
                         router.replace("/id/signin?callbackUrl=/id/checkout");
                         break;

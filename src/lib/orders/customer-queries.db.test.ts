@@ -3,12 +3,12 @@ import { afterAll, beforeEach, describe, expect, it } from "vitest";
 import type { Prisma } from "@/generated/prisma/client";
 import { prisma } from "@/lib/prisma";
 import { createUser, createVariant, resetDb } from "../../../test/db";
-import { getCustomerOrder, listCustomerOrders, listRecentCustomerOrders } from "./customer-queries";
+import { getCustomerOrder, getOrderForView, listCustomerOrders, listRecentCustomerOrders } from "./customer-queries";
 
 let sequence = 0;
 
 /** An order written directly: these tests read orders, not place them. */
-async function createOrder(userId: number, data: Partial<Prisma.OrderUncheckedCreateInput> = {}) {
+async function createOrder(userId: number | null, data: Partial<Prisma.OrderUncheckedCreateInput> = {}) {
   sequence += 1;
   const variant = await createVariant({ stock: 0 });
   return prisma.order.create({
@@ -65,6 +65,13 @@ describe("listRecentCustomerOrders", () => {
 });
 
 describe("getCustomerOrder", () => {
+  it("returns null for a guest order, even one with the user's email", async () => {
+    const ana = await createUser();
+    const order = await createOrder(null, { email: ana.email });
+
+    expect(await getCustomerOrder(ana.id, order.id)).toBeNull();
+  });
+
   it("returns null for another customer's order", async () => {
     const [ana, ben] = await Promise.all([createUser(), createUser()]);
     const order = await createOrder(ana.id);
@@ -156,5 +163,22 @@ describe("getCustomerOrder", () => {
       trackingNumber: shipped.trackingNumber,
     });
     expect((await getCustomerOrder(ana.id, paid.id))!.shipment).toBeNull();
+  });
+});
+
+describe("getOrderForView", () => {
+  it("returns a guest order by id, with the same shape as an account order", async () => {
+    const ana = await createUser();
+    const guest = await createOrder(null);
+    const owned = await createOrder(ana.id);
+
+    const guestView = await getOrderForView({ id: guest.id });
+    const ownedView = await getCustomerOrder(ana.id, owned.id);
+    expect(guestView?.id).toBe(guest.id);
+    expect(Object.keys(guestView!).sort()).toEqual(Object.keys(ownedView!).sort());
+  });
+
+  it("returns null when nothing matches", async () => {
+    expect(await getOrderForView({ id: 999_999 })).toBeNull();
   });
 });

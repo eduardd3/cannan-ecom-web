@@ -39,6 +39,9 @@ export const contactDailyLimiter = limiter("contact-day", 10, "24 h");
 // Checkout, per user: every call creates a Stripe Checkout Session. Each visit
 // to /id/checkout makes one, so this leaves room for reloads and retries.
 export const checkoutLimiter = limiter("checkout", 10, "10 m");
+// Guest checkout, per IP: the same budget as a user. Starting point; a shared
+// IP (office, mobile carrier) shares it, so watch it once guests check out.
+export const guestCheckoutLimiter = limiter("checkout-guest", 10, "10 m");
 // Guest carts, per IP; signed-in users have no cart limit. Every guest add
 // counts against the first; only adds that create a new guest cart (a row
 // plus a cookie) count against the second, which stops cart-row flooding.

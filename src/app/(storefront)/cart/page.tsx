@@ -33,9 +33,9 @@ function shippingLabel(subtotalCents: number): string {
 }
 
 //  Checkout closed wins over cart issues: fixing the lines wouldn't help.
-//  Checkout needs an account, so a guest's button goes through sign-in (which
-//  merges the guest cart) and comes back to checkout.
-function CheckoutAction({ hasIssues, signedIn }: { hasIssues: boolean; signedIn: boolean }) {
+//  Signed in or not, the button goes straight to checkout; a guest can sign
+//  in from its Contact step instead.
+function CheckoutAction({ hasIssues }: { hasIssues: boolean }) {
     if (!isCheckoutEnabled()) {
         return (
             <button type="button" disabled className={disabledButtonClass}>
@@ -55,9 +55,7 @@ function CheckoutAction({ hasIssues, signedIn }: { hasIssues: boolean; signedIn:
             </>
         );
     }
-    return (
-        <ButtonLink href={signedIn ? "/id/checkout" : "/id/signin?callbackUrl=%2Fid%2Fcheckout"}>Checkout</ButtonLink>
-    );
+    return <ButtonLink href="/id/checkout">Checkout</ButtonLink>;
 }
 
 //  Signed-in users and guests (Cart.guestTokenHash) see the same page. A
@@ -117,7 +115,7 @@ export default async function Cart() {
                         <SummaryRow label="Tax" value="Calculated at checkout" />
                     </SummaryList>
                     <div className="flex flex-col gap-2">
-                        <CheckoutAction hasIssues={cart.hasIssues} signedIn={owner?.kind === "user"} />
+                        <CheckoutAction hasIssues={cart.hasIssues} />
                     </div>
                 </section>
             </div>

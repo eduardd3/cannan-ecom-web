@@ -99,19 +99,17 @@ export default function LoginForm({ signupEnabled }: { signupEnabled: boolean })
                 </div>
             </Form>
 
-            <div className="mt-6 flex flex-col items-center gap-3 text-center">
-                {signupEnabled && (
+            {/* Only rendered with something in it, so a closed signup leaves no gap. */}
+            {signupEnabled && (
+                <div className="mt-6 flex flex-col items-center gap-3 text-center">
                     <p className="text-body-md text-stone">
                         New to myCANN?{' '}
                         <Link href={signupHref} className={textLinkClass}>
                             Create an account
                         </Link>
                     </p>
-                )}
-                <p className="max-w-75 text-caption text-stone">
-                    An account is required to place an order and complete checkout.
-                </p>
-            </div>
+                </div>
+            )}
         </div>
     );
 }

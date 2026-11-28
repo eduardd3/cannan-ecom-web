@@ -6,7 +6,8 @@
 
 import type Stripe from "stripe";
 
-import { VARIANT_ID_METADATA_KEY } from "./session-params";
+import { normalizeEmail } from "@/lib/normalize-email";
+import { GUEST_CART_ID_METADATA_KEY, VARIANT_ID_METADATA_KEY } from "./session-params";
 
 // ---------------------------------------------------------------------------
 // Output shape
@@ -18,10 +19,14 @@ export type ParsedLine = {
   unitPriceCents: number; // what Stripe CHARGED, not what the DB says now
 };
 
+// Who checked out: a signed-in user (client_reference_id) or a guest cart
+// (metadata), as createCheckoutSession set it.
+export type SessionOwner = { kind: "user"; userId: number } | { kind: "guest"; cartId: number };
+
 export type ParsedSession = {
   sessionId: string;
-  userId: number;
-  email: string;
+  owner: SessionOwner;
+  email: string; // normalized (trim + lowercase)
   shippingAddress: Stripe.Address | null; // stored as Json on Order
   shippingName: string | null;
   paymentIntentId: string | null;
@@ -35,7 +40,7 @@ export type ParsedSession = {
 
 /**
  * Thrown when a PAID session doesn't contain what our code put there
- * (missing client_reference_id, missing variantId metadata, a null amount).
+ * (no owner, missing variantId metadata, a null amount).
  * That means a bug or a session we didn't create, never a customer mistake.
  */
 export class SessionParseError extends Error {
@@ -87,15 +92,15 @@ export function parseSession(
   session: Stripe.Checkout.Session,
   lineItems: Stripe.LineItem[],
 ): ParsedSession {
-  const userId = Number(session.client_reference_id);
-  if (!isPositiveInteger(userId)) {
-    throw new SessionParseError(`Session ${session.id} has no valid client_reference_id`);
-  }
+  const owner = parseOwner(session);
 
-  const email = session.customer_details?.email ?? session.customer_email;
-  if (!email) {
+  const rawEmail = session.customer_details?.email ?? session.customer_email;
+  if (!rawEmail) {
     throw new SessionParseError(`Session ${session.id} has no customer email`);
   }
+  // Guest orders attach to accounts by this value, and User.email is stored
+  // normalized, so both sides must match.
+  const email = normalizeEmail(rawEmail);
 
   // On the pinned API version (2026-09-30.endive) the collected address lives
   // under collected_information. Missing shouldn't happen with address
@@ -122,7 +127,7 @@ export function parseSession(
 
   return {
     sessionId: session.id,
-    userId,
+    owner,
     email,
     shippingAddress: shipping?.address ?? null,
     shippingName: shipping?.name ?? null,
@@ -164,6 +169,20 @@ export function checkSubtotal(parsed: ParsedSession): string | null {
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
+
+// A user session wins if it has a valid client_reference_id; sessions created
+// before guest checkout all have one, so they still parse.
+function parseOwner(session: Stripe.Checkout.Session): SessionOwner {
+  const userId = Number(session.client_reference_id);
+  if (isPositiveInteger(userId)) return { kind: "user", userId };
+
+  const cartId = Number(session.metadata?.[GUEST_CART_ID_METADATA_KEY]);
+  if (isPositiveInteger(cartId)) return { kind: "guest", cartId };
+
+  throw new SessionParseError(
+    `Session ${session.id} has no valid client_reference_id or ${GUEST_CART_ID_METADATA_KEY} metadata`,
+  );
+}
 
 function isPositiveInteger(value: number): boolean {
   return Number.isInteger(value) && value > 0;

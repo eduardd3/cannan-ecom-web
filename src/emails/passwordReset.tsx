@@ -29,7 +29,7 @@ export function PasswordReset({name, email, url}: PasswordResetProps) {
             </p>
             <p>
                 Thank you,<br />
-                The Cannan Store • For you &amp; yours
+                Cannan • For you &amp; yours
             </p>
         </div>
     )

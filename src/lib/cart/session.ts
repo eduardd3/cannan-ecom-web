@@ -25,7 +25,8 @@ export async function getCurrentUserId(): Promise<number | null> {
 /**
  * Whose cart this request uses. Signed in always wins: a leftover guest cookie
  * is ignored. Doesn't check the cart exists; the queries and actions do.
- * Checkout and orders use getCurrentUserId instead: they need an account.
+ * Checkout uses it too, so guests can check out; /orders uses getCurrentUserId
+ * because it needs an account.
  */
 export const getCurrentCartOwner = cache(async (): Promise<CartOwner | null> => {
     const userId = await getCurrentUserId();

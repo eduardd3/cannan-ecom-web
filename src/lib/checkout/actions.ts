@@ -2,17 +2,21 @@
 
 import Stripe from "stripe"; // value import: `instanceof Stripe.errors.StripeError` needs it at runtime
 
+import { headers } from "next/headers";
+
+import { APP_ORIGIN } from "@/lib/app-origin";
 import { getCartView } from "@/lib/cart/queries";
-import { getCurrentUserId } from "@/lib/cart/session";
+import { getCurrentCartOwner } from "@/lib/cart/session";
 import { isCheckoutEnabled } from "@/lib/flags";
 import { prisma } from "@/lib/prisma";
-import { checkLimit, checkoutLimiter } from "@/lib/rate-limit";
+import { checkLimit, checkoutLimiter, clientIp, guestCheckoutLimiter } from "@/lib/rate-limit";
 import { SHIP_TO_COUNTRIES } from "@/lib/shipping/countries";
 import { getStripe } from "@/lib/stripe";
 import {
   buildLineItems,
   buildReturnUrl,
   buildShippingOptions,
+  GUEST_CART_ID_METADATA_KEY,
 } from "./session-params";
 
 export type CheckoutErrorCode =
@@ -28,21 +32,12 @@ export type CheckoutResult =
   | { ok: true; clientSecret: string }
   | { ok: false; error: CheckoutErrorCode; message: string };
 
-// Fixed per environment, never derived from the Host header. Unlike the
-// password-reset links, previews return to their OWN deployment: they use the
-// test-mode Stripe key, so production's return page couldn't find the session.
-// VERCEL_BRANCH_URL is a Vercel system env var (hostname, no protocol).
-const ORIGIN =
-  process.env.NODE_ENV === "development"
-    ? "http://localhost:3000"
-    : process.env.VERCEL_ENV === "preview" && process.env.VERCEL_BRANCH_URL
-      ? `https://${process.env.VERCEL_BRANCH_URL}`
-      : "https://www.shopcannan.com";
-
+const EMPTY_CART: CheckoutResult = { ok: false, error: "EMPTY_CART", message: "Your cart is empty." };
 
 /**
- * Creates a Stripe Checkout Session for the signed-in user's current cart and
- * returns the client secret the checkout page's Stripe Elements initialize from.
+ * Creates a Stripe Checkout Session for the current cart (a signed-in user's,
+ * or a guest's by cookie) and returns the client secret the checkout page's
+ * Stripe Elements initialize from.
  *
  * Takes NO input on purpose. Everything (who, what, how much) comes from the
  * session and the database. There's nothing for a caller to tamper with.
@@ -55,14 +50,16 @@ export async function createCheckoutSession(): Promise<CheckoutResult> {
     return { ok: false, error: "CHECKOUT_DISABLED", message: "Checkout isn't open yet." };
   }
 
-  const userId = await getCurrentUserId();
-  if (!userId) {
-    return { ok: false, error: "UNAUTHENTICATED", message: "Please sign in to check out." };
-  }
+  // No session and no guest cookie: a visitor with nothing to buy.
+  const owner = await getCurrentCartOwner();
+  if (!owner) return EMPTY_CART;
 
-  // Per user, not per IP: only signed-in users get this far. Before the
-  // database and Stripe, so throttled calls cost nothing.
-  const limit = await checkLimit(checkoutLimiter, String(userId));
+  // Users per user id; guests per IP, the way the guest cart actions do it.
+  // Before the database and Stripe, so throttled calls cost nothing.
+  const limit =
+    owner.kind === "user"
+      ? await checkLimit(checkoutLimiter, String(owner.userId))
+      : await checkLimit(guestCheckoutLimiter, clientIp(await headers()));
   if (!limit.ok) {
     return {
       ok: false,
@@ -72,20 +69,19 @@ export async function createCheckoutSession(): Promise<CheckoutResult> {
   }
 
   try {
-    const user = await prisma.user.findUnique({
-      where: { id: userId },
-      select: { email: true },
-    });
-    // Session outlived the account
-    if (!user) {
+    // Users only: null when the session outlived the account.
+    const user =
+      owner.kind === "user"
+        ? await prisma.user.findUnique({ where: { id: owner.userId }, select: { email: true } })
+        : null;
+    if (owner.kind === "user" && !user) {
       return { ok: false, error: "UNAUTHENTICATED", message: "Please sign in to check out." };
     }
 
-    // Soft checks; the authoritative stock check happens in the webhook
-    const cart = await getCartView({ kind: "user", userId });
-    if (cart.lines.length === 0) {
-      return { ok: false, error: "EMPTY_CART", message: "Your cart is empty." };
-    }
+    // Soft checks; the authoritative stock check happens in the webhook.
+    // cartId is null when the guest's cookie has no cart row behind it.
+    const cart = await getCartView(owner);
+    if (cart.lines.length === 0 || cart.cartId === null) return EMPTY_CART;
     if (cart.hasIssues) {
       return {
         ok: false,
@@ -94,20 +90,31 @@ export async function createCheckoutSession(): Promise<CheckoutResult> {
       };
     }
 
+    // Who the order belongs to, carried in the session for the webhook
+    // (parseSession). A guest has no email yet (the checkout page collects
+    // it) and no account: the cart id tells the webhook which cart to clear.
+    const ownerParams: Pick<Stripe.Checkout.SessionCreateParams, "customer_email" | "client_reference_id" | "metadata"> =
+      owner.kind === "user" && user
+        ? {
+            customer_email: user.email, // prefills and locks the email field
+            client_reference_id: String(owner.userId), // the webhook reads this to know whose order it is
+          }
+        : { metadata: { [GUEST_CART_ID_METADATA_KEY]: String(cart.cartId) } };
+
     const session = await getStripe().checkout.sessions.create({
       mode: "payment",
       // "elements": Stripe draws only the address, payment and wallet fields;
       // the page around them (summary, shipping method, Pay button) is ours.
       ui_mode: "elements",
       line_items: buildLineItems(cart),
-      return_url: buildReturnUrl(ORIGIN),
+      // Previews return to their own deployment (lib/app-origin.ts).
+      return_url: buildReturnUrl(APP_ORIGIN),
 
       automatic_tax: { enabled: true },
       shipping_address_collection: { allowed_countries: [...SHIP_TO_COUNTRIES] },
       shipping_options: buildShippingOptions(cart.subtotalCents),
 
-      customer_email: user.email, // prefills and locks the email field
-      client_reference_id: String(userId), // the webhook reads this to know whose order it is
+      ...ownerParams,
     });
 
     if (!session.client_secret) {

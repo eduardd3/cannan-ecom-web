@@ -19,12 +19,23 @@ type ReturnStatusProps = {
     primary: { label: string; href: string };
     //  "Need help? Contact us" under the actions (the not-found state).
     showContact?: boolean;
+    //  The secondary "Continue shopping" link. Off when primary already says
+    //  "Continue shopping" (guests have no orders page to send them to).
+    showContinueShopping?: boolean;
 };
 
 //  One result of the checkout return page. The server page picks the state
 //  and checks ownership; this only renders it, and moves focus to the <h1>
 //  on load so screen readers announce the result.
-export default function ReturnStatus({ eyebrow, title, body, details, primary, showContact }: ReturnStatusProps) {
+export default function ReturnStatus({
+    eyebrow,
+    title,
+    body,
+    details,
+    primary,
+    showContact,
+    showContinueShopping = true,
+}: ReturnStatusProps) {
     const titleRef = useRef<HTMLHeadingElement>(null);
 
     useEffect(() => {
@@ -49,9 +60,11 @@ export default function ReturnStatus({ eyebrow, title, body, details, primary, s
 
             <div className="flex flex-col items-center gap-3">
                 <ButtonLink href={primary.href}>{primary.label}</ButtonLink>
-                <Link href="/collections/signature" className={`${textLinkClass} py-2 text-body-md`}>
-                    Continue shopping
-                </Link>
+                {showContinueShopping && (
+                    <Link href="/collections/signature" className={`${textLinkClass} py-2 text-body-md`}>
+                        Continue shopping
+                    </Link>
+                )}
             </div>
 
             {showContact && (

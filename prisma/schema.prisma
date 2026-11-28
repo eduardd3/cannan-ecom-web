@@ -265,7 +265,7 @@ model ProductImage {
 
 // Owned by a user OR a guest (CHECK exactly one, in SQL). A guest cart is
 // keyed by the SHA-256 of a cookie token (see src/lib/tokens.ts) and is
-// merged into the user's cart on sign-in. Checkout still requires an account.
+// merged into the user's cart on sign-in. Guests check out from it too.
 model Cart {
   id             Int      @id @default(autoincrement())
   userId         Int?     @unique
@@ -295,8 +295,11 @@ model CartItem {
 
 model Order {
   id                 Int         @id @default(autoincrement())
-  userId             Int
-  user               User        @relation(fields: [userId], references: [id], onDelete: Restrict)
+  // Null for a guest order. Set when the guest's email is verified on an
+  // account (at the webhook if that account already exists, or when the
+  // account verifies later). Never cleared once set.
+  userId             Int?
+  user               User?       @relation(fields: [userId], references: [id], onDelete: Restrict)
   status             OrderStatus @default(PAID)
   // Why the order went to NEEDS_REVIEW. Required while in review (CHECK in
   // SQL) and kept after it's resolved, as history.
@@ -343,6 +346,8 @@ model Order {
   disputeReason   String?
   disputedAt      DateTime?
 
+  // The customer's email from Stripe, normalized (trim + lowercase). Every
+  // email for this order goes here, and guest orders attach by it.
   email           String
   shippingAddress Json?
 
@@ -359,9 +364,25 @@ model Order {
 
   items                OrderItem[]
   inventoryAdjustments InventoryAdjustment[]
+  accessTokens         OrderAccessToken[]
 
   @@index([userId, createdAt])
   @@index([status])
+  @@index([email]) // attaching guest orders on verification
+}
+
+// Private links to a guest order, sent in its emails. Only the SHA-256 of the
+// token is stored; the raw token exists only in the email. Each email mints
+// its own token, so a later email never breaks an earlier link. Deleting an
+// order's rows revokes its links.
+model OrderAccessToken {
+  id        Int      @id @default(autoincrement())
+  orderId   Int
+  order     Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  tokenHash String   @unique
+  createdAt DateTime @default(now())
+
+  @@index([orderId])
 }
 
 // Snapshot of the listing at purchase time; later edits never rewrite it.

@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { formatOrderDay, parseOrderId } from "./format";
+import { formatOrderDay, parseOrderId, shippingName } from "./format";
 
 describe("formatOrderDay", () => {
   it("shows the shop's date with no leading zero or time", () => {
@@ -22,6 +22,19 @@ describe("parseOrderId", () => {
   it("rejects ids that can't be an order", () => {
     for (const raw of ["0", "-1", "1.5", "abc", "", "2147483648", "99999999999999999999"]) {
       expect(parseOrderId(raw)).toBeNull();
+    }
+  });
+});
+
+describe("shippingName", () => {
+  it("reads the recipient's name from the stored address", () => {
+    expect(shippingName({ name: "Ana Buyer", line1: "1 Main St" })).toBe("Ana Buyer");
+    expect(shippingName({ name: "  Ana Buyer " })).toBe("Ana Buyer");
+  });
+
+  it("returns null when there's no usable name", () => {
+    for (const value of [null, undefined, "Ana", [], {}, { name: null }, { name: "   " }, { name: 42 }]) {
+      expect(shippingName(value)).toBeNull();
     }
   });
 });

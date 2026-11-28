@@ -35,11 +35,9 @@ export default function MyCANNPage () {
 
                 <GoldRule className="mx-auto my-5" />
 
-                {/* TODO(copy): intro paragraph, both versions. */}
+                {/* TODO(copy): intro paragraph. One version: an account isn't needed to check out. */}
                 <p className="mx-auto mb-10 max-w-115 text-body-lg text-stone">
-                    {signupOpen
-                        ? "Sign in to see your orders and pick up your cart where you left off, or create an account to check out."
-                        : "Sign in to see your orders and pick up your cart where you left off."}
+                    Sign in to see your orders and pick up your cart where you left off.
                 </p>
 
                 <div className="mx-auto flex max-w-95 flex-col gap-4">
@@ -64,10 +62,6 @@ export default function MyCANNPage () {
                         </p>
                     )}
                 </div>
-
-                <p className="mx-auto mt-6 max-w-100 text-caption text-stone">
-                    An account is required to place an order and complete checkout.
-                </p>
 
                 <AccountFeatures />
             </div>

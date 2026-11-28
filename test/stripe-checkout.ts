@@ -5,10 +5,17 @@ export type CheckoutLine = { variantId: number; quantity: number; unitPriceCents
 
 let sequence = 0;
 
+// userId null + guestCartId: a guest checkout, as createCheckoutSession builds it.
 export function fakeCheckout(
-  userId: number,
+  userId: number | null,
   lines: CheckoutLine[],
-  options: { paymentStatus?: "paid" | "unpaid"; subtotalAdjustCents?: number; address?: Partial<Stripe.Address> } = {},
+  options: {
+    paymentStatus?: "paid" | "unpaid";
+    subtotalAdjustCents?: number;
+    address?: Partial<Stripe.Address>;
+    guestCartId?: number;
+    email?: string;
+  } = {},
 ) {
   sequence += 1;
   const subtotal = lines.reduce((sum, line) => sum + line.unitPriceCents * line.quantity, 0);
@@ -17,8 +24,9 @@ export function fakeCheckout(
   const session = {
     id: `cs_test_${sequence}`,
     payment_status: options.paymentStatus ?? "paid",
-    client_reference_id: String(userId),
-    customer_details: { email: "buyer@example.com" },
+    client_reference_id: userId === null ? null : String(userId),
+    metadata: options.guestCartId === undefined ? {} : { guestCartId: String(options.guestCartId) },
+    customer_details: { email: options.email ?? "buyer@example.com" },
     customer_email: null,
     collected_information: {
       shipping_details: {

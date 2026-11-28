@@ -3,7 +3,7 @@ import { redirect } from "next/navigation";
 
 import PageHeading from "@/app/components/page-heading";
 import { getCartView } from "@/lib/cart/queries";
-import { getCurrentUser } from "@/lib/cart/session";
+import { getCurrentCartOwner, getCurrentUser } from "@/lib/cart/session";
 import type { CartView } from "@/lib/cart/types";
 import { isCheckoutEnabled } from "@/lib/flags";
 import CheckoutForm from "./checkout-form";
@@ -19,22 +19,31 @@ export const metadata: Metadata = {
 //  even see a payment form. It never talks to Stripe itself; creating a
 //  session is a side effect, and rendering must not have side effects.
 //
-//  The proxy already sends signed-out visitors to sign-in (auth.config.ts);
-//  the check here covers a session revoked since the JWT was issued.
+//  Signed-in users and guests (by cart cookie) both check out here. A visitor
+//  with neither has no cart, so there's nothing to buy.
 export default async function CheckoutPage() {
     //  Checkout closed in this environment: the cart page says why.
     //  createCheckoutSession enforces the same flag.
     if (!isCheckoutEnabled()) redirect("/cart");
 
-    const user = await getCurrentUser();
-    if (!user) redirect("/id/signin?callbackUrl=/id/checkout");
+    const owner = await getCurrentCartOwner();
+    if (!owner) redirect("/cart");
+
+    //  A signed-in user's email, for the Contact step. Missing only when the
+    //  session was revoked since the JWT was issued. A guest types theirs.
+    let email: string | null = null;
+    if (owner.kind === "user") {
+        const user = await getCurrentUser();
+        if (!user) redirect("/id/signin?callbackUrl=/id/checkout");
+        email = user.email;
+    }
 
     //  Temporary guard, as on the cart page: a failed read goes back to /cart,
     //  which shows the "couldn't load" message. redirect() throws, so it stays
     //  outside the try.
     let cart: CartView | undefined;
     try {
-        cart = await getCartView({ kind: "user", userId: user.id });
+        cart = await getCartView(owner);
     } catch (error) {
         console.error("Failed to load cart for checkout", error);
     }
@@ -59,7 +68,7 @@ export default async function CheckoutPage() {
         <CheckoutForm
             heading={<PageHeading eyebrow="Finalizar compra" title="Checkout" align="start" />}
             lines={lines}
-            email={user.email}
+            email={email}
         />
     );
 }

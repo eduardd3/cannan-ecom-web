@@ -41,9 +41,12 @@ export const authConfig = {
           return Response.redirect(new URL("/myCANN/dashboard", nextUrl));
         }
         if (pathname.startsWith("/myCANN/dashboard")) return !!user;
+        // A guest order's private link: the page checks the token itself.
+        // The trailing slash keeps bare /orders/guest behind sign-in.
+        if (pathname.startsWith("/orders/guest/")) return true;
         if (pathname.startsWith("/orders")) return !!user;
-        // Checkout requires an account; false sends the visitor to pages.signIn.
-        if (pathname.startsWith("/id/checkout")) return !!user;
+        // No rule for /id/checkout: guests check out too. The checkout page,
+        // its return page, and createCheckoutSession check ownership themselves.
 
         return true;
     },
