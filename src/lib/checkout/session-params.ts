@@ -16,6 +16,10 @@ type ShippingOption = Stripe.Checkout.SessionCreateParams.ShippingOption;
 // would silently break order creation.
 export const VARIANT_ID_METADATA_KEY = "variantId";
 
+// The session metadata key that marks a guest checkout: the guest cart's id,
+// so the webhook clears the right cart. Same reason to share it.
+export const GUEST_CART_ID_METADATA_KEY = "guestCartId";
+
 // Stripe's "General – Tangible Goods". Set on every line so tax doesn't
 // depend on the Dashboard's preset tax code.
 export const PRODUCT_TAX_CODE = "txcd_99999999";

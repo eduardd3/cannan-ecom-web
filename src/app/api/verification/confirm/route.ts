@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { TokenType } from "@/generated/prisma/client";
+import { attachGuestOrders } from "@/lib/orders/attach";
 import { prisma } from "@/lib/prisma";
 import { consumeToken } from "@/lib/tokens";
 import { checkLimit, clientIp, tokenLimiter, tooManyRequests } from "@/lib/rate-limit";
@@ -40,6 +41,11 @@ export async function POST(req: Request) {
                 where: { id: userId, emailVerified: null },
                 data: { emailVerified: new Date() },
             });
+
+            // The address is now proven, so guest orders placed with it
+            // join the account. Also on a repeat verification: harmless.
+            const user = await tx.user.findUniqueOrThrow({ where: { id: userId }, select: { email: true } });
+            await attachGuestOrders(tx, userId, user.email);
             return true;
         });
     } catch (e) {

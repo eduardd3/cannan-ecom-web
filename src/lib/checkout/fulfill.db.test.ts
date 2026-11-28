@@ -158,3 +158,77 @@ describe("fulfillCheckout", () => {
     expect(invalidateCatalogFromRoute).not.toHaveBeenCalled();
   });
 });
+
+describe("fulfillCheckout for a guest", () => {
+  let guestSequence = 0;
+  /** A guest cart row; the hash only has to be unique here. */
+  async function guestCart(lines: { variantId: number; quantity: number }[]) {
+    guestSequence += 1;
+    return prisma.cart.create({
+      data: { guestTokenHash: `test-guest-hash-${guestSequence}`, items: { create: lines } },
+    });
+  }
+
+  it("creates an order with no account and a normalized email, and clears only the guest cart's lines", async () => {
+    const variant = await createVariant({ stock: 5 });
+    const notBought = await createVariant({ stock: 5 });
+    const cart = await guestCart([
+      { variantId: variant.id, quantity: 1 },
+      { variantId: notBought.id, quantity: 1 },
+    ]);
+    // Same variant in another guest's cart and a user's cart: both stay.
+    const otherGuest = await guestCart([{ variantId: variant.id, quantity: 1 }]);
+    const user = await createUser();
+    await addToCart(user.id, variant.id, 1);
+
+    const sessionId = stripeReturns(
+      fakeCheckout(null, [{ variantId: variant.id, quantity: 1, unitPriceCents: 1500 }], {
+        guestCartId: cart.id,
+        email: "  Guest@Example.COM ",
+      }),
+    );
+    expect(await fulfillCheckout(sessionId)).toMatchObject({ status: "created", needsReview: false });
+
+    const order = await prisma.order.findUniqueOrThrow({ where: { stripeCheckoutSessionId: sessionId } });
+    expect(order.userId).toBeNull();
+    expect(order.email).toBe("guest@example.com");
+    expect(await stockOf(variant.id)).toBe(4);
+
+    const left = await prisma.cartItem.findMany({ select: { cartId: true, variantId: true }, orderBy: { id: "asc" } });
+    expect(left).toEqual([
+      { cartId: cart.id, variantId: notBought.id },
+      { cartId: otherGuest.id, variantId: variant.id },
+      { cartId: expect.any(Number), variantId: variant.id }, // the user's cart
+    ]);
+  });
+
+  it("attaches to a verified account with the same email, and not to an unverified one", async () => {
+    const variant = await createVariant({ stock: 5 });
+    const line = [{ variantId: variant.id, quantity: 1, unitPriceCents: 1500 }];
+    const verified = await prisma.user.create({ data: { email: "verified@example.com", emailVerified: new Date() } });
+    await prisma.user.create({ data: { email: "unverified@example.com" } });
+
+    const toVerified = stripeReturns(
+      fakeCheckout(null, line, { guestCartId: (await guestCart([])).id, email: "Verified@Example.com" }),
+    );
+    await fulfillCheckout(toVerified);
+    const toUnverified = stripeReturns(
+      fakeCheckout(null, line, { guestCartId: (await guestCart([])).id, email: "unverified@example.com" }),
+    );
+    await fulfillCheckout(toUnverified);
+
+    const attached = await prisma.order.findUniqueOrThrow({ where: { stripeCheckoutSessionId: toVerified } });
+    expect(attached.userId).toBe(verified.id);
+    const waiting = await prisma.order.findUniqueOrThrow({ where: { stripeCheckoutSessionId: toUnverified } });
+    expect(waiting.userId).toBeNull();
+  });
+
+  it("still creates the order when the guest cart is already gone", async () => {
+    const variant = await createVariant({ stock: 5 });
+    const sessionId = stripeReturns(
+      fakeCheckout(null, [{ variantId: variant.id, quantity: 1, unitPriceCents: 1500 }], { guestCartId: 999_999 }),
+    );
+    expect(await fulfillCheckout(sessionId)).toMatchObject({ status: "created" });
+    expect(await stockOf(variant.id)).toBe(4);
+  });
+});

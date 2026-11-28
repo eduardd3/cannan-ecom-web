@@ -11,6 +11,7 @@ import { Prisma } from "@/generated/prisma/client";
 import { invalidateCatalogFromRoute } from "@/lib/catalog/cache";
 import { formatVariantLabel } from "@/lib/catalog/format";
 import { adjustStock } from "@/lib/inventory/adjust";
+import { findVerifiedUserIdByEmail } from "@/lib/orders/attach";
 import { prisma } from "@/lib/prisma";
 import { blockedDestination } from "@/lib/shipping/countries";
 import { getStripe } from "@/lib/stripe";
@@ -102,9 +103,13 @@ async function createOrder(
 
   // 2. The order and its items. If the unique constraint on
   //    stripeCheckoutSessionId fires, it fires HERE, before any stock moves.
+  //    A guest order goes to the verified account with its email, if one
+  //    exists; otherwise it waits for verification (lib/orders/attach.ts).
+  const { owner } = parsed;
+  const userId = owner.kind === "user" ? owner.userId : await findVerifiedUserIdByEmail(tx, parsed.email);
   const order = await tx.order.create({
     data: {
-      userId: parsed.userId,
+      userId,
       status: "PAID",
       subtotalCents: parsed.subtotalCents,
       shippingCents: parsed.shippingCents,
@@ -171,9 +176,13 @@ async function createOrder(
     });
   }
 
-  // 5. Remove the purchased lines from the cart, and ONLY those.
+  // 5. Remove the purchased lines from the cart that paid, and ONLY those.
+  //    A guest cart that's gone (merged on sign-in, or pruned) matches nothing.
   await tx.cartItem.deleteMany({
-    where: { cart: { userId: parsed.userId }, variantId: { in: variantIds } },
+    where: {
+      ...(owner.kind === "user" ? { cart: { userId: owner.userId } } : { cartId: owner.cartId }),
+      variantId: { in: variantIds },
+    },
   });
 
   return { status: "created", orderId: order.id, needsReview: reasons.length > 0 };

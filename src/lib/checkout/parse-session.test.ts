@@ -62,7 +62,7 @@ describe("parseSession", () => {
   it("parses a complete session", () => {
     expect(parseSession(session(), [lineItem()])).toEqual({
       sessionId: "cs_test_1",
-      userId: 42,
+      owner: { kind: "user", userId: 42 },
       email: "buyer@example.com",
       shippingAddress: { line1: "1 Main St", city: "Los Angeles", state: "CA", postal_code: "90001", country: "US" },
       shippingName: "Ana Buyer",
@@ -91,9 +91,42 @@ describe("parseSession", () => {
     expect(parsed.shippingName).toBeNull();
   });
 
-  it("throws on a missing or invalid user id", () => {
-    expect(() => parseSession(session({ client_reference_id: null }), [lineItem()])).toThrow(/client_reference_id/);
-    expect(() => parseSession(session({ client_reference_id: "0" }), [lineItem()])).toThrow(/client_reference_id/);
+  it("reads a guest owner from the cart id metadata", () => {
+    const parsed = parseSession(
+      session({ client_reference_id: null, metadata: { guestCartId: "9" } }),
+      [lineItem()],
+    );
+    expect(parsed.owner).toEqual({ kind: "guest", cartId: 9 });
+  });
+
+  it("prefers a valid client_reference_id over guest metadata", () => {
+    const parsed = parseSession(session({ metadata: { guestCartId: "9" } }), [lineItem()]);
+    expect(parsed.owner).toEqual({ kind: "user", userId: 42 });
+  });
+
+  it("throws when there's neither a valid user id nor a valid guest cart id", () => {
+    for (const overrides of [
+      { client_reference_id: null },
+      { client_reference_id: "0" },
+      { client_reference_id: null, metadata: { guestCartId: "abc" } },
+      { client_reference_id: null, metadata: { guestCartId: "-1" } },
+    ]) {
+      expect(() => parseSession(session(overrides), [lineItem()])).toThrow(/client_reference_id or guestCartId/);
+    }
+  });
+
+  it("normalizes the email for both owners", () => {
+    const user = parseSession(session({ customer_details: { email: "  Buyer@Example.COM " } }), [lineItem()]);
+    expect(user.email).toBe("buyer@example.com");
+    const guest = parseSession(
+      session({
+        client_reference_id: null,
+        metadata: { guestCartId: "9" },
+        customer_details: { email: "Guest@Example.com" },
+      }),
+      [lineItem()],
+    );
+    expect(guest.email).toBe("guest@example.com");
   });
 
   it("throws on a missing email, currency, or amount", () => {
