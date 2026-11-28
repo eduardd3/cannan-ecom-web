@@ -10,7 +10,9 @@ export interface OrderConfirmationProps {
     tax: string
     total: string
     address: string[]
-    ordersUrl: string
+    //  guest: no account to sign in to, so the link is the order's own
+    //  private page instead of "your orders".
+    orderLink: { url: string; guest: boolean }
 }
 
 const CELL = { padding: '4px 12px 4px 0', verticalAlign: 'top' } as const;
@@ -56,7 +58,11 @@ export function OrderConfirmation(props: OrderConfirmationProps) {
             )}
 
             <p>
-                You can view your order any time in <a href={props.ordersUrl}>your orders</a>.
+                {props.orderLink.guest ? (
+                    <>You can view your order any time on <a href={props.orderLink.url}>its order page</a>.</>
+                ) : (
+                    <>You can view your order any time in <a href={props.orderLink.url}>your orders</a>.</>
+                )}
             </p>
             <p>
                 If you have any questions about your order, please contact us

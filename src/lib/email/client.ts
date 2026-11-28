@@ -23,7 +23,9 @@ type SendArgs = {
     headers?: Record<string, string>,
 };
 
-export type SendResult = {ok: true, id: string } | {ok: false, error: string};
+//  code: Resend's error name when it answered with one (e.g.
+//  "invalid_idempotent_request"), so a caller can tell a repeat from a failure.
+export type SendResult = {ok: true, id: string } | {ok: false, error: string, code?: string};
 export async function sendEmail (args: SendArgs) : Promise<SendResult> {
     if (!process.env.RESEND_API_KEY) {
         console.error(`[email] RESEND_API_KEY is not set`);
@@ -45,7 +47,7 @@ export async function sendEmail (args: SendArgs) : Promise<SendResult> {
         );
         if (error || !data) {
             console.error(`[email] send failed`, error);
-            return {ok: false, error: 'Email send failed'};
+            return {ok: false, error: 'Email send failed', code: error?.name};
         }
         return { ok: true, id: data.id };
     } catch (error) {

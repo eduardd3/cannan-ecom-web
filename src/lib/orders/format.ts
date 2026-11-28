@@ -60,6 +60,13 @@ type ShippingAddress = {
   country?: string | null;
 };
 
+/** The recipient's name from Order.shippingAddress (Json), or null when there's none. */
+export function shippingName(value: unknown): string | null {
+  if (!value || typeof value !== "object" || Array.isArray(value)) return null;
+  const { name } = value as ShippingAddress;
+  return typeof name === "string" && name.trim() !== "" ? name.trim() : null;
+}
+
 /** Order.shippingAddress (Json) as printable lines; [] when there's none. */
 export function addressLines(value: unknown): string[] {
   if (!value || typeof value !== "object" || Array.isArray(value)) return [];
