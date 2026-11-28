@@ -12,6 +12,7 @@ import Link from "next/link";
 
 import FormBanner from "@/app/components/form/form-banner";
 import { buttonClass, textLinkClass } from "@/app/components/form/styles";
+import TextField from "@/app/components/form/text-field";
 import { blockedDestination } from "@/lib/shipping/countries";
 import CheckoutLayout from "./checkout-layout";
 import { SummaryTotals, type CheckoutTotals, type SummaryLine } from "./order-summary";
@@ -23,6 +24,12 @@ const PENDING_ADDRESS = "Calculated after address";
 
 //  TODO(copy): for a territory Stripe's form offers but the policy excludes.
 const notShipped = (place: string) => `We don't ship to ${place} yet.`;
+
+//  The contact form's wording for the same mistake (lib/contact-actions.ts).
+const INVALID_EMAIL = "Enter a valid email address.";
+
+//  Signing in merges the guest cart (events.signIn), then comes back here.
+const SIGN_IN_HREF = "/id/signin?callbackUrl=%2Fid%2Fcheckout";
 
 //  Every amount is Stripe's own formatted string: the page must show the
 //  session's live total, and it changes as the address (tax) comes in.
@@ -42,10 +49,17 @@ type CheckoutPanelProps = {
     checkout: Checkout;
     heading: ReactNode;
     lines: SummaryLine[];
-    email: string;
+    email: string | null; // null: a guest, who types it in the Contact step
 };
 
 export default function CheckoutPanel({ checkout, heading, lines, email }: CheckoutPanelProps) {
+    const guest = email === null;
+    const [guestEmail, setGuestEmail] = useState("");
+    const [emailError, setEmailError] = useState<string | null>(null);
+    const emailRef = useRef<HTMLInputElement>(null);
+    //  The last value sent to Stripe, so leaving the field unchanged doesn't
+    //  send it again.
+    const lastSentEmail = useRef<string | null>(null);
     const [error, setError] = useState<string | null>(null);
     const [pending, setPending] = useState(false);
     const [hasWallets, setHasWallets] = useState(false);
@@ -60,6 +74,25 @@ export default function CheckoutPanel({ checkout, heading, lines, email }: Check
     useEffect(() => {
         if (error) bannerRef.current?.focus();
     }, [error]);
+
+    //  A guest's email goes to the Stripe session, which validates it (our
+    //  server set no customer_email for a guest). True when Stripe accepted it.
+    async function sendEmail(value: string): Promise<boolean> {
+        lastSentEmail.current = value;
+        const result = await checkout.updateEmail(value);
+        if (result.type === "error") {
+            setEmailError(INVALID_EMAIL);
+            return false;
+        }
+        setEmailError(null);
+        return true;
+    }
+
+    function handleEmailBlur() {
+        const value = guestEmail.trim();
+        if (value === "" || value === lastSentEmail.current) return;
+        void sendEmail(value);
+    }
 
     //  The Pay button. Not disabled while fields are incomplete: confirm()
     //  then reports what's missing and Stripe marks the fields, which a
@@ -78,7 +111,23 @@ export default function CheckoutPanel({ checkout, heading, lines, email }: Check
         }
         setError(null);
         setPending(true);
-        const result = await checkout.confirm();
+
+        //  A guest's email is checked again here, not only on blur: pressing
+        //  Pay blurs the field, but that update may still be in flight. The
+        //  value also goes to confirm(), so one typed just before Pay counts.
+        let guestConfirmEmail: string | undefined;
+        if (guest) {
+            const value = guestEmail.trim();
+            if (value === "" || !(await sendEmail(value))) {
+                setEmailError(INVALID_EMAIL);
+                emailRef.current?.focus();
+                setPending(false);
+                return;
+            }
+            guestConfirmEmail = value;
+        }
+
+        const result = await checkout.confirm(guestConfirmEmail ? { email: guestConfirmEmail } : undefined);
         if (result.type === "error") {
             setError(result.error.message);
             setPending(false);
@@ -86,7 +135,9 @@ export default function CheckoutPanel({ checkout, heading, lines, email }: Check
     }
 
     //  A wallet (Apple Pay, Google Pay) brings its own card and address, so
-    //  it confirms on its own, without the form.
+    //  it confirms on its own, without the form. It brings its own email too:
+    //  Stripe takes it from the wallet and ignores updateEmail for express
+    //  payments, so a guest's empty Contact field doesn't block it.
     async function handleExpressConfirm(event: StripeExpressCheckoutElementConfirmEvent) {
         //  The wallet's own address skips the form, so it's checked here.
         const blocked = event.shippingAddress && blockedDestination(event.shippingAddress.address);
@@ -116,9 +167,36 @@ export default function CheckoutPanel({ checkout, heading, lines, email }: Check
                 </section>
 
                 <Step title="Contact">
-                    <p className="text-body-md text-stone">
-                        Ordering as <span className="font-medium break-all text-charcoal">{email}</span>
-                    </p>
+                    {guest ? (
+                        <>
+                            <TextField
+                                id="checkout-email"
+                                label="Email"
+                                type="email"
+                                autoComplete="email"
+                                required
+                                ref={emailRef}
+                                value={guestEmail}
+                                onChange={(event) => {
+                                    setGuestEmail(event.target.value);
+                                    if (emailError) setEmailError(null);
+                                }}
+                                onBlur={handleEmailBlur}
+                                helper="We'll send your order confirmation here."
+                                error={emailError ?? undefined}
+                            />
+                            <p className="mt-4 text-body-md text-stone">
+                                Have an account?{" "}
+                                <Link href={SIGN_IN_HREF} className={textLinkClass}>
+                                    Sign in
+                                </Link>
+                            </p>
+                        </>
+                    ) : (
+                        <p className="text-body-md text-stone">
+                            Ordering as <span className="font-medium break-all text-charcoal">{email}</span>
+                        </p>
+                    )}
                 </Step>
 
                 <Step title="Shipping address">

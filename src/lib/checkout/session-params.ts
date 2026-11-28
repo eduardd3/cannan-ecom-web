@@ -86,7 +86,8 @@ export function buildShippingOptions(subtotalCents: number): ShippingOption[] {
  * literal placeholder Stripe fills in, so it must NOT be URL-encoded (and is
  * not a template-literal ${...} interpolation).
  *
- * Lives under /id/checkout so the proxy's sign-in gate covers it too.
+ * The return page checks the visitor owns the session itself (signed-in user
+ * or guest cart cookie); the proxy doesn't gate it.
  */
 export function buildReturnUrl(siteUrl: string): string {
   return `${siteUrl}/id/checkout/return?session_id={CHECKOUT_SESSION_ID}`;

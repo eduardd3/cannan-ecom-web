@@ -138,9 +138,6 @@ export default function SignupForm() {
                         Sign in
                     </Link>
                 </p>
-                <p className="max-w-75 text-caption text-stone">
-                    An account is required to place an order and complete checkout.
-                </p>
             </div>
         </div>
     );

@@ -81,6 +81,15 @@ export async function getCartView(owner: CartOwner | null): Promise<CartView> {
 }
 
 /**
+ * The id of the guest cart behind a cookie's hash, or null. The checkout
+ * return page compares it with the cart id a guest session carries.
+ */
+export async function findGuestCartId(tokenHash: string): Promise<number | null> {
+  const cart = await prisma.cart.findUnique({ where: { guestTokenHash: tokenHash }, select: { id: true } });
+  return cart?.id ?? null;
+}
+
+/**
  * Lightweight count for the header badge, so every page load doesn't pull
  * the full cart with images. One aggregate query.
  */

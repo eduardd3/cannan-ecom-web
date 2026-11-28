@@ -265,7 +265,7 @@ model ProductImage {
 
 // Owned by a user OR a guest (CHECK exactly one, in SQL). A guest cart is
 // keyed by the SHA-256 of a cookie token (see src/lib/tokens.ts) and is
-// merged into the user's cart on sign-in. Checkout still requires an account.
+// merged into the user's cart on sign-in. Guests check out from it too.
 model Cart {
   id             Int      @id @default(autoincrement())
   userId         Int?     @unique

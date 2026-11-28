@@ -3,7 +3,10 @@ import { redirect } from "next/navigation";
 import Stripe from "stripe"; // value import: `instanceof Stripe.errors.StripeError` needs it at runtime
 
 import { formatCents } from "@/lib/cart/format";
+import { hashGuestToken, readGuestToken } from "@/lib/cart/guest-token";
+import { findGuestCartId } from "@/lib/cart/queries";
 import { getCurrentUserId } from "@/lib/cart/session";
+import { canViewCheckoutSession } from "@/lib/checkout/return-access";
 import { getStripe } from "@/lib/stripe";
 import ReturnStatus from "./return-status";
 
@@ -16,10 +19,24 @@ export const metadata: Metadata = {
 
 const viewOrders = { label: "View your orders", href: "/orders" };
 
+//  Guests have no orders page, so their main action is to keep shopping, and
+//  the secondary "Continue shopping" link would only repeat it.
+const guestActions = { primary: { label: "Continue shopping", href: "/" }, showContinueShopping: false };
+
+//  The cart the visitor's guest cookie points to, if any. No cookie, or a
+//  malformed one, never reaches the database.
+async function currentGuestCartId(): Promise<number | null> {
+    const token = await readGuestToken();
+    return token ? findGuestCartId(hashGuestToken(token)) : null;
+}
+
 //  Where Stripe sends the customer after the embedded form (buildReturnUrl).
 //  Read-only: it shows what Stripe says about the session. Creating the order,
 //  deducting stock, and clearing the cart belong to the webhook, which runs
 //  even if the customer closes the tab before landing here.
+//
+//  Signed-in users and guests both land here; canViewCheckoutSession decides
+//  whether this visitor is the one who checked out.
 export default async function CheckoutReturnPage({
     searchParams,
 }: {
@@ -27,13 +44,12 @@ export default async function CheckoutReturnPage({
 }) {
     const { session_id: sessionId } = await searchParams;
 
-    //  As on the checkout page, the proxy handles signed-out visitors; this
-    //  covers a session revoked since the JWT was issued.
     const userId = await getCurrentUserId();
-    if (!userId) redirect("/id/signin?callbackUrl=/id/checkout");
+    //  Before we know whose session it is, the actions follow the visitor.
+    const visitorActions = userId !== null ? { primary: viewOrders } : guestActions;
 
     if (typeof sessionId !== "string" || !sessionId.startsWith("cs_")) {
-        return <NotFound />;
+        return <NotFound actions={visitorActions} />;
     }
 
     let session: Stripe.Checkout.Session;
@@ -43,22 +59,24 @@ export default async function CheckoutReturnPage({
         //  A made-up or other-mode id is a 404 from Stripe: same answer as
         //  someone else's session. Anything else is a real failure.
         if (error instanceof Stripe.errors.StripeError && error.code === "resource_missing") {
-            return <NotFound />;
+            return <NotFound actions={visitorActions} />;
         }
         console.error("Failed to retrieve checkout session", error);
         return (
             <ReturnStatus
                 title="We couldn't load your order"
                 body="If you completed payment, your order is safe. Refresh this page in a moment to see its status."
-                primary={viewOrders}
+                {...visitorActions}
             />
         );
     }
 
     //  Session ids aren't secret enough to authorize on their own (they show
     //  up in history and logs). Someone else's session looks like a bad link.
-    if (session.client_reference_id !== String(userId)) {
-        return <NotFound />;
+    //  The guest cookie is only read for a guest session.
+    const guestCartId = session.client_reference_id ? null : await currentGuestCartId();
+    if (!canViewCheckoutSession(session, { userId, guestCartId })) {
+        return <NotFound actions={visitorActions} />;
     }
 
     //  Still open: payment failed or the customer came back without paying.
@@ -92,17 +110,19 @@ export default async function CheckoutReturnPage({
                     : "We'll email you as soon as it's confirmed. Your order ships after that."
             }
             details={{ total: total !== null ? formatCents(total) : undefined, email }}
-            primary={viewOrders}
+            //  Whose session it is, not who's signed in: a guest order has no
+            //  orders page to view.
+            {...(session.client_reference_id ? { primary: viewOrders } : guestActions)}
         />
     );
 }
 
-function NotFound() {
+function NotFound({ actions }: { actions: { primary: { label: string; href: string }; showContinueShopping?: boolean } }) {
     return (
         <ReturnStatus
             title="Order not found"
             body="We couldn't find this checkout."
-            primary={viewOrders}
+            {...actions}
             showContact
         />
     );

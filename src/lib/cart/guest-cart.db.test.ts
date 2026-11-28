@@ -36,7 +36,7 @@ vi.mock("@/lib/rate-limit", () => ({
 const { addToCart, removeCartItem, updateCartItemQuantity } = await import("./actions");
 const { GUEST_COOKIE_NAME, generateGuestToken, hashGuestToken } = await import("./guest-token");
 const { mergeGuestCart } = await import("./merge");
-const { getCartView } = await import("./queries");
+const { findGuestCartId, getCartView } = await import("./queries");
 const { getCurrentCartOwner } = await import("./session");
 
 const OLD = new Date("2020-01-01T00:00:00Z");
@@ -137,6 +137,17 @@ describe("guest addToCart", () => {
     request.limited = true;
 
     expect((await addToCart({ variantId: variant.id, quantity: 1 })).ok).toBe(true);
+  });
+});
+
+describe("findGuestCartId", () => {
+  it("finds the guest cart behind a cookie's hash, and nothing for an unknown hash", async () => {
+    const variant = await createVariant({ stock: 5 });
+    const cart = await guestCart([{ variantId: variant.id, quantity: 1 }]);
+    const token = cookie()!;
+
+    expect(await findGuestCartId(hashGuestToken(token))).toBe(cart.id);
+    expect(await findGuestCartId(hashGuestToken(generateGuestToken()))).toBeNull();
   });
 });
 

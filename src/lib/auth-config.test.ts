@@ -26,3 +26,12 @@ describe("authorized: orders", () => {
     }
   });
 });
+
+describe("authorized: checkout", () => {
+  it("lets guests reach checkout and its return page", () => {
+    for (const path of ["/id/checkout", "/id/checkout/return"]) {
+      expect(authorized(path, false)).toBe(true);
+      expect(authorized(path, true)).toBe(true);
+    }
+  });
+});
